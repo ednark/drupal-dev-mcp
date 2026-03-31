@@ -27,6 +27,12 @@ export interface LanceQueryResult {
   _distance: number;
 }
 
+export interface VectorSearchOptions {
+  tableName: string;
+  limit?: number;
+  drupalVersion?: string;
+}
+
 let dbInstance: lancedb.Connection | null = null;
 
 /**
@@ -40,55 +46,68 @@ export async function getDb(dbPath?: string): Promise<lancedb.Connection> {
   return dbInstance;
 }
 
+const DEFAULT_VECTOR_LIMIT = 10;
+
+function resolveLegacyOptions(
+  limit: number | undefined,
+  legacySelector?: string,
+): VectorSearchOptions {
+  let tableName: string = TABLE_NAMES.core;
+  let drupalVersion: string | undefined;
+
+  if (!legacySelector) {
+    return { tableName, limit };
+  }
+
+  if (legacySelector === 'developer' || legacySelector === TABLE_NAMES.developerGuides) {
+    tableName = TABLE_NAMES.developerGuides;
+  } else if (legacySelector === 'user_guide' || legacySelector === TABLE_NAMES.userGuide) {
+    tableName = TABLE_NAMES.userGuide;
+  } else if (
+    legacySelector === TABLE_NAMES.core
+    || legacySelector === TABLE_NAMES.changeRecords
+    || legacySelector === TABLE_NAMES.drupalExamples
+    || legacySelector === TABLE_NAMES.coreModuleCode
+    || legacySelector === TABLE_NAMES.contribModuleHandbook
+    || legacySelector === TABLE_NAMES.drupalModuleHandbook
+  ) {
+    tableName = legacySelector;
+  } else if (legacySelector.includes('_')) {
+    tableName = legacySelector;
+  } else {
+    tableName = TABLE_NAMES.core;
+    drupalVersion = legacySelector;
+  }
+
+  return { tableName, limit, drupalVersion };
+}
+
 /**
- * Perform vector similarity search on the drupal_core_docs table.
+ * Perform vector similarity search with explicit options.
+ * Supports legacy positional parameters for backwards compatibility.
  */
 export async function vectorSearch(
   queryVector: number[],
-  nResults: number = 10,
-  drupalVersion?: string,
+  optionsOrLimit: VectorSearchOptions | number = DEFAULT_VECTOR_LIMIT,
+  legacySelector?: string,
 ): Promise<LanceQueryResult[]> {
   const db = await getDb();
-  let tableName: string;
-  // Determine which table to search. The third parameter historically was
-  // overloaded to sometimes contain a table selector (e.g. 'drupal_developer_guides')
-  // or a drupal version string (e.g. '11.x'). If callers pass a table name,
-  // we should select that table but NOT apply a drupal_version WHERE filter.
-  let applyVersionFilter = false;
-  if (drupalVersion === 'developer' || drupalVersion === 'drupal_developer_guides') {
-    tableName = TABLE_NAMES.developerGuides;
-  } else if (drupalVersion === 'user_guide' || drupalVersion === 'drupal_user_guide') {
-    tableName = TABLE_NAMES.userGuide;
-  } else if (
-    drupalVersion === TABLE_NAMES.developerGuides
-    || drupalVersion === TABLE_NAMES.userGuide
-    || drupalVersion === TABLE_NAMES.core
-    || drupalVersion === TABLE_NAMES.changeRecords
-    || drupalVersion === TABLE_NAMES.drupalExamples
-    || drupalVersion === TABLE_NAMES.coreModuleCode
-  ) {
-    // Explicit well-known table name supplied; use it as-is, no version filter.
-    tableName = drupalVersion;
-  } else if (drupalVersion && drupalVersion.includes('_')) {
-    // Any other value containing an underscore is treated as a direct table name
-    // (e.g. 'api_drupal_org_docs', 'contrib_module_docs', 'contrib_module_code',
-    //  'drupal_examples', 'core_module_code', 'php_docs', 'symfony_docs',
-    //  'certification_docs', 'drupal_tutorials').
-    // Version strings like '11.x' or 'all' never contain underscores, so this
-    // heuristic is unambiguous.
-    tableName = drupalVersion;
-  } else {
-    // Treat the param as a drupal version filter (e.g. '11.x' or 'all'), select core by default
-    tableName = TABLE_NAMES.core;
-    if (drupalVersion) applyVersionFilter = true;
-  }
-  const table = await db.openTable(tableName);
-  let query = table.vectorSearch(queryVector).limit(nResults);
 
-  // Only apply WHERE filter when the caller passed a drupal version (not a table name)
-  if (applyVersionFilter && drupalVersion) {
-    // Use exact match on drupal_version column
-    query = query.where(`drupal_version = '${drupalVersion}'`);
+  let options: VectorSearchOptions;
+  if (typeof optionsOrLimit === 'number' || optionsOrLimit === undefined) {
+    const limitValue = typeof optionsOrLimit === 'number' ? optionsOrLimit : DEFAULT_VECTOR_LIMIT;
+    options = resolveLegacyOptions(limitValue, legacySelector);
+  } else {
+    options = { ...optionsOrLimit };
+  }
+
+  const tableName: string = options.tableName ?? TABLE_NAMES.core;
+  const limit = options.limit ?? DEFAULT_VECTOR_LIMIT;
+  const table = await db.openTable(tableName);
+  let query = table.vectorSearch(queryVector).limit(limit);
+
+  if (options.drupalVersion) {
+    query = query.where(`drupal_version = '${options.drupalVersion}'`);
   }
 
   const results = await query.toArray();
