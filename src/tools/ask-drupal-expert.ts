@@ -3,8 +3,8 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import { embed, chat } from '../lib/openai.js';
-import { vectorSearch } from '../lib/lancedb.js';
+import { chat } from '../lib/openai.js';
+import { retrieveContext } from '../lib/retrieval.js';
 import path from 'path';
 import fs from 'fs';
 
@@ -179,13 +179,14 @@ const PHP_DOCS_MAX_DISTANCE = 1.3;
 // ── Tool Definition ──────────────────────────────────────────
 export const TOOL_DEFINITION = {
   name: 'ask_drupal_expert',
-  description: `Ask a Drupal backend development question. This tool searches a local vector database of official Drupal documentation (PHPDoc from drupal/drupal core, Drupal User Guide) and synthesizes an expert answer using GPT-4o.
+  description: `Provide conversational, citation-backed explanations for human Drupal backend developers. This tool searches local Drupal documentation and source code, then synthesizes an educational answer tailored to people seeking conceptual clarity.
 
-Covers: hooks, services, dependency injection, entity API, form API, routing, config management, caching, plugins, migrations, events, Drupal/Symfony patterns.
+Primary audience: human developers learning or implementing Drupal backend features.
+Primary use case: conversational synthesis, explaining concepts, and clarifying how to apply retrieved evidence in practice.
 
-Also searches contrib module source code (PHP classes, hook implementations, YAML services/routes) from 43 popular contributed modules including views, webform, paragraphs, pathauto, and more.
+Covers hooks, services, dependency injection, entity API, form API, routing, config management, caching, plugins, migrations, events, and Drupal/Symfony patterns using official documentation plus vetted contrib module sources.
 
-Does NOT search the internet. Answers are grounded in official Drupal documentation and contrib module source code only.`,
+Does NOT search the internet. All guidance is grounded in the local Drupal corpus.`,
   inputSchema: {
     type: 'object' as const,
     properties: {
@@ -203,15 +204,15 @@ Does NOT search the internet. Answers are grounded in official Drupal documentat
 };
 
 // ── System Prompt ────────────────────────────────────────────
-const SYSTEM_PROMPT = `You are an expert Drupal backend developer and architect.
-Answer using ONLY the documentation excerpts provided below.
-Format your response in Markdown with code blocks for PHP/YAML/JSON examples.
-Cite every factual statement with [Source N] where N corresponds to the numbered sources.
-End your response with a ## Sources section listing the 3-5 most relevant sources used.
-If the provided context is insufficient to answer the question, say so clearly — do not hallucinate API names, function names, or class names.
-Do not reference deprecated Drupal 7 or Drupal 8 APIs unless the user specifically asks about them.
-Always prefer Drupal 10/11 patterns and APIs.
-When Code Example sources are provided, prefer showing real working code from those examples rather than synthesizing hypothetical code. Label code examples with their module name and class/function name.`;
+const SYSTEM_PROMPT = `You are Ask Drupal Expert, a senior Drupal educator speaking to human developers.
+Your role is to teach: interpret the provided evidence, explain the concepts step by step, and highlight why each cited source matters for real-world implementation.
+Answer using ONLY the documentation excerpts supplied in the context.
+Format your response in Markdown, using PHP/YAML/JSON code blocks when sharing examples.
+Cite every factual statement with [Source N] where N corresponds to the numbered sources in the context block.
+Begin with a concise summary, then elaborate with practical guidance, best practices, and cautions suited to human developers.
+End with a ## Sources section listing the 3-5 most relevant sources you relied on.
+If the context is insufficient, say so directly and recommend next steps instead of guessing.
+Favor Drupal 10/11 APIs unless the user explicitly requests older versions, and prefer real code from the evidence over hypothetical snippets.`;
 
 // ── Handler ──────────────────────────────────────────────────
 export async function handleAskDrupalExpert(args: { question: string; drupal_version?: string }): Promise<string> {
@@ -220,186 +221,48 @@ export async function handleAskDrupalExpert(args: { question: string; drupal_ver
 
   console.error(`[ask_drupal_expert] Question: "${question}"${drupal_version ? ` (version: ${drupal_version})` : ''}`);
 
-  // Phase 1: Embed the question
-  console.error('[ask_drupal_expert] Phase 1: Embedding question...');
-  const queryVector = await embed(question);
-
-  // Phase 2: Vector search in LanceDB with source tiering
-  console.error('[ask_drupal_expert] Phase 2: Searching LanceDB with source tiering...');
-
-  // Query classification for conditional Tier 3 logic.
-  // php_docs is excluded for hook-related queries because PHP 8.4 property-hook
-  // syntax causes false-positive matches (distance ~1.3–1.55) that pollute results.
-  // api_drupal_org_docs is prioritised for entity queries: it has the richest entity-API and
-  // hook-reference coverage (e.g. EntityStorageInterface, loadByProperties, EntityQuery)
-  // that drupal_core_docs PHPDoc stubs only cover with empty {@inheritdoc} entries.
-  const hookQuery = isHookRelatedQuery(question);
-  const entityQuery = isEntityQuery(question);
-  const tutorialQuery = isTutorialQuery(question);
-
-  // ── Tier 1 (Primary): High-yield sources with limit=6 ──
-  // Includes official Drupal core, API reference, developer guides, high-quality
-  // contrib module source code implementations, and change records for version-aware
-  // and deprecation-safe answers.
-  const primaryDocDatasets = [
-    'drupal_core_docs',
-    'api_drupal_org_docs',
-    'drupal_developer_guides',
-    'drupal_module_handbook',
-    'contrib_module_code',
-    'drupal_examples',
-    'core_module_code',
-    'change_records',
-  ];
-
-  // ── Tier 2 (Secondary): Supplementary sources with limit=3 ──
-  // Includes framework patterns (Symfony), tutorials, contributed module documentation,
-  // and site-building best practices.
-  const secondaryDocDatasets = [
-    'symfony_docs',
-    'drupal_tutorials',
-    'contrib_module_docs',
-    'contrib_module_handbook',
-    'drupal_best_practices',
-  ];
-
-  // ── Tier 3 (Explicit Fallback): PHP docs with limit=3 ──
-  // Only searched for non-hook and non-entity queries to avoid polluting results with
-  // false-positive matches from PHP 8.4 property-hook syntax or generic PHP documentation.
-  const shouldSearchPhpDocs = !hookQuery && !entityQuery;
-
-  if (hookQuery) {
-    console.error('[ask_drupal_expert] Hook-related query detected — excluding php_docs from search');
-  }
-  if (entityQuery) {
-    console.error('[ask_drupal_expert] Entity-related query detected — api_drupal_org_docs prioritised');
-  }
-  if (tutorialQuery) {
-    console.error('[ask_drupal_expert] Tutorial query detected — boosting drupal_tutorials in Tier 2');
-  }
-
-  // Perform tiered searches: Tier 1 all parallel, then Tier 2 all parallel, then optional Tier 3.
-  // This prioritises high-quality official documentation before falling back to supplementary sources.
-  const tier1Results = await Promise.all(
-    primaryDocDatasets.map(ds =>
-      vectorSearch(queryVector, (ds === 'api_drupal_org_docs' && entityQuery) ? 8 : 6, ds)
-        .then(r => r.map(x => ({ ...x, dataset: ds, tier: 1 as const })))
-        .catch(() => [] as Array<Awaited<ReturnType<typeof vectorSearch>>[number] & { dataset: string; tier: 1 }>),
-    ),
-  ).then(r => r.flat());
-
-  console.error(`[ask_drupal_expert] Tier 1 search complete: ${tier1Results.length} results across ${primaryDocDatasets.length} sources`);
-
-  const tier2Results = await Promise.all(
-    secondaryDocDatasets.map(ds =>
-      vectorSearch(queryVector, ds === 'drupal_tutorials' && tutorialQuery ? 5 : 3, ds)
-        .then(r => r.map(x => ({ ...x, dataset: ds, tier: 2 as const })))
-        .catch(() => [] as Array<Awaited<ReturnType<typeof vectorSearch>>[number] & { dataset: string; tier: 2 }>),
-    ),
-  ).then(r => r.flat());
-
-  console.error(`[ask_drupal_expert] Tier 2 search complete: ${tier2Results.length} results across ${secondaryDocDatasets.length} sources`);
-
-  let tier3Results: Array<Awaited<ReturnType<typeof vectorSearch>>[number] & { dataset: string; tier: 3 }> = [];
-  if (shouldSearchPhpDocs) {
-    tier3Results = await vectorSearch(queryVector, 3, 'php_docs')
-      .then(r => r.map(x => ({ ...x, dataset: 'php_docs', tier: 3 as const })))
-      .then(r => r.filter(x => x._distance <= PHP_DOCS_MAX_DISTANCE))
-      .catch(() => []);
-    console.error(`[ask_drupal_expert] Tier 3 search complete: ${tier3Results.length} results from php_docs (distance filtered)`);
-  } else {
-    console.error('[ask_drupal_expert] Tier 3 search skipped (hook or entity query)');
-  }
-
-  // Merge and sort: prioritise Tier 1, then Tier 2, then Tier 3 by distance.
-  // Ensure at least 4 results from Tier 1 if available; then fill with Tier 2/3 sorted by distance.
-  const tier1Sorted = tier1Results
-    .sort((a, b) => a._distance - b._distance)
-    .slice(0, 8); // cap at 8
-
-  const tier1Count = tier1Sorted.length;
-  let results: Array<Awaited<ReturnType<typeof vectorSearch>>[number] & { dataset: string; tier?: number }>;
-
-  if (tier1Count >= 4) {
-    // Tier 1 has at least 4 results; fill up to total of 8 with Tier 2/3.
-    const remainingSlots = 8 - tier1Count;
-    const tier23Merged = [...tier2Results, ...tier3Results]
-      .sort((a, b) => a._distance - b._distance)
-      .slice(0, remainingSlots);
-    results = [...tier1Sorted, ...tier23Merged];
-  } else {
-    // Tier 1 has fewer than 4 results; take all available and fill the rest.
-    const remainingSlots = 8 - tier1Count;
-    const tier23Merged = [...tier2Results, ...tier3Results]
-      .sort((a, b) => a._distance - b._distance)
-      .slice(0, remainingSlots);
-    results = [...tier1Sorted, ...tier23Merged];
-  }
-
-  // Reorder final results by distance for consistent presentation.
-  // Per-dataset distance thresholds — drop results noisier than their dataset baseline.
-  // (php_docs is already filtered by PHP_DOCS_MAX_DISTANCE above; this is a safety net
-  //  for other datasets whose noise floor has been empirically measured.)
-  const DATASET_MAX_DISTANCE: Record<string, number> = {
-    contrib_module_docs: 1.25,
-    contrib_module_handbook: 1.25,
-    drupal_tutorials: 1.3,
-    symfony_docs: 1.3,
-    drupal_best_practices: 1.2,
-    php_docs: 1.3,
-  };
-
-  const beforeFilter = results.length;
-  results = results.filter(r => {
-    const maxDist = DATASET_MAX_DISTANCE[r.dataset];
-    return maxDist === undefined || r._distance <= maxDist;
+  // Phase 1 & 2: Retrieve normalized evidence context
+  console.error('[ask_drupal_expert] Phase 1: Retrieving documentation context...');
+  const retrievalResponse = await retrieveContext({
+    query: question,
+    drupalVersion: drupal_version,
+    strategy: 'tiered',
+    includeText: true,
+    overallLimit: 12,
   });
-  const droppedByDistance = beforeFilter - results.length;
-  if (droppedByDistance > 0) {
-    console.error(`[ask_drupal_expert] Dropped ${droppedByDistance} results by dataset distance thresholds`);
-  }
 
-  // Sort results: keep tier ordering, then prefer code chunks that have a
-  // symbol_name (concrete implementations) over anonymous/prose chunks within
-  // the same tier, and finally fall back to ascending distance.
-  results.sort((a, b) => {
-    // Preserve tier ordering first
-    if (a.tier !== b.tier) return (a.tier ?? 3) - (b.tier ?? 3);
-    // Within the same tier, prefer code datasets that carry a symbol_name
-    const codeDatasets = ['contrib_module_code', 'drupal_examples', 'core_module_code', 'drupal_module_handbook'];
-    const aIsCode = codeDatasets.includes(a.dataset);
-    const bIsCode = codeDatasets.includes(b.dataset);
-    if (aIsCode && a.symbol_name && (!bIsCode || !b.symbol_name)) return -1;
-    if (bIsCode && b.symbol_name && (!aIsCode || !a.symbol_name)) return 1;
-    // Otherwise sort by ascending distance
-    return a._distance - b._distance;
-  });
+  const results = retrievalResponse.hits;
+
+  console.error(
+    `[ask_drupal_expert] Retrieval complete: ${retrievalResponse.total_hits_after_filter}/${retrievalResponse.total_hits_before_filter} hits after filtering across ${retrievalResponse.datasets_searched.length} datasets (strategy=${retrievalResponse.strategy})`,
+  );
 
   if (results.length === 0) {
     return 'No relevant documentation found in the local Drupal documentation database. Try rephrasing your question or removing the version filter.';
   }
 
-  // Log when change_records results are included
-  const changeRecordsResults = results.filter(r => r.dataset === 'change_records');
+  const contextHits = results.slice(0, 8);
+
+  const changeRecordsResults = contextHits.filter(r => r.dataset === 'change_records');
   if (changeRecordsResults.length > 0) {
     console.error(`[ask_drupal_expert] Change records included: ${changeRecordsResults.length} result(s) — version-aware recommendations available`);
   }
 
-  const drupalExamplesResults = results.filter(r => r.dataset === 'drupal_examples');
+  const drupalExamplesResults = contextHits.filter(r => r.dataset === 'drupal_examples');
   if (drupalExamplesResults.length > 0) {
     console.error(`[ask_drupal_expert] Drupal Examples included: ${drupalExamplesResults.length} result(s)`);
   }
 
-  const coreModuleCodeResults = results.filter(r => r.dataset === 'core_module_code');
+  const coreModuleCodeResults = contextHits.filter(r => r.dataset === 'core_module_code');
   if (coreModuleCodeResults.length > 0) {
     console.error(`[ask_drupal_expert] Core module code included: ${coreModuleCodeResults.length} result(s)`);
   }
 
-  console.error(`[ask_drupal_expert] Found ${results.length} relevant chunks from tiered search`);
+  console.error(`[ask_drupal_expert] Using ${contextHits.length} hits for synthesis context`);
 
   // Phase 3: Build context prompt
   console.error('[ask_drupal_expert] Phase 3: Building context prompt...');
-  const contextBlocks = results.map((result, index) => {
+  const contextBlocks = contextHits.map((result, index) => {
     const label = result.symbol_name || result.section || result.file_path || 'Unknown';
     const sourceType = result.source;
     const version = result.drupal_version;
@@ -456,21 +319,15 @@ export async function handleAskDrupalExpert(args: { question: string; drupal_ver
   const metricsLog = {
     query_hash: queryHash,
     skill_detected: detectedDomain ?? null,
-    tiers_searched: (
-      [
-        tier1Results.length > 0 ? 1 : null,
-        tier2Results.length > 0 ? 2 : null,
-        tier3Results.length > 0 ? 3 : null,
-      ] as Array<number | null>
-    ).filter((t): t is number => t !== null),
+    tiers_searched: Array.from(new Set(contextHits.map(hit => hit.tier).filter((tier): tier is number => typeof tier === 'number'))),
     result_counts: {
-      tier1: tier1Results.length,
-      tier2: tier2Results.length,
-      tier3: tier3Results.length,
-      total_after_filter: results.length,
+      tier1: contextHits.filter(hit => hit.tier === 1).length,
+      tier2: contextHits.filter(hit => hit.tier === 2).length,
+      tier3: contextHits.filter(hit => hit.tier === 3).length,
+      total_after_filter: contextHits.length,
     },
     datasets_used: [...new Set(results.map(r => r.dataset))],
-    top_distance: results.length > 0 ? Math.min(...results.map(r => r._distance)) : null,
+    top_distance: results.length > 0 ? Math.min(...results.map(r => r.distance)) : null,
     latency_ms: Date.now() - queryStartTime,
   };
   console.error(`[metrics] ${JSON.stringify(metricsLog)}`);

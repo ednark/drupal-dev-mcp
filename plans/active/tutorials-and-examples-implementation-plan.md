@@ -2,108 +2,55 @@
 status: in-progress
 phase: implementation
 completed_at: null
-last_reviewed_at: 2026-03-30
+last_reviewed_at: 2026-03-31
 depends_on: []
 supersedes: []
-related_artifacts: []
+related_artifacts:
+  - etl/parse-tutorials.ts
+  - etl/verify-tutorials.ts
+  - src/lib/retrieval.ts
+  - src/tools/search-drupal-docs.ts
+  - src/tools/ask-drupal-expert.ts
+  - src/lib/deep-research.ts
+  - src/tools/deep-research-drupal.ts
 ---
 
 # Tutorials and Examples Integration Plan
 
-## 1. Goal
-The objective is to **enrich the knowledge base** with high-quality, real-world tutorials and examples from widely used Drupal community modules. These examples will help developers and site builders understand practical implementations of Drupal concepts, complementing the existing core documentation and developer guides.
+## Goal
+Treat tutorials and examples as shared retrieval assets that improve raw evidence lookup, human explanations, and deep research planning across the full tool set.
 
-## 2. Identify Top Community Modules
-Focus on the most popular and educational Drupal modules that demonstrate best practices and common use cases:
+## Current Status
+- [x] Tutorial dataset slot exists in shared retrieval ordering via [`src/lib/retrieval.ts`](src/lib/retrieval.ts:146)
+- [x] [`ask_drupal_expert`](src/tools/ask-drupal-expert.ts:279) already formats tutorial hits distinctly when they are retrieved
+- [ ] Tutorial parsing and verification quality still need hardening
+- [ ] Metadata quality for filtering and ranking still needs validation
+- [ ] Cross-tool retrieval value has not been benchmarked systematically
 
-| Module | Description | Repository |
-|---------|--------------|-------------|
-| **Views** | Build dynamic lists and queries of content. | https://www.drupal.org/project/views |
-| **Webform** | Create complex forms and surveys. | https://www.drupal.org/project/webform |
-| **Pathauto** | Automatically generate SEO-friendly URLs. | https://www.drupal.org/project/pathauto |
-| **Paragraphs** | Flexible content components for editors. | https://www.drupal.org/project/paragraphs |
-| **Token** | Provides placeholder tokens for dynamic text. | https://www.drupal.org/project/token |
-| **Devel** | Developer tools for debugging and profiling. | https://www.drupal.org/project/devel |
-| **Metatag** | Manage meta tags for SEO and social sharing. | https://www.drupal.org/project/metatag |
-| **Redirect** | Manage URL redirects. | https://www.drupal.org/project/redirect |
-| **Admin Toolbar** | Enhances the default admin menu. | https://www.drupal.org/project/admin_toolbar |
-| **CKEditor 5** | Rich text editor integration. | https://www.drupal.org/project/ckeditor5 |
+## Retrieval Role
+- [`search_drupal_docs`](src/tools/search-drupal-docs.ts:43) should expose tutorial/example chunks as raw evidence when relevant
+- [`ask_drupal_expert`](src/tools/ask-drupal-expert.ts:218) should use them as illustrative teaching context
+- [`runDeepResearch()`](src/lib/deep-research.ts:154) and [`deep_research_drupal`](src/tools/deep-research-drupal.ts:56) should use them as implementation examples and comparative evidence
 
-## 3. Data Sources
-Tutorials and examples will be collected from multiple authoritative sources:
+## Remaining Actions
+1. Validate the outputs of [`etl/parse-tutorials.ts`](etl/parse-tutorials.ts:1) and [`etl/verify-tutorials.ts`](etl/verify-tutorials.ts:1) against real example-heavy sources
+2. Confirm the metadata schema consistently captures `module`, `topic`, `complexity`, and code-snippet presence
+3. Tune retrieval behaviour so tutorial/example chunks appear for example-seeking queries without overwhelming primary API and handbook evidence
+4. Add benchmark questions that verify tutorial/example usefulness in all three tool surfaces
+5. Keep any new filtering generic enough to live in shared retrieval or shared metadata conventions where possible
 
-- **Drupal.org project pages** — official documentation, examples, and issue discussions.
-- **GitLab repositories** — README files, `/examples` directories, and inline code comments.
-- **Community guides** — curated tutorials from Drupal.org documentation and Planet Drupal blogs.
-- **Module maintainers’ documentation** — external GitHub or GitLab repos linked from project pages.
+## Preferred Sources
+- Drupal.org project documentation and example pages
+- Maintainer documentation with implementation walkthroughs
+- Repository example directories and README usage sections
+- Community tutorial material only when attribution and quality are clear
 
-## 4. Ingestion Strategy
-A new ETL pipeline extension will be created to fetch, parse, and verify tutorials and examples.
+## Exit Criteria
+- Tutorial/example chunks are validated, deduplicated, and consistently attributed
+- Example-oriented questions surface helpful evidence in raw search, synthesized answers, and deep research dossiers
+- Metadata is good enough for ranking and future filtering without creating tool-specific coupling
 
-### New ETL Components
-- [`etl/parse-tutorials.ts`](etl/parse-tutorials.ts): Extracts tutorial content, code snippets, and metadata from module sources.
-- [`etl/verify-tutorials.ts`](etl/verify-tutorials.ts): Validates extracted data for completeness, accuracy, and duplication.
-
-### Workflow
-```mermaid
-flowchart TD
-  A[Fetch module sources] --> B[Parse tutorials and examples]
-  B --> C[Extract metadata]
-  C --> D[Verify and clean data]
-  D --> E[Chunk and embed]
-  E --> F[Load into LanceDB]
-  F --> G[Expose via ask-drupal-expert]
-```
-
-### Steps
-1. **Fetch**: Use `scripts/fetch-tutorials.sh` to download module READMEs and example directories.
-2. **Parse**: Identify tutorial sections, code blocks, and usage examples.
-3. **Verify**: Ensure examples are valid, non-duplicative, and properly attributed.
-4. **Chunk & Embed**: Use existing `etl/chunker.ts` and `etl/embedder.ts` for semantic embedding.
-5. **Load**: Store processed examples in LanceDB for retrieval.
-
-## 5. Metadata Schema
-Each tutorial or example will include structured metadata for discoverability and filtering.
-
-| Field | Type | Description |
-|--------|------|-------------|
-| `id` | string | Unique identifier |
-| `module` | string | Drupal module name |
-| `title` | string | Tutorial or example title |
-| `topic` | string | Key concept (e.g., Views filters, Webform submission) |
-| `complexity` | enum(`beginner`, `intermediate`, `advanced`) | Difficulty level |
-| `source_url` | string | Original source link |
-| `content` | text | Full tutorial or example text |
-| `code_snippets` | array | Extracted code examples |
-| `tags` | array | Keywords for search and categorization |
-| `last_updated` | date | Last modified date from source |
-
-## 6. Integration Plan
-
-### In `ask-drupal-expert`
-- Extend [`src/tools/ask-drupal-expert.ts`](src/tools/ask-drupal-expert.ts) to query the new `tutorials` collection in LanceDB.
-- Add filtering by `module`, `topic`, and `complexity`.
-- Display example snippets inline with answers.
-
-### In LanceDB
-- Create a new table: `drupal_tutorials.lance`.
-- Store embedded vectors for semantic search.
-- Integrate with existing `etl/loader.ts` for unified ingestion.
-
-## 7. Deliverables
-
-| Type | File | Description |
-|------|------|-------------|
-| **Script** | `scripts/fetch-tutorials.sh` | Fetches module documentation and examples. |
-| **ETL Parser** | `etl/parse-tutorials.ts` | Extracts and structures tutorial data. |
-| **ETL Verifier** | `etl/verify-tutorials.ts` | Validates and cleans parsed data. |
-| **Database** | `data/lancedb/drupal_tutorials.lance` | Stores embedded tutorial data. |
-| **Tool Update** | `src/tools/ask-drupal-expert.ts` | Adds tutorial retrieval and display. |
-| **Documentation** | `README.md` and `plans/tutorials-and-examples-implementation-plan.md` | Describes ingestion and integration process. |
-
-## 8. Next Steps
-1. Implement `fetch-tutorials.sh` to gather module data.
-2. Develop `parse-tutorials.ts` and `verify-tutorials.ts`.
-3. Extend ETL runner to include tutorials pipeline.
-4. Update `ask-drupal-expert` to surface examples.
-5. Test and validate integration end-to-end.
+## Key Decisions
+- Tutorials/examples are corpus assets first, presentation features second
+- Shared retrieval remains the integration point; tool files should only decide how retrieved tutorial hits are presented
+- Tutorial/example evidence should complement, not displace, core API and handbook sources

@@ -86,7 +86,6 @@ function isBoilerplateDocBlock(text: string): boolean {
   const stripped = text.replace(/\/\*\*[\s\S]*?\*\//g, '').trim();
   // Consider boilerplate if: declaration is very short (stub), or docblock
   // contains only @inheritdoc with no additional content.
-  if (stripped.length < 80) return true;
   if (/^\s*\{?@inheritdoc\}?\s*$/im.test(text)) return true;
   return false;
 }

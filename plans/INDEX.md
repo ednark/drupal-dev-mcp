@@ -12,9 +12,9 @@ This index tracks plan lifecycle state and location.
 
 | Name | Status | Last Reviewed | Replaced By | Location |
 |---|---|---|---|---|
-| roadmap-phased-milestones.md | in-progress | 2026-03-30 | - | plans/active/roadmap-phased-milestones.md |
-| skill-rag-integration-plan.md | in-progress | 2026-03-30 | - | plans/active/skill-rag-integration-plan.md |
-| tutorials-and-examples-implementation-plan.md | in-progress | 2026-03-30 | - | plans/active/tutorials-and-examples-implementation-plan.md |
+| roadmap-phased-milestones.md | in-progress | 2026-03-31 | - | plans/active/roadmap-phased-milestones.md |
+| skill-rag-integration-plan.md | in-progress | 2026-03-31 | - | plans/active/skill-rag-integration-plan.md |
+| tutorials-and-examples-implementation-plan.md | in-progress | 2026-03-31 | - | plans/active/tutorials-and-examples-implementation-plan.md |
 
 ## Blocked Plans
 
@@ -34,6 +34,7 @@ This index tracks plan lifecycle state and location.
 | evaluation.md | archived | 2026-03-30 | mvp-implementation-plan.md | plans/archived/evaluation.md |
 | mvc-source-material.md | archived | 2026-03-30 | mvp-implementation-plan.md | plans/archived/mvc-source-material.md |
 | mvp-implementation-plan.md | archived | 2026-03-30 | plans/tasks/README.md | plans/archived/mvp-implementation-plan.md |
+| new-search-tools-plan.md | archived | 2026-03-31 | roadmap-phased-milestones.md | plans/archived/new-search-tools-plan.md |
 | organized-plan.md | archived | 2026-03-30 | plans/tasks/README.md | plans/archived/organized-plan.md |
 | playwright-fetcher-plan.md | archived | 2026-03-30 | api-drupal-org-source-plan.md | plans/archived/playwright-fetcher-plan.md |
 
