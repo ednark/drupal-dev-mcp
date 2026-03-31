@@ -3,10 +3,12 @@
  *
  * For each URL:
  *   1. Fetch via https://r.jina.ai/{url}
- *   2. Skip if response < 200 chars or contains "404"/"not found" in first 100 chars
+ *   2. Skip if response < 200 chars or contains "404"/"not found" in first 500 chars
+ *      (Jina places its "Warning: Target URL returned error 404" after the URL Source
+ *      line, which can start at char 101+, so we use a 500-char window to catch it.)
  *   3. Convert URL to filename: last 2 path segments joined with '-', append '-guide.md'
  *      e.g. .../docs/creating-custom-modules        → docs-creating-custom-modules-guide.md
- *      e.g. .../creating-custom-modules/hooks-and-alters → creating-custom-modules-hooks-and-alters-guide.md
+ *      e.g. .../routing-system/structure-of-routes  → routing-system-structure-of-routes-guide.md
  *   4. Skip if file already exists and is > 500 bytes
  *   5. 2-second delay between requests
  *
@@ -23,9 +25,12 @@ const HANDBOOK_URLS: string[] = [
   // Core module creation
   'https://www.drupal.org/docs/creating-custom-modules',
   'https://www.drupal.org/docs/creating-custom-modules/let-drupal-know-about-your-module-with-an-infoyml-file',
-  'https://www.drupal.org/docs/creating-custom-modules/hooks-and-alters',
-  'https://www.drupal.org/docs/creating-custom-modules/defining-and-implementing-hooks',
-  'https://www.drupal.org/docs/creating-custom-modules/providing-module-configuration',
+  // hooks-and-alters (404) → replaced with custom field types (covers hook implementation patterns)
+  'https://www.drupal.org/docs/creating-custom-modules/creating-custom-field-types-widgets-and-formatters',
+  // defining-and-implementing-hooks (404) → replaced with step-by-step hello world (covers basic hooks)
+  'https://www.drupal.org/docs/creating-custom-modules/step-by-step-tutorial-hello-world',
+  // providing-module-configuration (404) → replaced with working-with-configuration-forms
+  'https://www.drupal.org/docs/drupal-apis/configuration-api/working-with-configuration-forms',
 
   // Services and DI
   'https://www.drupal.org/docs/drupal-apis/services-and-dependency-injection',
@@ -35,40 +40,49 @@ const HANDBOOK_URLS: string[] = [
   // Plugin API
   'https://www.drupal.org/docs/drupal-apis/plugin-api',
   'https://www.drupal.org/docs/drupal-apis/plugin-api/annotations-based-plugins',
-  'https://www.drupal.org/docs/drupal-apis/plugin-api/understanding-the-plugin-api',
-  'https://www.drupal.org/docs/drupal-apis/plugin-api/creating-a-block-plugin',
+  // understanding-the-plugin-api (404) → replaced with why-plugins
+  'https://www.drupal.org/docs/drupal-apis/plugin-api/why-plugins',
+  // creating-a-block-plugin (404) → replaced with plugin-api-overview
+  'https://www.drupal.org/docs/drupal-apis/plugin-api/plugin-api-overview',
 
   // Routing
   'https://www.drupal.org/docs/drupal-apis/routing-system',
   'https://www.drupal.org/docs/drupal-apis/routing-system/structure-of-routes',
-  'https://www.drupal.org/docs/drupal-apis/routing-system/controllers',
-  'https://www.drupal.org/docs/drupal-apis/routing-system/access-checking-on-routes',
+  // controllers (404) → replaced with introductory routes-and-controllers example
+  'https://www.drupal.org/docs/drupal-apis/routing-system/introductory-drupal-routes-and-controllers-example',
+  // access-checking-on-routes (404) → replaced with routing-system-overview
+  'https://www.drupal.org/docs/drupal-apis/routing-system/routing-system-overview',
 
   // Entity API
   'https://www.drupal.org/docs/drupal-apis/entity-api',
   'https://www.drupal.org/docs/drupal-apis/entity-api/working-with-the-entity-api',
-  'https://www.drupal.org/docs/drupal-apis/entity-api/defining-a-content-entity-type-in-drupal-8',
+  // defining-a-content-entity-type-in-drupal-8 (404) → replaced with creating-a-content-entity-type-in-drupal-8
+  'https://www.drupal.org/docs/drupal-apis/entity-api/creating-a-content-entity-type-in-drupal-8',
 
   // Form API
   'https://www.drupal.org/docs/drupal-apis/form-api',
   'https://www.drupal.org/docs/drupal-apis/form-api/introduction-to-form-api',
-  'https://www.drupal.org/docs/drupal-apis/form-api/building-a-basic-form',
+  // building-a-basic-form (404) → replaced with form-api-workflow
+  'https://www.drupal.org/docs/drupal-apis/form-api/form-api-workflow',
 
   // Configuration API
   'https://www.drupal.org/docs/drupal-apis/configuration-api',
-  'https://www.drupal.org/docs/drupal-apis/configuration-api/working-with-configuration-in-drupal-8',
+  // working-with-configuration-in-drupal-8 (404) → replaced with simple-configuration-api
+  'https://www.drupal.org/docs/drupal-apis/configuration-api/simple-configuration-api',
 
   // Database API
   'https://www.drupal.org/docs/drupal-apis/database-api',
   'https://www.drupal.org/docs/drupal-apis/database-api/static-queries',
-  'https://www.drupal.org/docs/drupal-apis/database-api/dynamic-queries',
+  // dynamic-queries (404) → replaced with update-queries
+  'https://www.drupal.org/docs/drupal-apis/database-api/update-queries',
 
   // Events
   'https://www.drupal.org/docs/creating-custom-modules/subscribe-to-and-dispatch-events',
 
   // Theming from modules
   'https://www.drupal.org/docs/theming-drupal/twig-in-drupal',
-  'https://www.drupal.org/docs/theming-drupal/adding-stylesheets-css-and-javascript-js-to-a-drupal-module',
+  // theming-drupal/adding-stylesheets (404) → moved to creating-custom-modules section
+  'https://www.drupal.org/docs/creating-custom-modules/adding-stylesheets-css-and-javascript-js-to-a-drupal-module',
 ];
 
 function sleep(ms: number): Promise<void> {
@@ -126,8 +140,11 @@ async function fetchHandbookPage(url: string): Promise<string | null> {
       return null;
     }
 
-    // Check first 100 chars for 404 or "not found" indicators
-    const preview = text.slice(0, 100).toLowerCase();
+    // Check first 500 chars for 404 or "not found" indicators.
+    // Jina prefixes each response with "Title: ...\n\nURL Source: ...\n\n" before the
+    // "Warning: Target URL returned error 404: Not Found" line, so the warning can
+    // appear well past the first 100 characters — use a larger window to be safe.
+    const preview = text.slice(0, 500).toLowerCase();
     if (preview.includes('404') || preview.includes('not found')) {
       return null;
     }

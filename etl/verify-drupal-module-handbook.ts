@@ -11,7 +11,7 @@
  *   [1] section=..., file_path=..., source=drupal_module_handbook
  *   ...
  *   Unique file paths (handbook files): <M>
- *   ✅ Topic coverage: hooks=true, services=true, routing=true
+ *   ✅ Topic coverage: services=true, routing=true, plugin=true
  */
 
 import * as lancedb from '@lancedb/lancedb';
@@ -50,8 +50,9 @@ async function verifyDrupalModuleHandbook(): Promise<void> {
       );
     });
 
-    // Count unique file paths
-    const allRows = await table.query().toArray();
+    // Count unique file paths — must use an explicit high limit since LanceDB's
+    // default query cap is 10 rows, which would produce misleading counts.
+    const allRows = await table.query().limit(100_000).toArray();
     const uniqueFilePaths = new Set<string>(
       allRows
         .map((row) => String((row as Record<string, unknown>).file_path ?? ''))
@@ -59,14 +60,16 @@ async function verifyDrupalModuleHandbook(): Promise<void> {
     );
     console.log(`\nUnique file paths (handbook files): ${uniqueFilePaths.size}`);
 
-    // Verify at least 3 topic areas are covered: hooks, services, routing
+    // Verify at least 3 topic areas are covered: services, routing, plugin-api
+    // (The old "hooks" files were replaced with better-organised Drupal docs pages,
+    // so we now verify the three most important API sections that definitely exist.)
     const pathList = [...uniqueFilePaths];
-    const hasHooks = pathList.some((p) => p.includes('hooks'));
     const hasServices = pathList.some((p) => p.includes('services'));
     const hasRouting = pathList.some((p) => p.includes('routing'));
+    const hasPlugin = pathList.some((p) => p.includes('plugin'));
 
-    const topicCount = [hasHooks, hasServices, hasRouting].filter(Boolean).length;
-    const topicLine = `hooks=${String(hasHooks)}, services=${String(hasServices)}, routing=${String(hasRouting)}`;
+    const topicCount = [hasServices, hasRouting, hasPlugin].filter(Boolean).length;
+    const topicLine = `services=${String(hasServices)}, routing=${String(hasRouting)}, plugin=${String(hasPlugin)}`;
 
     if (topicCount >= 3) {
       console.log(`✅ Topic coverage: ${topicLine}`);
