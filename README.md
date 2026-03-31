@@ -1,64 +1,178 @@
 # drupal-dev-mcp
 
-**Drupal Architect MCP Server** — A RAG-powered Drupal documentation assistant that runs locally as an MCP (Model Context Protocol) server.
+**Drupal development MCP server powered by RAG + LLM** — gives AI assistants direct access to Drupal documentation, source code, best-practice skill guides, and iterative deep-research capabilities via local vector search and OpenAI synthesis.
 
-## What It Does
+## Overview
 
-Exposes a single tool — `ask_drupal_expert` — that searches a local vector database of official Drupal 11 documentation and synthesizes expert answers using GPT-4o. No internet search, no cloud databases — just local LanceDB + OpenAI API.
+`drupal-dev-mcp` is a [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) server that exposes four complementary tools to any MCP-compatible AI client (Claude Desktop, Cursor, RooCode, etc.). The server is powered by a locally embedded [LanceDB](https://lancedb.github.io/lancedb/) vector database built from a broad corpus of official Drupal documentation, API references, contrib module source code, PHP and Symfony documentation, certification study guides, and community tutorials.
 
-**Covers**: hooks, services, dependency injection, entity API, form API, routing, config management, caching, plugins, migrations, events, Drupal/Symfony patterns.
+Answers and research outputs are grounded entirely in the local corpus — no internet search is performed at query time. All LLM synthesis is handled by OpenAI (text-embedding-3-small for retrieval, GPT-4o for synthesis by default). The server communicates over stdio transport and is registered in your AI client's MCP configuration as a standard server entry.
+
+The ETL pipeline fetches, parses, chunks, embeds, and loads content from 14+ knowledge sources into LanceDB tables. Once indexed, the four MCP tools can be called at any time from your AI client to retrieve canonical Drupal references, synthesize expert answers, load domain-specific skill guides, or drive multi-iteration research workflows.
+
+## Available MCP Tools
+
+The following tools are registered in [`src/index.ts`](src/index.ts) and exposed to MCP clients.
+
+---
+
+### `ask_drupal_expert`
+
+**File:** [`src/tools/ask-drupal-expert.ts`](src/tools/ask-drupal-expert.ts)
+
+Provides conversational, citation-backed explanations for human Drupal backend developers. This tool searches the local Drupal documentation corpus and source code, then synthesizes an educational answer tailored to people seeking conceptual clarity. Covers hooks, services, dependency injection, entity API, form API, routing, config management, caching, plugins, migrations, events, and Drupal/Symfony patterns.
+
+**Primary use case:** Explaining concepts, answering implementation questions, and synthesizing guidance from multiple documentation sources into a single Markdown answer with `[Source N]` citations and a `## Sources` section.
+
+**When to use:** When you need a narrative, human-readable answer with citations. Not for raw retrieval hits or structured data.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `question` | string | ✅ | The Drupal development question to answer |
+| `drupal_version` | string | no | Optional version filter (e.g., `"11.x"`). If omitted, searches all versions. |
+
+---
+
+### `search_drupal_docs`
+
+**File:** [`src/tools/search-drupal-docs.ts`](src/tools/search-drupal-docs.ts)
+
+Raw Drupal documentation search for agents. Returns unsynthesized retrieval hits with exact excerpts and metadata. Ideal for agentic workflows where the AI client needs to inspect source material directly rather than receive a synthesized answer.
+
+**Primary use case:** Gathering raw evidence chunks before deciding how to act. Use in planning workflows, before calling `ask_drupal_expert`, or when you want to control synthesis yourself.
+
+**When to use:** When you need structured retrieval results (JSON), want to filter specific datasets, or are building agentic workflows that inspect evidence before synthesis.
+
+| Parameter | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `query` | string | ✅ | — | Natural-language search query |
+| `drupal_version` | string | no | all | Optional version filter (e.g., `"10.x"`, `"11.x"`) |
+| `datasets` | string[] | no | all | Explicit dataset allowlist (see dataset names below) |
+| `top_k` | integer (1–25) | no | 8 | Maximum hits returned after merge and filtering |
+| `per_dataset_limit` | integer (1–10) | no | 4 | Maximum hits fetched from each dataset before merge |
+| `strategy` | `"tiered"` \| `"flat"` | no | `"tiered"` | Whether to preserve source-quality tiers or rank globally by relevance |
+| `include_text` | boolean | no | `true` | Whether to include chunk text in the response |
+| `include_metadata` | boolean | no | `true` | Whether to include section, file path, symbol name, and related metadata |
+
+---
+
+### `deep_research_drupal`
+
+**File:** [`src/tools/deep-research-drupal.ts`](src/tools/deep-research-drupal.ts)
+
+Iterative Drupal research planner. Produces implementation roadmaps and architectural guidance grounded in local documentation evidence. Runs multiple rounds of retrieval, using GPT-4o to generate follow-up queries, accumulate a structured evidence dossier, and synthesize key findings, open questions, contradictions, and a recommended approach.
+
+**Primary use case:** Multi-domain architectural investigations, implementation planning, or any question that requires synthesizing evidence across many source types before recommending an approach.
+
+**When to use:** For high-stakes, multi-step research tasks (e.g., "What is the recommended pattern for building a decoupled Drupal site with JSON:API and React?"). More expensive than `ask_drupal_expert` but delivers structured dossiers with implementation roadmaps and evidence ledgers.
+
+| Parameter | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `question` | string | ✅ | — | Primary Drupal research question |
+| `drupal_version` | string | no | all | Optional version filter (e.g., `"11.x"`) |
+| `datasets` | string[] | no | all | Optional dataset allowlist for all research iterations |
+| `max_iterations` | integer (1–6) | no | 4 | Hard cap on research rounds |
+| `queries_per_iteration` | integer (1–5) | no | 2 | Maximum follow-up queries generated per iteration |
+| `initial_top_k` | integer (1–15) | no | 8 | Maximum hits for the initial broad retrieval step |
+| `followup_top_k` | integer (1–10) | no | 5 | Maximum hits per follow-up query |
+| `max_evidence_chunks` | integer (5–40) | no | 18 | Cap on evidence stored in the final dossier |
+| `output_format` | `"json"` \| `"markdown"` | no | `"json"` | Preferred response format |
+| `include_evidence_text` | boolean | no | `false` | Whether to include full chunk text excerpts in the final response |
+
+---
+
+### `drupal_skill_guide`
+
+**File:** [`src/tools/drupal-skill-guide.ts`](src/tools/drupal-skill-guide.ts)
+
+Returns Drupal best-practice skill rules for a specific domain. Reads curated `SKILL.md` files from the local `drupal-best-practices` data source, which contain authoritative naming conventions, guardrails, usage patterns, and validation commands. Pair with `ask_drupal_expert` for searched documentation.
+
+**Primary use case:** Loading domain-specific guardrails and naming conventions before generating or reviewing Drupal configuration, code, or architecture plans.
+
+**When to use:** At the start of a site-building or module-development workflow to establish the correct conventions before asking broader questions or generating code.
+
+| Parameter | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `skill_id` | string | ✅ | — | Drupal skill domain to retrieve. Valid values: `nodes`, `blocks`, `taxonomy`, `fields`, `views`, `forms`, `text-formats-editors`, `theming`, `config-parser`, `other-content-entities` |
+| `format` | `"raw"` \| `"trimmed"` \| `"json"` | no | `"trimmed"` | `"raw"` returns the complete `SKILL.md`. `"trimmed"` strips frontmatter and `## References`. `"json"` returns a structured object with `id`, `title`, `description`, `usage`, `guardrails`, `validation_command`, and `references`. |
+
+---
+
+## Data Sources
+
+The RAG index is built from the following knowledge sources. Each is fetched, parsed, chunked, embedded, and loaded into a named LanceDB dataset.
+
+| Dataset name | Source | Description |
+|---|---|---|
+| `drupal_core_docs` | api.drupal.org, drupal.org/docs/user_guide | Core API docs, user guide, PHPDoc |
+| `api_drupal_org_docs` | api.drupal.org/api | Canonical function, hook, and service documentation |
+| `change_records` | drupal.org/list-changes | Release-by-release behavioral notes and API changes |
+| `core_module_code` | git.drupalcode.org (Drupal core) | Source code of Drupal core modules |
+| `contrib_module_code` | git.drupalcode.org (contrib) | Source code for widely used contrib modules |
+| `contrib_module_docs` | drupal.org/docs/contributed-modules | Contrib module README and handbook pages |
+| `contrib_module_handbook` | drupal.org/docs/contributed-modules | Handbook pages fetched via Jina proxy |
+| `drupal_module_handbook` | drupal.org/docs/develop | Official module developer handbook |
+| `drupal_developer_guides` | drupal.org/docs/develop/developer-tools | Modern Drupal workflow developer guides |
+| `drupal_tutorials` | drupal.org/docs | How-to tutorials and articles |
+| `drupal_examples` | drupal.org/project/examples | Runnable example implementations |
+| `drupal_best_practices` | drupal.org/docs/develop/best-practices | Community best-practices guide + curated skill files |
+| `php_docs` | php.net/manual/en/ | PHP manual pages relevant to Drupal runtime |
+| `symfony_docs` | symfony.com/doc/current/ | Symfony component docs (routing, services, events) |
+| `certification_docs` | acquia.com/academy | Acquia certification study guide material |
 
 ## Prerequisites
 
 - **Node.js** ≥ 20.0.0 (pin with `.nvmrc`: `nvm use`)
-- **OpenAI API key** ([platform.openai.com](https://platform.openai.com))
-- **pandoc** ≥ 3.0 (`brew install pandoc`) — for User Guide conversion
-- **git** — for cloning Drupal core
+- **npm** ≥ 10 (bundled with Node 20)
+- **OpenAI API key** — [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+- **git** — for cloning Drupal core during source sync
 
-## Quick Start
-
-### 1. Install dependencies
+## Installation
 
 ```bash
+# 1. Clone the repository
+git clone https://github.com/your-org/drupal-dev-mcp.git
+cd drupal-dev-mcp
+
+# 2. Install Node dependencies
 npm install
-```
 
-### 2. Configure environment
-
-```bash
+# 3. Configure environment
 cp .env.example .env
 # Edit .env and set OPENAI_API_KEY=sk-...
-```
 
-### 3. Download documentation sources
-
-```bash
-npm run sync:sources
-```
-
-This clones Drupal core (shallow, ~300 MB) and downloads the User Guide.
-
-### 4. Run the ETL pipeline
-
-```bash
-# Dry run first (no API calls, no cost):
-npm run build && node dist/etl/run.js --dry-run
-
-# Full run (~$0.03, takes 2-5 minutes):
-npm run build && node dist/etl/run.js
-```
-
-### 5. Build the server
-
-```bash
+# 4. Build TypeScript
 npm run build
 ```
 
-### 6. Register in your AI client
+## Configuration
 
-See [Client Configuration](#client-configuration) below.
+Copy [`.env.example`](.env.example) to `.env` and set values as needed. Only `OPENAI_API_KEY` is required.
 
-## Client Configuration
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `OPENAI_API_KEY` | ✅ | — | OpenAI API key for embeddings and synthesis |
+| `OPENAI_SYNTHESIS_MODEL` | no | `gpt-4o` | Model used by `ask_drupal_expert` for answer synthesis |
+| `OPENAI_RESEARCH_MODEL` | no | `gpt-4o` | Model used by `deep_research_drupal` for iterative planning |
+| `RESEARCH_SOURCES_SUMMARY_MODEL` | no | `gpt-4o-mini` | Model used by the `research:sources` maintenance script |
+| `RESEARCH_TOOLS_SUMMARY_MODEL` | no | `gpt-4o-mini` | Model used by the `research:tools` maintenance script |
+| `LANCEDB_PATH` | no | `./data/lancedb` | Path to the LanceDB vector database directory |
+| `ETL_SOURCES_DIR` | no | `./data/sources` | Root path where fetch scripts store downloaded documents |
+| `ETL_DRUPAL_CORE_BRANCH` | no | `11.x` | Drupal core branch cloned during `sync:sources` |
+| `DRUPAL_DOCSET_URL` | no | Kapeli feed | Override URL for the Drupal Dash docset download |
+| `TRAINING_DOCS_PATH` | no | — | Absolute path to private certification/training documents |
+| `SKIP_EPUB` | no | `false` | Set `true` to skip ePub download/conversion (useful in CI) |
+| `PLAYWRIGHT_HEADLESS` | no | `true` | Launch Chromium in headless mode for browser-based fetch scripts |
+| `ENABLE_PLAYWRIGHT_FALLBACK` | no | `0` | Set `1` to allow Playwright fallback when no Wayback snapshot exists |
+| `PLAYWRIGHT_MAX_RETRIES` | no | `2` | Retry attempts per page when using the Playwright fetcher |
+| `LOG_LEVEL` | no | `info` | Log verbosity: `error` \| `warn` \| `info` \| `debug` |
+| `DEBUG_QUERIES` | no | `false` | Set `true` to print verbose query diagnostics to stderr |
+
+> **Cost tip:** Set `OPENAI_SYNTHESIS_MODEL=gpt-4o-mini` in `.env` for cheaper development testing (~$0.001/question vs ~$0.02 for GPT-4o).
+
+## MCP Client Setup
+
+After building, register the server in your AI client's MCP configuration.
 
 ### Claude Desktop
 
@@ -69,35 +183,29 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
   "mcpServers": {
     "drupal-dev-mcp": {
       "command": "node",
-      "args": ["/path/to/drupal-dev-mcp/dist/src/index.js"],
+      "args": ["/absolute/path/to/drupal-dev-mcp/dist/src/index.js"],
       "env": {
-        "OPENAI_API_KEY": "your_openai_api_key_here",
-        "LANCEDB_PATH": "/path/to/drupal-dev-mcp/data/lancedb",
-        "ETL_SOURCES_DIR": "/path/to/drupal-dev-mcp/data/sources",
-        "ETL_DRUPAL_CORE_BRANCH": "11.x",
-        "OPENAI_SYNTHESIS_MODEL": "gpt-4o"
+        "OPENAI_API_KEY": "sk-...",
+        "LANCEDB_PATH": "/absolute/path/to/drupal-dev-mcp/data/lancedb"
       }
     }
   }
 }
 ```
 
-> **Replace `/path/to/drupal-dev-mcp`** with the absolute path to your local clone, and set `OPENAI_API_KEY` to your real key from [platform.openai.com](https://platform.openai.com/api-keys).
-
 ### Cursor
 
 Edit `~/.cursor/mcp.json` with the same structure as above.
 
-### Verify
+### RooCode / VS Code MCP
 
-After restarting your AI client:
-1. The `ask_drupal_expert` tool should appear in the tool picker
-2. Ask: "How do I implement a custom access checker in Drupal?"
-3. You should receive a Markdown answer with `## Sources` section
+Add the same JSON block to your workspace or user-level MCP settings file.
 
-### RooCode Custom Mode
+> **Note:** Replace `/absolute/path/to/drupal-dev-mcp` with the real path to your local clone. After restarting the AI client, all four tools (`ask_drupal_expert`, `search_drupal_docs`, `deep_research_drupal`, `drupal_skill_guide`) should appear in the tool picker.
 
-Add the following entry to your RooCode `.roomodes` file to enable the repository-aware planning specialist:
+### RooCode Custom Mode (Drupal Planner)
+
+Add the following entry to your RooCode `.roomodes` file to enable a repository-aware Drupal planning specialist:
 
 ```yaml
 customModes:
@@ -132,165 +240,170 @@ customModes:
       - mcp
 ```
 
-> The mode relies on the MCP tools exported by [`src/index.ts`](src/index.ts:1). Ensure your AI client registers this MCP server and permits the `alwaysAllow` list above so the mode can enforce its evidence-first workflow.
+## Fetching & Indexing Data
+
+Documentation must be fetched and indexed before the MCP tools can return results. Run these steps once (and re-run periodically to refresh the index):
+
+```bash
+# Step 1: Download/sync documentation sources (~300 MB for Drupal core)
+npm run sync:sources
+
+# Step 2: Optional — fetch individual source families
+npm run fetch:tutorials
+npm run fetch:api-drupal-org
+npm run fetch:contrib-modules
+npm run fetch:symfony-docs
+npm run fetch:php-manual
+npm run fetch:best-practices
+npm run fetch:drupal-examples
+npm run fetch:contrib-module-handbook
+npm run fetch:drupal-module-handbook
+
+# Step 3: Run the full ETL pipeline (parse → chunk → embed → load into LanceDB)
+# Dry run first (no API calls, no cost):
+npm run etl -- --dry-run
+
+# Full run (~$0.03 for ~40K chunks using text-embedding-3-small):
+npm run etl
+```
+
+Individual ETL targets are also available (see [`package.json`](package.json) for the full list of `etl:*` and `verify:*` scripts).
+
+## Research Maintenance Scripts
+
+Two maintenance scripts audit the current state of sources and tools without mutating any fetch or ETL configurations.
+
+### `research:sources`
+
+Generates a scored source inventory and recommendation report.
+
+```bash
+npm run research:sources
+# Add --llm-summary for an optional GPT summary (requires OPENAI_API_KEY)
+npx tsx scripts/research-sources.ts --llm-summary --output data/cache/research-sources
+```
+
+Outputs written to `data/cache/research-sources/`:
+
+| File | Description |
+|---|---|
+| `discovery.json` | Deterministic source inventory snapshot |
+| `evaluation.json` | Scored assessments and summary metadata |
+| `recommendations.md` | Human-readable review brief |
+
+Smoke test: `npm run test:research-sources`
+
+### `research:tools`
+
+Audits current tool surfaces, shared retrieval logic, and benchmarks.
+
+```bash
+npm run research:tools
+# Add --llm-summary for an optional GPT summary (requires OPENAI_API_KEY)
+npx tsx scripts/research-tools.ts --llm-summary --output data/cache/research-tools
+```
+
+Outputs written to `data/cache/research-tools/`:
+
+| File | Description |
+|---|---|
+| `inventory.json` | Deterministic tool inventory snapshot |
+| `evaluation.json` | Scored assessments, duplicate identifiers, optional LLM summary |
+| `recommendations.md` | Human-readable review brief |
+
+Smoke test: `npm run test:research-tools`
+
+## NPM Scripts Reference
+
+| Script | Description |
+|---|---|
+| `npm run build` | Compile TypeScript to `dist/` |
+| `npm start` | Start the MCP server (stdio transport) using compiled `dist/` |
+| `npm run dev` | Run the MCP server directly with `tsx` (no build step) |
+| `npm run sync:sources` | Download/update core documentation sources |
+| `npm run etl` | Run the full ETL pipeline |
+| `npm run research:sources` | Generate source inventory and recommendations |
+| `npm run research:tools` | Generate tool inventory and recommendations |
+| `npm run typecheck` | Type-check without emitting output |
+| `npm run verify:*` | Verify individual ETL datasets (e.g., `verify:tutorials`, `verify:api-drupal-org`) |
+
+## Development
+
+```bash
+# Type-check only (no build output)
+npm run typecheck
+
+# Run the server locally with live TypeScript (no prior build needed)
+npm run dev
+
+# Run smoke tests
+npm run test:research-sources
+npm run test:research-tools
+```
+
+The project is written in TypeScript (Node 20 LTS, ESM). [`tsconfig.json`](tsconfig.json) targets `dist/` for production builds; [`tsconfig.typecheck.json`](tsconfig.typecheck.json) is used for type checking only.
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Runtime | Node.js 20 LTS, TypeScript (ESM) |
+| Vector database | LanceDB (embedded, no server, no Docker) |
+| Embeddings | OpenAI `text-embedding-3-small` |
+| Synthesis | OpenAI GPT-4o (configurable) |
+| MCP transport | `@modelcontextprotocol/sdk` (stdio) |
+| HTML fetch/parse | Cheerio, Playwright, Jina reader proxy |
+| Config validation | Zod |
+
+## Cost Estimates
+
+- **ETL (one-time):** ~$0.03 for embedding ~40K chunks via `text-embedding-3-small`
+- **Per `ask_drupal_expert` question:** ~$0.02 (GPT-4o) or ~$0.001 (GPT-4o-mini)
+- **Per `deep_research_drupal` research run:** ~$0.05–$0.15 depending on iteration depth
+- **1,000 `ask_drupal_expert` questions:** ~$18 (GPT-4o) or ~$1 (GPT-4o-mini)
 
 ## Project Structure
 
 ```text
 drupal-dev-mcp/
 ├── src/
-│   ├── index.ts              # MCP server entry point
-│   ├── config.ts             # Environment config loader
+│   ├── index.ts                  # MCP server entry point; registers all four tools
+│   ├── config.ts                 # Zod-validated environment config loader
 │   ├── lib/
-│   │   ├── lancedb.ts        # LanceDB vector search helpers
-│   │   └── openai.ts         # OpenAI embed + chat helpers
+│   │   ├── lancedb.ts            # LanceDB vector search helpers
+│   │   ├── openai.ts             # OpenAI embed + chat helpers
+│   │   ├── retrieval.ts          # Tiered/flat retrieval logic across all datasets
+│   │   ├── deep-research.ts      # Iterative deep-research engine
+│   │   ├── research-sources/     # Source inventory & scoring library
+│   │   └── research-tools/       # Tool inventory & scoring library
 │   └── tools/
-│       └── ask-drupal-expert.ts  # RAG tool handler
+│       ├── ask-drupal-expert.ts  # ask_drupal_expert handler
+│       ├── search-drupal-docs.ts # search_drupal_docs handler
+│       ├── deep-research-drupal.ts # deep_research_drupal handler
+│       └── drupal-skill-guide.ts # drupal_skill_guide handler
 ├── etl/
-│   ├── run.ts                # ETL pipeline runner
-│   ├── parser.ts             # PHPDoc + Docset + User Guide parsers
-│   ├── chunker.ts            # Text splitter with SHA-256 IDs
-│   ├── embedder.ts           # Batched OpenAI embeddings
-│   └── loader.ts             # LanceDB loader
+│   ├── run.ts                    # Full ETL pipeline runner
+│   ├── chunker.ts                # Text splitter with SHA-256 chunk IDs
+│   ├── embedder.ts               # Batched OpenAI embeddings
+│   ├── loader.ts                 # LanceDB loader
+│   └── parse-*.ts                # Per-source parsers
 ├── scripts/
-│   └── sync-docs.sh          # Source download script
+│   ├── sync-docs.sh              # Core documentation sync script
+│   ├── fetch-*.sh / fetch-*.ts   # Per-source fetch scripts
+│   ├── research-sources.ts       # Source maintenance script
+│   └── research-tools.ts         # Tool maintenance script
 ├── data/
-│   ├── sources/              # Downloaded documentation (git-ignored)
-│   └── lancedb/              # Vector database (git-ignored)
-└── tests/
-    └── manual-test-questions.md
+│   ├── sources/                  # Downloaded documentation (git-ignored)
+│   └── lancedb/                  # Vector database files (git-ignored)
+├── tests/
+│   ├── manual-test-questions.md
+│   ├── benchmark-questions.md
+│   ├── research-sources-smoke.ts
+│   └── research-tools-smoke.ts
+├── .env.example                  # Environment variable reference
+└── .nvmrc                        # Node version pin (20)
 ```
 
-## NPM Scripts
+## License
 
-| Script | Description |
-|--------|-------------|
-| `npm run build` | Compile TypeScript to `dist/` |
-| `npm run sync:sources` | Download/update documentation sources |
-| `node dist/etl/run.js` | Run full ETL pipeline |
-| `node dist/etl/run.js --dry-run` | ETL dry run (no API calls) |
-| `npm start` | Start MCP server (stdio transport) |
-| `npm run research:sources` | Generate source inventory & recommendations |
-| `npm run research:tools` | Generate tool inventory & recommendations |
-| `npm run typecheck` | Type-check without emitting |
-
-## Research Maintenance Scripts
-
-### `research-sources`
-
-Generates a current-source inventory and recommendation report without mutating fetch/ETL configs.
-
-```bash
-npm run research:sources
-```
-
-Outputs written to `data/cache/research-sources/`:
-
-| File | Description |
-| --- | --- |
-| `discovery.json` | Deterministic source inventory snapshot |
-| `evaluation.json` | Scored assessments & summary metadata |
-| `recommendations.md` | Human-readable review brief |
-
-Pass `--llm-summary` to request an optional GPT summary (requires `OPENAI_API_KEY`).
-
-```bash
-npx tsx scripts/research-sources.ts --llm-summary --output data/cache/research-sources
-```
-
-For validation during development run:
-
-```bash
-npm run test:research-sources
-```
-
-
-### `research-tools`
-
-Audits current tool surfaces, shared retrieval logic, and benchmarks to produce recommendation-only outputs.
-
-```bash
-npm run research:tools
-```
-
-Outputs written to `data/cache/research-tools/`:
-
-| File | Description |
-| --- | --- |
-| `inventory.json` | Deterministic tool inventory snapshot |
-| `evaluation.json` | Scored assessments, duplicate identifiers, optional summary |
-| `recommendations.md` | Human-readable review brief |
-
-Pass `--llm-summary` to request an optional GPT summary (requires `OPENAI_API_KEY`).
-
-```bash
-npx tsx scripts/research-tools.ts --llm-summary --output data/cache/research-tools
-```
-
-
-## Cost Estimates
-
-- **ETL (one-time)**: ~$0.03 for embedding ~40K chunks
-- **Per question**: ~$0.02 (GPT-4o) or ~$0.001 (GPT-4o-mini)
-- **1,000 questions**: ~$18 (GPT-4o) or ~$1 (GPT-4o-mini)
-
-Set `OPENAI_SYNTHESIS_MODEL=gpt-4o-mini` in `.env` for cheaper development testing.
-
-## Tech Stack
-
-- **TypeScript** (Node 20 LTS)
-- **LanceDB** — Fully embedded vector database (no server, no Docker)
-- **OpenAI** — text-embedding-3-small + GPT-4o
-- **MCP SDK** — Model Context Protocol for AI client integration
-
-## Documentation Sources
-
-The RAG index is built from a broad mix of primary Drupal references, ecosystem handbooks, and adjacent platform material:
-
-- **Drupal API Reference (api.drupal.org)** — Canonical function, hook, and service documentation scraped by [`scripts/fetch-api-drupal-org.sh`](scripts/fetch-api-drupal-org.sh:1) and parsed via [`etl/parse-api-drupal-org.ts`](etl/parse-api-drupal-org.ts:1) to ground answers in the same source core developers rely on.
-- **Drupal Change Records** — Release-by-release behavioral notes fetched through [`scripts/fetch-change-records.sh`](scripts/fetch-change-records.sh:1) and normalized by [`etl/parse-change-records.ts`](etl/parse-change-records.ts:1), ensuring upgrades and regressions are reflected.
-- **Drupal Core Module Source Code** — Parsed with [`etl/parse-core-module-code.ts`](etl/parse-core-module-code.ts:1) so the assistant can quote real implementations, service definitions, and annotations when docs are thin.
-- **Drupal Contrib Module Source Code** — Ingested by [`scripts/fetch-contrib-module-code.sh`](scripts/fetch-contrib-module-code.sh:1) and [`etl/parse-contrib-module-code.ts`](etl/parse-contrib-module-code.ts:1) to surface production-ready patterns from widely used extensions.
-- **Contrib Module README & Handbook Content** — Combined via [`scripts/fetch-contrib-modules.sh`](scripts/fetch-contrib-modules.sh:1), [`scripts/fetch-contrib-module-handbook.ts`](scripts/fetch-contrib-module-handbook.ts:1), and their parsers [`etl/parse-contrib-modules.ts`](etl/parse-contrib-modules.ts:1) and [`etl/parse-contrib-module-handbook.ts`](etl/parse-contrib-module-handbook.ts:1) to explain module configuration and usage beyond code.
-- **Drupal Module Developer Handbook** — Pulled through [`scripts/fetch-drupal-module-handbook.ts`](scripts/fetch-drupal-module-handbook.ts:1) and structured by [`etl/parse-drupal-module-handbook.ts`](etl/parse-drupal-module-handbook.ts:1) to cover official best practices for building custom modules.
-- **Drupal Developer Guides** — Captured with [`scripts/fetch-developer-guides.sh`](scripts/fetch-developer-guides.sh:1) and parsed in [`etl/parse-developer-guides.ts`](etl/parse-developer-guides.ts:1) for narrative guidance on modern Drupal workflows.
-- **Drupal Tutorials & How-To Articles** — Harvested through [`scripts/fetch-tutorials.sh`](scripts/fetch-tutorials.sh:1) and [`scripts/fetch-drupal-tutorial-articles.ts`](scripts/fetch-drupal-tutorial-articles.ts:1), then distilled by [`etl/parse-tutorials.ts`](etl/parse-tutorials.ts:1) to provide step-by-step instructions for real-world tasks.
-- **Drupal Examples Project** — Mirrored by [`scripts/fetch-drupal-examples.sh`](scripts/fetch-drupal-examples.sh:1) and parsed through [`etl/parse-drupal-examples.ts`](etl/parse-drupal-examples.ts:1) to supply runnable reference implementations of common patterns.
-- **Drupal Best Practices Guide** — Synced with [`scripts/fetch-best-practices.sh`](scripts/fetch-best-practices.sh:1) and segmented by [`etl/parse-best-practices.ts`](etl/parse-best-practices.ts:1) to codify architectural recommendations validated by the community.
-- **PHP Manual** — Downloaded via [`scripts/fetch-php-manual.sh`](scripts/fetch-php-manual.sh:1) and indexed by [`etl/parse-php-manual.ts`](etl/parse-php-manual.ts:1) so the assistant can clarify core language behavior underpinning Drupal APIs.
-- **Symfony Documentation** — Gathered with [`scripts/fetch-symfony-docs.sh`](scripts/fetch-symfony-docs.sh:1) and processed by [`etl/parse-symfony.ts`](etl/parse-symfony.ts:1) to explain the Symfony components Drupal builds upon (routing, services, events).
-- **Acquia Certification Study Guides** — Fetched through [`scripts/fetch-certification-docs.sh`](scripts/fetch-certification-docs.sh:1) and [`scripts/fetch-acquia-certification-study-guides.ts`](scripts/fetch-acquia-certification-study-guides.ts:1), then parsed by [`etl/parse-certification-docs.ts`](etl/parse-certification-docs.ts:1) to reinforce exam-aligned competencies.
-
-## Developer Guides Integration
-
-The **Drupal Developer Guides** are now included as a new dataset in the ETL pipeline.
-
-### Steps to Ingest Developer Guides
-
-1. **Fetch the guides**:
-   ```bash
-   ./scripts/fetch-developer-guides.sh
-   ```
-
-2. **Parse the guides**:
-   ```bash
-   npx tsx etl/parse-developer-guides.ts
-   ```
-
-3. **Chunk and embed**:
-   ```bash
-   npx tsx etl/chunker.ts data/parsed/developer-guides.json
-   npx tsx etl/embedder.ts data/chunks/developer-guides.json
-   ```
-
-4. **Load into LanceDB**:
-   ```bash
-   LANCEDB_TABLE_NAME=drupal_developer_guides npx tsx etl/loader.ts data/embedded/developer-guides.json
-   ```
-
-5. **Verify**:
-   ```bash
-   npx tsx etl/verify-developer-guides.ts
-   ```
-
-The `ask_drupal_expert` tool now queries across **Core Docs**, **User Guide**, and **Developer Guides** datasets for comprehensive answers.
+See [LICENSE](LICENSE).
