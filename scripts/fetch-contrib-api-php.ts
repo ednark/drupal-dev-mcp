@@ -62,6 +62,8 @@ const MODULES: string[] = [
   'queue_ui',
   'crop',
   'focal_point',
+  'ai',
+  'drupal_ai',
 ];
 
 function sleep(ms: number): Promise<void> {

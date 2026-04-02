@@ -48,6 +48,7 @@ const DATASET_ALLOWLIST: DatasetName[] = [
   'contrib_module_docs',
   'contrib_module_handbook',
   'drupal_best_practices',
+  'drupal_skills',
   'php_docs',
 ];
 

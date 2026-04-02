@@ -51,6 +51,8 @@ POPULAR_MODULES=(
   queue_ui
   crop
   focal_point
+  ai
+  drupal_ai
 )
 
 mkdir -p "$DEST_DIR"
@@ -395,6 +397,50 @@ if [ "$BULK_OK" -eq 0 ]; then
     write_fallback
   fi
 fi
+
+# ─── Always fetch key AI ecosystem modules regardless of bulk API result ──────
+
+AI_MODULES=(
+  ai
+  drupal_ai
+)
+
+echo ""
+echo "Step 3: Fetching AI ecosystem modules (always fetched)..."
+echo ""
+
+TMP_AI_JSON="$(mktemp)"
+AI_FETCHED=0
+AI_FAILED=0
+
+for module in "${AI_MODULES[@]}"; do
+  printf "  %-35s " "${module}..."
+
+  if curl -fsSL \
+      -H "User-Agent: $UA" \
+      -H "Accept: application/json" \
+      --max-time 20 \
+      "${PER_MODULE_API}${module}" \
+      -o "$TMP_AI_JSON" 2>/dev/null; then
+    if process_module_json "$module" "$TMP_AI_JSON" 2>/dev/null; then
+      AI_FETCHED=$((AI_FETCHED + 1))
+    else
+      echo "  ✗ (could not process API response)"
+      AI_FAILED=$((AI_FAILED + 1))
+    fi
+  else
+    echo "  ✗ (curl failed)"
+    AI_FAILED=$((AI_FAILED + 1))
+  fi
+
+  # Polite delay to avoid hammering Drupal.org
+  sleep 0.4
+done
+
+rm -f "$TMP_AI_JSON"
+
+echo ""
+echo "AI ecosystem fetch complete: ${AI_FETCHED} succeeded, ${AI_FAILED} failed."
 
 # ─── Summary ──────────────────────────────────────────────────────────────────
 

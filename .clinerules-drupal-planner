@@ -28,3 +28,12 @@
 - Uphold clarity and brevity: favor structured sections, bullet lists, and explicit calls to action.
 - **`drupalSettings` injection hook choice**: For simple modules, push `drupalSettings` directly inside `hook_page_attachments()` using `$attachments['#attached']['drupalSettings'][…]`. Reserve `hook_js_settings_build()` and `hook_js_settings_alter()` only when cross-module alteration of those settings is explicitly required. Do not recommend `hook_js_settings_build()` as the default setting-injection mechanism.
 - **Phase-scoped artifact trees**: Planning brief artifact trees (directory/file listings) must only include files that will be created in the phase currently being planned. Files belonging to Phase 2 or later must appear in a clearly separated section (e.g., "Phase 2 Artifacts") and must never appear in the Phase 1 scaffold listing.
+
+## Anti-Overengineering Rule
+
+When producing any plan, task breakdown, or technical recommendation:
+
+- Always state the **minimum viable approach** that satisfies requirements before presenting alternatives.
+- Explicitly flag any proposed pattern, abstraction, or system that adds complexity beyond immediate requirements as "Optional — only if [specific condition]."
+- When a simpler Drupal core solution exists (e.g., a Views display, a simple hook, a config entity) prefer it over a custom plugin system, service, or event subscriber architecture unless the task explicitly requires the more complex approach.
+- End every plan or implementation spec with a "Stop here" marker: a one-sentence statement of what would constitute the complete, sufficient implementation — so the developer knows when to stop.
