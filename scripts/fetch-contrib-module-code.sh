@@ -58,6 +58,8 @@ MODULES=(
   queue_ui
   crop
   focal_point
+  ai
+  drupal_ai
 )
 
 SUCCEEDED=0

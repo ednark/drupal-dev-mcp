@@ -13,6 +13,7 @@ import { parseDrupalExamples } from './parse-drupal-examples.js';
 import { parseCoreModuleCode } from './parse-core-module-code.js';
 import { parseContribModuleHandbook } from './parse-contrib-module-handbook.js';
 import { parseDrupalModuleHandbook } from './parse-drupal-module-handbook.js';
+import { parseDrupalSkills } from './parse-drupal-skills.js';
 import { chunkPages } from './chunker.js';
 import { embedChunks } from './embedder.js';
 import { loadChunks } from './loader.js';
@@ -82,6 +83,10 @@ async function main() {
   try { execSync('bash scripts/fetch-change-records.sh', { stdio: 'inherit' }); }
   catch (e) { console.warn('⚠ fetch-change-records failed, continuing...'); }
 
+  // Drupal Claude Skills
+  try { execSync('bash scripts/fetch-drupal-skills.sh', { stdio: 'inherit' }); }
+  catch (e) { console.warn('⚠ fetch-drupal-skills failed, continuing...'); }
+
   // Drupal Examples source code
   try { execSync('bash scripts/fetch-drupal-examples.sh', { stdio: 'inherit' }); }
   catch (e) { console.warn('⚠ fetch-drupal-examples failed, continuing...'); }
@@ -125,6 +130,8 @@ async function main() {
     .catch(err => { console.error(`  ⚠ Drupal Examples parser failed: ${err.message}`); return []; });
   const coreModuleCodePromise = parseCoreModuleCode(coreDir, config.drupalCoreBranch)
     .catch(err => { console.error(`  ⚠ Core module code parser failed: ${err.message}`); return []; });
+  const drupalSkillsPromise = parseDrupalSkills(config.etlSourcesDir)
+    .catch(err => { console.error(`  ⚠ Drupal skills parser failed: ${err.message}`); return []; });
 
   const [
     phpdocPages,
@@ -144,6 +151,7 @@ async function main() {
     coreModuleCodePages,
     contribModuleHandbookPages,
     drupalModuleHandbookPages,
+    drupalSkillsPages,
   ] = await Promise.all([
     phpdocPromise,
     docsetPromise,
@@ -162,6 +170,7 @@ async function main() {
     coreModuleCodePromise,
     parseContribModuleHandbook().then(pages => { console.error(`  contrib_module_handbook: ${pages.length} pages`); return pages; }),
     parseDrupalModuleHandbook().then(pages => { console.error(`  drupal_module_handbook: ${pages.length} pages`); return pages; }),
+    drupalSkillsPromise,
   ]);
 
   const allPages = [
@@ -182,6 +191,7 @@ async function main() {
     ...coreModuleCodePages,
     ...contribModuleHandbookPages,
     ...drupalModuleHandbookPages,
+    ...drupalSkillsPages,
   ].map((p: any) => {
     if ('text' in p && 'metadata' in p) return p;
     return {
@@ -217,6 +227,7 @@ async function main() {
   console.error(`     Core Module Code: ${coreModuleCodePages.length.toLocaleString()} pages`);
   console.error(`     Contrib Module Handbook: ${contribModuleHandbookPages.length.toLocaleString()} pages`);
   console.error(`     Drupal Module Handbook: ${drupalModuleHandbookPages.length.toLocaleString()} pages`);
+  console.error(`     Drupal Skills: ${drupalSkillsPages.length.toLocaleString()} pages`);
   console.error(`     Total:      ${allPages.length.toLocaleString()} pages\n`);
 
   if (allPages.length === 0) {
@@ -278,6 +289,7 @@ async function main() {
       'drupal_docset', // excluded: docset HTML overlaps with drupal_phpdoc; phpdoc is higher-quality
       'contrib_module_handbook',
       'drupal_module_handbook',
+      'drupal_skills',
     ].includes(c.metadata.source),
   );
   const developerChunks = allEmbedded.filter(c => c.metadata.source === 'developer_guides');
@@ -376,6 +388,14 @@ async function main() {
     process.env.LANCEDB_TABLE_NAME = 'drupal_module_handbook';
     await loadChunks(drupalModuleHandbookEmbedded, config.lancedbPath);
   }
+
+  const drupalSkillsEmbedded = allEmbedded.filter(c => c.metadata.source === 'drupal_skills');
+  if (drupalSkillsEmbedded.length > 0) {
+    console.error('━━━ [4n/4] Loading Drupal Skills into LanceDB ━━━');
+    process.env.LANCEDB_TABLE_NAME = 'drupal_skills';
+    await loadChunks(drupalSkillsEmbedded, config.lancedbPath);
+  }
+
   const db = await lancedb.connect(config.lancedbPath);
   const coreTable = await db.openTable('drupal_core_docs');
   const coreCount = await coreTable.countRows();
@@ -393,6 +413,7 @@ async function main() {
   let coreModuleCodeCount = 0;
   let contribModuleHandbookCount = 0;
   let drupalModuleHandbookCount = 0;
+  let drupalSkillsCount = 0;
   try {
     const devTable = await db.openTable('drupal_developer_guides');
     devCount = await devTable.countRows();
@@ -477,6 +498,12 @@ async function main() {
   } catch {
     console.error('⚠ Drupal module handbook table not found');
   }
+  try {
+    const drupalSkillsTable = await db.openTable('drupal_skills');
+    drupalSkillsCount = await drupalSkillsTable.countRows();
+  } catch {
+    console.error('⚠ Drupal skills table not found');
+  }
 
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
@@ -499,6 +526,7 @@ async function main() {
   console.error(`  Core Module Code rows: ${coreModuleCodeCount.toLocaleString()}`);
   console.error(`  Contrib Module Handbook rows: ${contribModuleHandbookCount.toLocaleString()}`);
   console.error(`  Drupal Module Handbook rows: ${drupalModuleHandbookCount.toLocaleString()}`);
+  console.error(`  Drupal Skills rows: ${drupalSkillsCount.toLocaleString()}`);
   console.error(`  Elapsed: ${elapsed}s`);
 
   if (coreCount < 10000) {
@@ -542,6 +570,9 @@ async function main() {
   }
   if (drupalModuleHandbookEmbedded.length > 0 && drupalModuleHandbookCount === 0) {
     console.error('  ⚠ Drupal module handbook parsed but not loaded');
+  }
+  if (drupalSkillsEmbedded.length > 0 && drupalSkillsCount === 0) {
+    console.error('  ⚠ Drupal skills parsed but not loaded');
   }
   console.error('═══════════════════════════════════════════════════');
 }

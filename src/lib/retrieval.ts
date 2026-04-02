@@ -15,6 +15,7 @@ export type DatasetName =
   | 'contrib_module_docs'
   | 'contrib_module_handbook'
   | 'drupal_best_practices'
+  | 'drupal_skills'
   | 'php_docs';
 
 export interface RetrievalOptions {
@@ -135,6 +136,12 @@ const DATASET_CONFIGS: Record<DatasetName, DatasetConfig> = {
     defaultLimit: 3,
     defaultMaxDistance: 1.2,
   },
+  drupal_skills: {
+    name: 'drupal_skills',
+    tier: 2,
+    defaultLimit: 3,
+    defaultMaxDistance: 1.2,
+  },
   php_docs: {
     name: 'php_docs',
     tier: 3,
@@ -157,6 +164,7 @@ const DEFAULT_DATASET_ORDER: DatasetName[] = [
   'contrib_module_docs',
   'contrib_module_handbook',
   'drupal_best_practices',
+  'drupal_skills',
   'php_docs',
 ];
 
