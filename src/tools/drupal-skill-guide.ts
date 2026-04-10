@@ -184,8 +184,13 @@ export function handleDrupalSkillGuide(
   const content = readFileSafe(skillPath);
 
   if (content === null) {
-    const errorPayload = { error: 'Skill file not found', skill_id: skillId };
-    return { content: [{ type: 'text', text: JSON.stringify(errorPayload, null, 2) }] };
+    const relativePath = `data/sources/drupal-best-practices/ai/skills/${skillId}/SKILL.md`;
+    const errorText = [
+      `Skill file not found at: ${relativePath}`,
+      '',
+      'To populate skill files, run: bash scripts/fetch-best-practices.sh',
+    ].join('\n');
+    return { content: [{ type: 'text', text: errorText }] };
   }
 
   // ── Apply format ─────────────────────────────────────────────

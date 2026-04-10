@@ -36,6 +36,16 @@ const SKILL_KEYWORDS: Record<string, string[]> = {
 
 async function loadSkills(): Promise<void> {
   const skillsRoot = path.join(process.cwd(), 'data/sources/drupal-best-practices/ai/skills');
+
+  // If the skills directory doesn't exist, warn and continue rather than crashing.
+  if (!fs.existsSync(skillsRoot)) {
+    console.error(
+      `[skill-loader] Skills directory not found: ${skillsRoot}\n` +
+      `  Run "bash scripts/fetch-best-practices.sh" to populate skill files.`,
+    );
+    return;
+  }
+
   const domains = Object.keys(SKILL_KEYWORDS);
   let loaded = 0;
   for (const domain of domains) {

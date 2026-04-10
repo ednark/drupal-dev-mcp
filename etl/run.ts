@@ -22,6 +22,7 @@ import * as lancedb from '@lancedb/lancedb';
 import { execSync } from 'child_process';
 
 const isDryRun = process.argv.includes('--dry-run');
+const skipFetch = process.argv.includes('--skip-fetch');
 
 async function main() {
   const startTime = Date.now();
@@ -32,64 +33,72 @@ async function main() {
   console.error(`  Dry run: ${isDryRun}`);
   console.error('═══════════════════════════════════════════════════\n');
 
-  // ── [0/4] Fetch Developer Guides ─────────────────────────────
-  console.error('━━━ [0/4] Fetching Developer Guides ━━━');
-  try {
-    // Use Playwright-based fetcher wrapper (new): it implements stealth, retries,
-    // and --skip-existing behavior. Replaces legacy curl-based fetch script.
-    execSync('bash scripts/fetch-developer-guides-playwright.sh', { stdio: 'inherit' });
-  } catch (err) {
-    console.error('⚠ Failed to fetch Developer Guides (playwright):', err);
-  }
-  try {
-    execSync('bash scripts/fetch-tutorials.sh', { stdio: 'inherit' });
-  } catch (err) {
-    console.error('⚠ Failed to fetch Tutorials:', err);
+  if (skipFetch) {
+    console.error('🚀 Running with --skip-fetch: will use existing source data only');
   }
 
-  // Symfony docs
-  try { execSync('bash scripts/fetch-symfony-docs.sh', { stdio: 'inherit' }); }
-  catch (e) { console.warn('⚠ fetch-symfony-docs failed, continuing...'); }
+  if (!skipFetch) {
+    // ── [0/4] Fetch Developer Guides ─────────────────────────────
+    console.error('━━━ [0/4] Fetching Developer Guides ━━━');
+    try {
+      // Use Playwright-based fetcher wrapper (new): it implements stealth, retries,
+      // and --skip-existing behavior. Replaces legacy curl-based fetch script.
+      execSync('bash scripts/fetch-developer-guides-playwright.sh', { stdio: 'inherit' });
+    } catch (err) {
+      console.error('⚠ Failed to fetch Developer Guides (playwright):', err);
+    }
+    try {
+      execSync('bash scripts/fetch-tutorials.sh', { stdio: 'inherit' });
+    } catch (err) {
+      console.error('⚠ Failed to fetch Tutorials:', err);
+    }
 
-  // PHP manual
-  try { execSync('bash scripts/fetch-php-manual.sh', { stdio: 'inherit' }); }
-  catch (e) { console.warn('⚠ fetch-php-manual failed, continuing...'); }
+    // Symfony docs
+    try { execSync('bash scripts/fetch-symfony-docs.sh', { stdio: 'inherit' }); }
+    catch (e) { console.warn('⚠ fetch-symfony-docs failed, continuing...'); }
 
-  // Contrib modules
-  try { execSync('bash scripts/fetch-contrib-modules.sh', { stdio: 'inherit' }); }
-  catch (e) { console.warn('⚠ fetch-contrib-modules failed, continuing...'); }
+    // PHP manual
+    try { execSync('bash scripts/fetch-php-manual.sh', { stdio: 'inherit' }); }
+    catch (e) { console.warn('⚠ fetch-php-manual failed, continuing...'); }
 
-  // Contrib module handbook pages
-  try { execSync('npx tsx scripts/fetch-contrib-module-handbook.ts', { stdio: 'inherit' }); }
-  catch (e) { console.warn('⚠ fetch-contrib-module-handbook failed, continuing...'); }
+    // Contrib modules
+    try { execSync('bash scripts/fetch-contrib-modules.sh', { stdio: 'inherit' }); }
+    catch (e) { console.warn('⚠ fetch-contrib-modules failed, continuing...'); }
 
-  // Drupal module developer handbook
-  try { execSync('npx tsx scripts/fetch-drupal-module-handbook.ts', { stdio: 'inherit' }); }
-  catch (e) { console.warn('⚠ fetch-drupal-module-handbook failed, continuing...'); }
+    // Contrib module handbook pages
+    try { execSync('npx tsx scripts/fetch-contrib-module-handbook.ts', { stdio: 'inherit' }); }
+    catch (e) { console.warn('⚠ fetch-contrib-module-handbook failed, continuing...'); }
 
-  // Certification docs
-  try { execSync('bash scripts/fetch-certification-docs.sh', { stdio: 'inherit' }); }
-  catch (e) { console.warn('⚠ fetch-certification-docs failed, continuing...'); }
+    // Drupal module developer handbook
+    try { execSync('npx tsx scripts/fetch-drupal-module-handbook.ts', { stdio: 'inherit' }); }
+    catch (e) { console.warn('⚠ fetch-drupal-module-handbook failed, continuing...'); }
 
-  // api.drupal.org topic docs
-  try { execSync('bash scripts/fetch-api-drupal-org.sh', { stdio: 'inherit' }); }
-  catch (e) { console.warn('⚠ fetch-api-drupal-org failed, continuing...'); }
+    // Certification docs
+    try { execSync('bash scripts/fetch-certification-docs.sh', { stdio: 'inherit' }); }
+    catch (e) { console.warn('⚠ fetch-certification-docs failed, continuing...'); }
 
-  // Contrib module source code
-  try { execSync('bash scripts/fetch-contrib-module-code.sh', { stdio: 'inherit' }); }
-  catch (e) { console.warn('⚠ fetch-contrib-module-code failed, continuing...'); }
+    // api.drupal.org topic docs
+    try { execSync('bash scripts/fetch-api-drupal-org.sh', { stdio: 'inherit' }); }
+    catch (e) { console.warn('⚠ fetch-api-drupal-org failed, continuing...'); }
 
-  // Change records (deprecations, API changes, features, security updates)
-  try { execSync('bash scripts/fetch-change-records.sh', { stdio: 'inherit' }); }
-  catch (e) { console.warn('⚠ fetch-change-records failed, continuing...'); }
+    // Contrib module source code
+    try { execSync('bash scripts/fetch-contrib-module-code.sh', { stdio: 'inherit' }); }
+    catch (e) { console.warn('⚠ fetch-contrib-module-code failed, continuing...'); }
 
-  // Drupal Claude Skills
-  try { execSync('bash scripts/fetch-drupal-skills.sh', { stdio: 'inherit' }); }
-  catch (e) { console.warn('⚠ fetch-drupal-skills failed, continuing...'); }
+    // Change records (deprecations, API changes, features, security updates)
+    try { execSync('bash scripts/fetch-change-records.sh', { stdio: 'inherit' }); }
+    catch (e) { console.warn('⚠ fetch-change-records failed, continuing...'); }
 
-  // Drupal Examples source code
-  try { execSync('bash scripts/fetch-drupal-examples.sh', { stdio: 'inherit' }); }
-  catch (e) { console.warn('⚠ fetch-drupal-examples failed, continuing...'); }
+    // Drupal Claude Skills
+    try { execSync('bash scripts/fetch-drupal-skills.sh', { stdio: 'inherit' }); }
+    catch (e) { console.warn('⚠ fetch-drupal-skills failed, continuing...'); }
+
+    // Drupal Examples source code
+    try { execSync('bash scripts/fetch-drupal-examples.sh', { stdio: 'inherit' }); }
+    catch (e) { console.warn('⚠ fetch-drupal-examples failed, continuing...'); }
+  } else {
+    console.error('⏭️  Skipping source fetching (--skip-fetch)');
+  }
 
   // ── [1/4] Parse ──────────────────────────────────────────────
   console.error('━━━ [1/4] Parsing documentation sources ━━━');

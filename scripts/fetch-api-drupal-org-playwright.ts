@@ -116,6 +116,21 @@ async function main() {
     console.log(`\nTotal unique group topics discovered: ${topicUrls.size}`);
 
     if (topicUrls.size === 0) {
+      // Check if cached HTML files already exist before treating this as a fatal error
+      let cachedFiles: string[] = [];
+      try {
+        cachedFiles = (await fs.readdir(DEST_DIR)).filter((f) =>
+          f.endsWith('.html'),
+        );
+      } catch {
+        // Directory may not exist yet — treat as no cache
+      }
+      if (cachedFiles.length > 0) {
+        console.warn(
+          `⚠ No new topics fetched, but ${cachedFiles.length} cached files exist in ${DEST_DIR}. Using cached data.`,
+        );
+        process.exit(0);
+      }
       console.error(
         '\nERROR: Zero topic URLs collected. The site structure may have changed.',
       );

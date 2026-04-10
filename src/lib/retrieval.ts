@@ -1,5 +1,5 @@
 import { embed } from './openai.js';
-import { LanceQueryResult, vectorSearch, VectorSearchOptions } from './lancedb.js';
+import { DbNotReadyError, isDbReady, LanceQueryResult, vectorSearch, VectorSearchOptions } from './lancedb.js';
 
 export type DatasetName =
   | 'drupal_core_docs'
@@ -16,7 +16,8 @@ export type DatasetName =
   | 'contrib_module_handbook'
   | 'drupal_best_practices'
   | 'drupal_skills'
-  | 'php_docs';
+  | 'php_docs'
+  | 'certification_docs';
 
 export interface RetrievalOptions {
   query: string;
@@ -148,6 +149,12 @@ const DATASET_CONFIGS: Record<DatasetName, DatasetConfig> = {
     defaultLimit: 3,
     defaultMaxDistance: 1.3,
   },
+  certification_docs: {
+    name: 'certification_docs',
+    tier: 2,
+    defaultLimit: 3,
+    defaultMaxDistance: 1.25,
+  },
 };
 
 const DEFAULT_DATASET_ORDER: DatasetName[] = [
@@ -165,6 +172,7 @@ const DEFAULT_DATASET_ORDER: DatasetName[] = [
   'contrib_module_handbook',
   'drupal_best_practices',
   'drupal_skills',
+  'certification_docs',
   'php_docs',
 ];
 
@@ -180,6 +188,10 @@ interface DatasetRequest {
  * Shared retrieval entry point.
  */
 export async function retrieve(options: RetrievalOptions): Promise<RetrievalResponse> {
+  if (!isDbReady()) {
+    throw new DbNotReadyError();
+  }
+
   if (!options.query || typeof options.query !== 'string') {
     throw new Error('RetrievalOptions.query is required');
   }

@@ -6,7 +6,7 @@ set -euo pipefail
 
 REPO="https://github.com/theodorosploumis/drupal-best-practices.git"
 DEST="data/sources/drupal-best-practices"
-BRANCH="master"
+BRANCH="main"
 
 if [ -d "${DEST}/.git" ]; then
   echo "Repository already cloned. Pulling latest changes..."
