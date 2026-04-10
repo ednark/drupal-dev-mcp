@@ -5,6 +5,7 @@ import {
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { validateConfig } from './config.js';
+import { refreshDbStatus } from './lib/lancedb.js';
 import {
   TOOL_DEFINITION as ASK_DRUPAL_EXPERT_TOOL,
   handleAskDrupalExpert,
@@ -21,10 +22,24 @@ import {
   TOOL_DEFINITION as DEEP_RESEARCH_TOOL,
   handleDeepResearchDrupal,
 } from './tools/deep-research-drupal.js';
+import {
+  INITIALIZE_DRUPAL_DOCS_TOOL,
+  handleInitializeDrupalDocs,
+} from './tools/initialize-drupal-docs.js';
 
 async function main() {
   // Validate environment before starting server
   validateConfig();
+
+  // Check DB readiness at startup
+  const dbStatus = await refreshDbStatus();
+  if (dbStatus.ready) {
+    console.error(`[drupal-dev-mcp] ✅ DB ready: ${dbStatus.tablesFound.length} tables, ${dbStatus.totalRows.toLocaleString()} total rows`);
+  } else {
+    console.error('[drupal-dev-mcp] ⚠️  DB NOT READY — missing tables: ' + dbStatus.tablesMissing.join(', '));
+    console.error('[drupal-dev-mcp] Run ETL first: npm run etl');
+    console.error('[drupal-dev-mcp] Or use the initialize_drupal_docs tool from MCP');
+  }
 
   const server = new Server(
     {
@@ -45,6 +60,7 @@ async function main() {
       DRUPAL_SKILL_GUIDE_TOOL,
       SEARCH_DRUPAL_DOCS_TOOL,
       DEEP_RESEARCH_TOOL,
+      INITIALIZE_DRUPAL_DOCS_TOOL,
     ],
   }));
 
@@ -119,6 +135,20 @@ async function main() {
         console.error(`[deep_research_drupal] Error: ${message}`);
         return {
           content: [{ type: 'text', text: `Error performing deep research: ${message}` }],
+          isError: true,
+        };
+      }
+    }
+
+    // ── initialize_drupal_docs ─────────────────────────────────
+    if (name === 'initialize_drupal_docs') {
+      try {
+        return await handleInitializeDrupalDocs((args ?? {}) as Record<string, unknown>);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`[initialize_drupal_docs] Error: ${message}`);
+        return {
+          content: [{ type: 'text', text: `Error initializing documentation database: ${message}` }],
           isError: true,
         };
       }

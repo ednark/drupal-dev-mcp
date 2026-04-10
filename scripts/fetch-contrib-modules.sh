@@ -32,6 +32,7 @@ POPULAR_MODULES=(
   scheduler
   linkit
   eck
+  eca
   transliteration
   imce
   conditional_fields
@@ -52,7 +53,6 @@ POPULAR_MODULES=(
   crop
   focal_point
   ai
-  drupal_ai
 )
 
 mkdir -p "$DEST_DIR"
@@ -402,7 +402,6 @@ fi
 
 AI_MODULES=(
   ai
-  drupal_ai
 )
 
 echo ""

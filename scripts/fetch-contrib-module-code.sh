@@ -39,6 +39,7 @@ MODULES=(
   scheduler
   linkit
   eck
+  eca
   transliteration
   imce
   conditional_fields
