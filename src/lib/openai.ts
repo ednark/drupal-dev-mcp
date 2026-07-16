@@ -6,7 +6,12 @@ let client: OpenAI | null = null;
 function getClient(): OpenAI {
   if (!client) {
     const config = validateConfig();
-    client = new OpenAI({ apiKey: config.openaiApiKey });
+    client = new OpenAI({
+      apiKey: config.openaiApiKey,
+      fetch: globalThis.fetch as any,
+      timeout: 120_000,
+      maxRetries: 3,
+    });
   }
   return client;
 }
