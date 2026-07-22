@@ -23,7 +23,8 @@ const SearchOutputSchema = z.object({
     id: z.string(), resultType: z.enum(['document', 'entity']), title: z.string(),
     snippet: z.string().optional(), score: z.number(), exactMatch: z.boolean(),
     sourceType: z.string(), authority: z.number(), project: z.string().optional(),
-    drupalVersion: z.string(), status: z.string(), resourceUri: z.string(),
+    drupalVersion: z.string(), compatibility: z.enum(['compatible', 'cross_version']), status: z.string(),
+    freshness: z.string(), provenance: z.record(z.string(), z.unknown()), resourceUri: z.string(),
   }).passthrough()),
 });
 const EntityOutputSchema = z.object({

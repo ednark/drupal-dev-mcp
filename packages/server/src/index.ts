@@ -1,11 +1,13 @@
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { SqliteKnowledgeProvider } from '@drupal-dev-mcp/knowledge';
+import { fileURLToPath } from 'node:url';
+import { getDefaultIndexRoot, SqliteKnowledgeProvider } from '@drupal-dev-mcp/knowledge';
 import { createDrupalMcpServer } from './server.js';
 
 export { createDrupalMcpServer } from './server.js';
 
 export async function startServer(): Promise<void> {
-  const provider = await SqliteKnowledgeProvider.open();
+  const repoRoot = fileURLToPath(new URL('../../..', import.meta.url));
+  const provider = await SqliteKnowledgeProvider.open(getDefaultIndexRoot(repoRoot));
   const server = createDrupalMcpServer(provider);
   const shutdown = async () => {
     await server.close();

@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 import 'dotenv/config';
 import { Command } from 'commander';
-import { SqliteKnowledgeProvider } from '@drupal-dev-mcp/knowledge';
+import { fileURLToPath } from 'node:url';
+import { getDefaultIndexRoot, SqliteKnowledgeProvider } from '@drupal-dev-mcp/knowledge';
 import { DrupalAgent } from './agent.js';
 import { OpenAiLlmProvider } from './openai-provider.js';
 
 async function run(mode: 'ask' | 'research', question: string, options: Record<string, string>): Promise<void> {
-  const knowledge = await SqliteKnowledgeProvider.open();
+  const repoRoot = fileURLToPath(new URL('../../..', import.meta.url));
+  const knowledge = await SqliteKnowledgeProvider.open(getDefaultIndexRoot(repoRoot));
   try {
     const events: unknown[] = [];
     const agent = new DrupalAgent({ knowledge, llm: new OpenAiLlmProvider(), onEvent: event => events.push(event) });

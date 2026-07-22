@@ -1,6 +1,7 @@
 import { mkdir, rename, writeFile } from 'node:fs/promises';
+import { randomBytes } from 'node:crypto';
 import path from 'node:path';
-import { contentHash, chunkId, documentId } from '../ids.js';
+import { contentHash, chunkId, documentId, relationId } from '../ids.js';
 import { extractGraph } from '../graph/index.js';
 import { SOURCE_BY_KEY } from '../registry.js';
 import { createSchema, openDatabase, SCHEMA_VERSION } from '../storage/schema.js';
@@ -83,7 +84,7 @@ function insertEntity(db: ReturnType<typeof openDatabase>, entity: ExtractedEnti
 
 export async function buildIndex(options: BuildOptions): Promise<BuildResult> {
   const indexRoot = options.indexRoot ?? getDefaultIndexRoot(options.repoRoot);
-  const runId = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
+  const runId = `${new Date().toISOString().replace(/[-:.TZ]/g, '')}-${randomBytes(3).toString('hex')}`;
   const buildPath = path.join(indexRoot, 'builds', runId);
   await mkdir(buildPath, { recursive: true });
   const dbPath = path.join(buildPath, 'knowledge.sqlite');
@@ -99,7 +100,7 @@ export async function buildIndex(options: BuildOptions): Promise<BuildResult> {
   const entities: ExtractedEntity[] = [];
   const pendingRelations: RelationRecord[] = [];
   const parseErrors: BuildResult['parseErrors'] = [];
-  const vectorChunks: Array<{ id: string; text: string; sourceType: string; project?: string; drupalVersion: string; authority: number }> = [];
+  const vectorChunks: Array<{ id: string; text: string; contentHash: string; sourceType: string; project?: string; drupalVersion: string; authority: number }> = [];
 
   const transaction = db.transaction(() => {
     for (const document of documents) {
@@ -123,7 +124,7 @@ export async function buildIndex(options: BuildOptions): Promise<BuildResult> {
       insertDocument(db, document, snapshotId);
       for (const chunk of splitDocument(document)) {
         db.prepare('INSERT INTO chunks(id, document_id, ordinal, locator, text, content_hash, token_count) VALUES (?, ?, ?, ?, ?, ?, ?)').run(chunk.id, document.id, chunk.ordinal, chunk.locator, chunk.text, chunk.hash, chunk.tokenCount);
-        vectorChunks.push({ id: chunk.id, text: chunk.text, sourceType: document.sourceType, project: document.project, drupalVersion: document.drupalVersion, authority: document.authority });
+        vectorChunks.push({ id: chunk.id, text: chunk.text, contentHash: chunk.hash, sourceType: document.sourceType, project: document.project, drupalVersion: document.drupalVersion, authority: document.authority });
       }
       const graph = extractGraph(document);
       parseErrors.push(...graph.errors);
@@ -136,16 +137,33 @@ export async function buildIndex(options: BuildOptions): Promise<BuildResult> {
   });
   transaction();
 
+  const uniqueEntities = new Map(entities.map(entity => [entity.id, entity]));
   const entityByLookup = new Map<string, string>();
-  for (const entity of entities) {
+  for (const entity of uniqueEntities.values()) {
     for (const lookup of [entity.id, entity.canonicalName, entity.shortName, ...(entity.aliases ?? [])]) {
       entityByLookup.set(`${entity.drupalVersion}:${lookup.toLowerCase()}`, entity.id);
       entityByLookup.set(`all:${lookup.toLowerCase()}`, entity.id);
     }
   }
+  const crossVersionGroups = new Map<string, ExtractedEntity[]>();
+  for (const entity of uniqueEntities.values()) {
+    if (!['10.6', '11.4'].includes(entity.drupalVersion)) continue;
+    const key = `${entity.project ?? ''}:${entity.kind}:${entity.canonicalName.toLowerCase()}`;
+    crossVersionGroups.set(key, [...(crossVersionGroups.get(key) ?? []), entity]);
+  }
+  for (const pair of crossVersionGroups.values()) {
+    const ten = pair.find(entity => entity.drupalVersion === '10.6');
+    const eleven = pair.find(entity => entity.drupalVersion === '11.4');
+    if (!ten || !eleven) continue;
+    for (const [from, to] of [[ten, eleven], [eleven, ten]] as const) pendingRelations.push({
+      id: relationId(from.id, 'equivalent_to', to.id, from.sourceDocumentId), fromId: from.id,
+      predicate: 'equivalent_to', toId: to.id, confidence: 1, extractor: 'cross-version-identity',
+      evidenceDocumentId: from.sourceDocumentId,
+    });
+  }
   const relationTransaction = db.transaction(() => {
     for (const relation of pendingRelations) {
-      const sourceEntity = entities.find(entity => entity.id === relation.fromId);
+      const sourceEntity = uniqueEntities.get(relation.fromId);
       const target = relation.unresolvedTarget;
       const resolved = relation.toId ?? (target ? entityByLookup.get(`${sourceEntity?.drupalVersion ?? 'all'}:${target.toLowerCase()}`) ?? entityByLookup.get(`all:${target.toLowerCase()}`) : undefined);
       db.prepare(`INSERT OR IGNORE INTO relations(
@@ -157,7 +175,7 @@ export async function buildIndex(options: BuildOptions): Promise<BuildResult> {
         relation.endLine ?? null, JSON.stringify(relation.attributes ?? {}),
       );
     }
-    for (const entity of entities) {
+    for (const entity of uniqueEntities.values()) {
       const aliases = db.prepare('SELECT group_concat(alias, ?) AS aliases FROM entity_aliases WHERE entity_id = ?').get(' ', entity.id) as { aliases?: string };
       db.prepare('INSERT INTO entity_fts(entity_id, canonical_name, short_name, aliases) VALUES (?, ?, ?, ?)').run(entity.id, entity.canonicalName, entity.shortName, aliases.aliases ?? '');
     }
@@ -165,10 +183,15 @@ export async function buildIndex(options: BuildOptions): Promise<BuildResult> {
   relationTransaction();
 
   let vectorCount = 0;
+  let embeddedCount = 0;
+  let reusedEmbeddingCount = 0;
   if (options.withEmbeddings) {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) throw new Error('OPENAI_API_KEY is required with --with-embeddings');
-    vectorCount = await buildVectorIndex({ buildPath, chunks: vectorChunks, model: embeddingModel!, apiKey });
+    const vectorResult = await buildVectorIndex({ buildPath, chunks: vectorChunks, model: embeddingModel!, apiKey, cachePath: path.join(indexRoot, 'embedding-cache.sqlite') });
+    vectorCount = vectorResult.vectorCount;
+    embeddedCount = vectorResult.embeddedCount;
+    reusedEmbeddingCount = vectorResult.reusedCount;
   }
 
   const counts: Record<string, number> = {
@@ -177,6 +200,8 @@ export async function buildIndex(options: BuildOptions): Promise<BuildResult> {
     entities: Number((db.prepare('SELECT count(*) AS count FROM entities').get() as { count: number }).count),
     relations: Number((db.prepare('SELECT count(*) AS count FROM relations').get() as { count: number }).count),
     vectors: vectorCount,
+    embeddingsCreated: embeddedCount,
+    embeddingsReused: reusedEmbeddingCount,
     parseErrors: parseErrors.length,
   };
   const eligibleCode = documents.filter(document => /\.(?:php|module|install|theme|yml)$/.test(document.repositoryPath ?? '')).length;

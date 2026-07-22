@@ -78,10 +78,20 @@ export interface SearchResult {
   authority: number;
   project?: string;
   drupalVersion: string;
+  compatibility: 'compatible' | 'cross_version';
   status: string;
   canonicalUrl?: string;
   repositoryPath?: string;
   commit?: string;
+  freshness: string;
+  provenance: {
+    sourceKey: string;
+    sourceType: string;
+    authority: number;
+    canonicalUrl?: string;
+    repositoryPath?: string;
+    commit?: string;
+  };
   resourceUri: string;
 }
 
@@ -132,6 +142,10 @@ export interface EntityRecord {
   filePath?: string;
   startLine?: number;
   endLine?: number;
+  canonicalUrl?: string;
+  commit?: string;
+  freshness?: string;
+  evidenceResourceUri?: string;
   resourceUri: string;
 }
 
@@ -141,6 +155,7 @@ export interface EntityResponse {
   candidates?: EntityRecord[];
   incoming?: RelationRecord[];
   outgoing?: RelationRecord[];
+  evidence?: Array<{ resourceUri: string; canonicalUrl?: string; filePath?: string; startLine?: number; endLine?: number }>;
 }
 
 export interface RelationshipRequest {

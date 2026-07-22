@@ -7,7 +7,7 @@ import type {
   EntityRecord, EntityRequest, EntityResponse, IndexStatus, KnowledgeProvider, RelationRecord,
   RelationshipRequest, RelationshipResponse, ResourceRecord, SearchRequest, SearchResponse, SearchResult,
 } from '../types.js';
-import { DEFAULT_DRUPAL_VERSION } from '../version.js';
+import { DEFAULT_DRUPAL_VERSION, isCompatible } from '../version.js';
 import { getDefaultIndexRoot, resolveActiveBuild, statusFromManifest, type ActiveManifest } from '../index/manifest.js';
 
 type Row = Record<string, any>;
@@ -17,7 +17,7 @@ function ftsQuery(query: string): string {
   return tokens.map(token => `"${token.replace(/"/g, '""')}"`).join(' OR ');
 }
 
-function entityFromRow(row: Row): EntityRecord {
+function entityFromRow(row: Row, builtAt?: string): EntityRecord {
   return {
     id: row.id,
     kind: row.kind,
@@ -33,6 +33,10 @@ function entityFromRow(row: Row): EntityRecord {
     filePath: row.file_path || undefined,
     startLine: row.start_line ?? undefined,
     endLine: row.end_line ?? undefined,
+    canonicalUrl: row.canonical_url || undefined,
+    commit: row.commit_sha || undefined,
+    freshness: row.modified_at || builtAt,
+    evidenceResourceUri: row.source_document_id ? `drupal://document/${row.source_document_id}` : undefined,
     resourceUri: `drupal://entity/${row.id}`,
   };
 }
@@ -62,7 +66,9 @@ export class SqliteKnowledgeProvider implements KnowledgeProvider {
   static async open(indexRoot = getDefaultIndexRoot()): Promise<SqliteKnowledgeProvider> {
     const manifest = await resolveActiveBuild(indexRoot);
     if (!manifest?.verification.passed) throw new Error('No verified active Drupal knowledge index. Run npm run index:rebuild.');
-    return new SqliteKnowledgeProvider(manifest, openDatabase(path.join(manifest.buildPath, 'knowledge.sqlite'), true));
+    const db = openDatabase(path.join(manifest.buildPath, 'knowledge.sqlite'), true);
+    db.function('drupal_compatible', (constraint: unknown, target: unknown) => isCompatible(typeof constraint === 'string' ? constraint : undefined, String(target)) ? 1 : 0);
+    return new SqliteKnowledgeProvider(manifest, db);
   }
 
   close(): void { this.db.close(); }
@@ -79,8 +85,8 @@ export class SqliteKnowledgeProvider implements KnowledgeProvider {
     const match = ftsQuery(query);
     if (!match) return { query, appliedFilters: { drupalVersion: version, mode }, index: await this.getIndexStatus(), results: [] };
 
-    const filters: string[] = [version === 'all' ? '1=1' : "(drupal_version = ? OR drupal_version = 'all')"];
-    const params: unknown[] = version === 'all' ? [] : [version];
+    const filters: string[] = [version === 'all' ? '1=1' : "(drupal_version = ? OR (drupal_version = 'all' AND drupal_compatible(compatibility, ?) = 1))"];
+    const params: unknown[] = version === 'all' ? [] : [version, version];
     if (request.projects?.length) {
       filters.push(`project IN (${request.projects.map(() => '?').join(',')})`);
       params.push(...request.projects);
@@ -101,15 +107,18 @@ export class SqliteKnowledgeProvider implements KnowledgeProvider {
         id: row.id, resultType: 'document', title: row.title, snippet: includeSnippets ? row.snippet : undefined,
         score: 1 / (60 + index + 1), lexicalRank: index + 1, exactMatch: row.title.toLowerCase() === query.toLowerCase(),
         sourceType: row.source_type, authority: row.authority, project: row.project || undefined,
-        drupalVersion: row.drupal_version, status: row.status, canonicalUrl: row.canonical_url || undefined,
+        drupalVersion: row.drupal_version, compatibility: version === 'all' ? 'cross_version' : 'compatible', status: row.status, canonicalUrl: row.canonical_url || undefined,
         repositoryPath: row.repository_path || undefined, commit: row.commit_sha || undefined,
+        freshness: row.modified_at || this.manifest.builtAt,
+        provenance: { sourceKey: row.source_key, sourceType: row.source_type, authority: row.authority, canonicalUrl: row.canonical_url || undefined, repositoryPath: row.repository_path || undefined, commit: row.commit_sha || undefined },
         resourceUri: `drupal://document/${row.id}`,
       }));
-      const entityFilters = [version === 'all' ? '1=1' : "(e.drupal_version = ? OR e.drupal_version = 'all')"];
-      const entityParams: unknown[] = version === 'all' ? [] : [version];
+      const entityFilters = [version === 'all' ? '1=1' : `(e.drupal_version = ? OR (e.drupal_version = 'all' AND drupal_compatible(
+        (SELECT s.drupal_core_constraint FROM source_snapshots s WHERE s.id=e.source_snapshot_id), ?) = 1))`];
+      const entityParams: unknown[] = version === 'all' ? [] : [version, version];
       if (request.projects?.length) { entityFilters.push(`e.project IN (${request.projects.map(() => '?').join(',')})`); entityParams.push(...request.projects); }
       if (request.entityKinds?.length) { entityFilters.push(`e.kind IN (${request.entityKinds.map(() => '?').join(',')})`); entityParams.push(...request.entityKinds); }
-      const entityRows = this.db.prepare(`SELECT e.*, d.source_type, d.authority, d.canonical_url, d.commit_sha,
+      const entityRows = this.db.prepare(`SELECT e.*, d.source_key, d.source_type, d.authority, d.canonical_url, d.repository_path, d.commit_sha, d.modified_at,
         bm25(entity_fts) AS rank FROM entity_fts JOIN entities e ON e.id = entity_fts.entity_id
         LEFT JOIN documents d ON d.id = e.source_document_id
         WHERE entity_fts MATCH ? AND ${entityFilters.join(' AND ')}
@@ -120,8 +129,10 @@ export class SqliteKnowledgeProvider implements KnowledgeProvider {
         score: 1 / (60 + index + 1), lexicalRank: index + 1,
         exactMatch: [row.canonical_name, row.short_name].some((name: string) => name.toLowerCase() === query.toLowerCase()),
         sourceType: row.source_type ?? 'core_code', authority: row.authority ?? 100, project: row.project || undefined,
-        drupalVersion: row.drupal_version, status: row.status, canonicalUrl: row.canonical_url || undefined,
+        drupalVersion: row.drupal_version, compatibility: version === 'all' ? 'cross_version' : 'compatible', status: row.status, canonicalUrl: row.canonical_url || undefined,
         repositoryPath: row.file_path || undefined, commit: row.commit_sha || undefined,
+        freshness: row.modified_at || this.manifest.builtAt,
+        provenance: { sourceKey: row.source_key ?? 'unknown', sourceType: row.source_type ?? 'core_code', authority: row.authority ?? 100, canonicalUrl: row.canonical_url || undefined, repositoryPath: row.file_path || undefined, commit: row.commit_sha || undefined },
         resourceUri: `drupal://entity/${row.id}`,
       }));
     }
@@ -148,6 +159,7 @@ export class SqliteKnowledgeProvider implements KnowledgeProvider {
     semanticRows.forEach((row, index) => {
       const document = this.db.prepare(`SELECT d.*, c.text FROM chunks c JOIN documents d ON d.id=c.document_id WHERE c.id=?`).get(row.chunk_id) as Row | undefined;
       if (!document) return;
+      if (version !== 'all' && !isCompatible(document.compatibility, version)) return;
       const existing = merged.get(document.id);
       const semanticScore = 1 / (60 + index + 1);
       if (existing) merged.set(document.id, { ...existing, semanticRank: index + 1, score: existing.score + semanticScore });
@@ -155,9 +167,11 @@ export class SqliteKnowledgeProvider implements KnowledgeProvider {
         id: document.id, resultType: 'document', title: document.title,
         snippet: includeSnippets ? document.text.slice(0, 500) : undefined, score: semanticScore,
         semanticRank: index + 1, exactMatch: false, sourceType: document.source_type, authority: document.authority,
-        project: document.project || undefined, drupalVersion: document.drupal_version, status: document.status,
+        project: document.project || undefined, drupalVersion: document.drupal_version, compatibility: version === 'all' ? 'cross_version' : 'compatible', status: document.status,
         canonicalUrl: document.canonical_url || undefined, repositoryPath: document.repository_path || undefined,
-        commit: document.commit_sha || undefined, resourceUri: `drupal://document/${document.id}`,
+        commit: document.commit_sha || undefined, freshness: document.modified_at || this.manifest.builtAt,
+        provenance: { sourceKey: document.source_key, sourceType: document.source_type, authority: document.authority, canonicalUrl: document.canonical_url || undefined, repositoryPath: document.repository_path || undefined, commit: document.commit_sha || undefined },
+        resourceUri: `drupal://document/${document.id}`,
       });
     });
     const results = [...merged.values()].sort((a, b) => b.score - a.score || b.authority - a.authority || a.title.localeCompare(b.title)).slice(0, limit);
@@ -175,23 +189,36 @@ export class SqliteKnowledgeProvider implements KnowledgeProvider {
     const version = request.drupalVersion ?? DEFAULT_DRUPAL_VERSION;
     let rows: Row[];
     if (request.entityId) {
-      rows = this.db.prepare('SELECT * FROM entities WHERE id = ?').all(request.entityId) as Row[];
-    } else {
-      const clauses = ['(lower(e.canonical_name)=lower(?) OR lower(e.short_name)=lower(?) OR EXISTS (SELECT 1 FROM entity_aliases a WHERE a.entity_id=e.id AND lower(a.alias)=lower(?)))'];
-      const params: unknown[] = [request.identifier, request.identifier, request.identifier];
+      const clauses = ['e.id = ?'];
+      const params: unknown[] = [request.entityId];
       if (version !== 'all') { clauses.push("(e.drupal_version=? OR e.drupal_version='all')"); params.push(version); }
       if (request.project) { clauses.push('e.project=?'); params.push(request.project); }
       if (request.kind) { clauses.push('e.kind=?'); params.push(request.kind); }
-      rows = this.db.prepare(`SELECT e.* FROM entities e WHERE ${clauses.join(' AND ')} ORDER BY e.drupal_version DESC, e.canonical_name LIMIT 25`).all(...params) as Row[];
+      rows = this.db.prepare(`SELECT e.*, d.canonical_url, d.commit_sha, d.modified_at
+        FROM entities e LEFT JOIN documents d ON d.id=e.source_document_id WHERE ${clauses.join(' AND ')}`).all(...params) as Row[];
+    } else {
+      const clauses = ['(lower(e.canonical_name)=lower(?) OR lower(e.short_name)=lower(?) OR EXISTS (SELECT 1 FROM entity_aliases a WHERE a.entity_id=e.id AND lower(a.alias)=lower(?)))'];
+      const params: unknown[] = [request.identifier, request.identifier, request.identifier];
+      if (version !== 'all') {
+        clauses.push(`(e.drupal_version=? OR (e.drupal_version='all' AND drupal_compatible(
+          (SELECT s.drupal_core_constraint FROM source_snapshots s WHERE s.id=e.source_snapshot_id), ?) = 1))`);
+        params.push(version, version);
+      }
+      if (request.project) { clauses.push('e.project=?'); params.push(request.project); }
+      if (request.kind) { clauses.push('e.kind=?'); params.push(request.kind); }
+      rows = this.db.prepare(`SELECT e.*, d.canonical_url, d.commit_sha, d.modified_at FROM entities e
+        LEFT JOIN documents d ON d.id=e.source_document_id WHERE ${clauses.join(' AND ')}
+        ORDER BY e.drupal_version DESC, e.canonical_name LIMIT 25`).all(...params) as Row[];
     }
     if (rows.length === 0) return { status: 'not_found' };
-    if (rows.length > 1) return { status: 'ambiguous', candidates: rows.map(entityFromRow) };
-    const entity = entityFromRow(rows[0]);
-    if (request.includeRelations === false) return { status: 'found', entity };
+    if (rows.length > 1) return { status: 'ambiguous', candidates: rows.map(row => entityFromRow(row, this.manifest.builtAt)) };
+    const entity = entityFromRow(rows[0], this.manifest.builtAt);
+    const evidence = entity.evidenceResourceUri ? [{ resourceUri: entity.evidenceResourceUri, canonicalUrl: entity.canonicalUrl, filePath: entity.filePath, startLine: entity.startLine, endLine: entity.endLine }] : [];
+    if (request.includeRelations === false) return { status: 'found', entity, evidence };
     const limit = Math.min(100, Math.max(1, request.relationLimit ?? 25));
     const outgoing = (this.db.prepare('SELECT * FROM relations WHERE from_id=? ORDER BY confidence DESC, predicate LIMIT ?').all(entity.id, limit) as Row[]).map(relationFromRow);
     const incoming = (this.db.prepare('SELECT * FROM relations WHERE to_id=? ORDER BY confidence DESC, predicate LIMIT ?').all(entity.id, limit) as Row[]).map(relationFromRow);
-    return { status: 'found', entity, outgoing, incoming };
+    return { status: 'found', entity, outgoing, incoming, evidence };
   }
 
   async exploreRelationships(request: RelationshipRequest): Promise<RelationshipResponse> {
@@ -227,7 +254,7 @@ export class SqliteKnowledgeProvider implements KnowledgeProvider {
     }
     const ids = [...visited].filter(id => id !== request.entityId);
     const nodes = ids.length
-      ? (this.db.prepare(`SELECT * FROM entities WHERE id IN (${ids.map(() => '?').join(',')})`).all(...ids) as Row[]).map(entityFromRow)
+      ? (this.db.prepare(`SELECT e.*, d.canonical_url, d.commit_sha, d.modified_at FROM entities e LEFT JOIN documents d ON d.id=e.source_document_id WHERE e.id IN (${ids.map(() => '?').join(',')})`).all(...ids) as Row[]).map(row => entityFromRow(row, this.manifest.builtAt))
       : [];
     return { startEntity: found.entity, nodes, edges: [...edges.values()].sort((a, b) => b.confidence - a.confidence || a.predicate.localeCompare(b.predicate)), truncated };
   }

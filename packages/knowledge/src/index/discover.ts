@@ -1,11 +1,12 @@
 import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
+import { parse as parseYaml } from 'yaml';
 import { contentHash, documentId } from '../ids.js';
 import { SOURCE_BY_KEY } from '../registry.js';
 import type { NormalizedDocument } from '../types.js';
 
 const CODE_EXTENSIONS = new Set(['.php', '.module', '.install', '.theme', '.yml']);
-const TEXT_EXTENSIONS = new Set(['.md', '.txt', '.rst', '.html', '.htm']);
+const TEXT_EXTENSIONS = new Set(['.md', '.txt', '.rst', '.html', '.htm', '.json']);
 const SKIP_DIRECTORIES = new Set(['.git', 'node_modules', 'vendor', 'tests', 'test', 'fixtures', 'css', 'js', 'images']);
 
 async function walk(directory: string, limit = Number.POSITIVE_INFINITY): Promise<string[]> {
@@ -51,6 +52,7 @@ async function documentsFromDirectory(options: {
   drupalVersion: string;
   project?: string;
   commit?: string;
+  compatibility?: string;
   includeCode: boolean;
   limit?: number;
 }): Promise<NormalizedDocument[]> {
@@ -80,6 +82,7 @@ async function documentsFromDirectory(options: {
       canonicalUrl: urlFromContent(content) ?? `${source.canonicalBaseUrl}/${relative}`,
       repositoryPath: relative,
       commit: options.commit,
+      compatibility: options.compatibility,
       mimeType: extension === '.md' ? 'text/markdown' : CODE_EXTENSIONS.has(extension) ? 'text/plain' : 'text/plain',
       status: /@deprecated|\bdeprecated\b/i.test(content.slice(0, 4000)) ? 'deprecated' : 'current',
       content,
@@ -116,13 +119,22 @@ export async function discoverDocuments(repoRoot: string, fixtureLimit?: number)
   try { contribProjects = (await readdir(contribRoot, { withFileTypes: true })).filter(entry => entry.isDirectory()).map(entry => entry.name); } catch { /* optional */ }
   for (const project of contribProjects) {
     const directory = path.join(contribRoot, project);
-    documents.push(...await documentsFromDirectory({ directory, sourceKey: 'contrib_code', drupalVersion: 'all', project, commit: await gitCommit(directory), includeCode: true, limit: fixtureLimit }));
+    let compatibility: string | undefined;
+    try {
+      const infoFiles = (await readdir(directory)).filter(file => file.endsWith('.info.yml'));
+      if (infoFiles[0]) compatibility = String(parseYaml(await readFile(path.join(directory, infoFiles[0]), 'utf8'))?.core_version_requirement ?? '') || undefined;
+    } catch { /* compatibility remains explicit unknown */ }
+    documents.push(...await documentsFromDirectory({ directory, sourceKey: 'contrib_code', drupalVersion: 'all', project, compatibility, commit: await gitCommit(directory), includeCode: true, limit: fixtureLimit }));
   }
+
+  const examplesDirectory = path.join(sources, 'drupal-examples');
+  documents.push(...await documentsFromDirectory({ directory: examplesDirectory, sourceKey: 'drupal_examples', drupalVersion: 'all', project: 'examples', commit: await gitCommit(examplesDirectory), includeCode: true, limit: fixtureLimit }));
 
   const textSources = [
     ['drupal-developer-guides', 'developer_guides'], ['drupal-module-handbook', 'module_handbook'],
     ['drupal-skills', 'drupal_skills'], ['tutorials', 'tutorials'], ['symfony-docs', 'symfony_docs'],
     ['php-manual', 'php_docs'], ['certification', 'certification'], ['contrib-modules', 'contrib_docs'],
+    ['api-drupal-org', 'api_drupal_org'], ['change-records', 'change_records'],
   ] as const;
   for (const [folder, sourceKey] of textSources) {
     const directory = path.join(sources, folder);

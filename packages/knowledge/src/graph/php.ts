@@ -20,6 +20,20 @@ function nameOf(value: unknown): string | undefined {
   return undefined;
 }
 
+function scalarValue(value: unknown): string | undefined {
+  if (typeof value === 'string' || typeof value === 'number') return String(value);
+  if (!value || typeof value !== 'object') return undefined;
+  const record = value as AstNode;
+  if (record.kind === 'argument') return scalarValue(record.value);
+  if (['string', 'number', 'identifier', 'name'].includes(record.kind) && record.value !== undefined) return String(record.value);
+  if (record.kind === 'classconstant') {
+    const owner = nameOf(record.what);
+    const member = nameOf(record.offset);
+    return [owner, member].filter(Boolean).join('::') || undefined;
+  }
+  return scalarValue(record.value) ?? nameOf(record);
+}
+
 function shortName(name: string): string {
   return name.split('\\').at(-1) ?? name;
 }
@@ -65,6 +79,8 @@ export function extractPhpGraph(document: NormalizedDocument): GraphExtraction {
   const imports = new Map<string, string>();
   const stack: string[] = [];
   const idByAst = new WeakMap<object, string>();
+  const moduleProject = document.repositoryPath?.match(/(?:^|\/)modules\/(?:contrib\/|custom\/)?([^/]+)/)?.[1]
+    ?? document.project;
 
   const qualify = (name: string): string => {
     const clean = name.replace(/^\\/, '');
@@ -131,6 +147,11 @@ export function extractPhpGraph(document: NormalizedDocument): GraphExtraction {
       entities.push(entity);
       idByAst.set(current, id);
       if (parentId) addRelation(parentId, 'contains', id, 1, current);
+      if (kind === 'function' && rawName.startsWith('hook_')) {
+        const hookId = entityId('drupal', document.drupalVersion, 'hook', rawName);
+        entities.push({ id: hookId, kind: 'hook', canonicalName: rawName, shortName: rawName, project: 'drupal', drupalVersion: document.drupalVersion, status: state.status, sourceDocumentId: document.id, filePath: document.repositoryPath, aliases: [rawName], ...sourceLines(current) });
+        addRelation(id, 'defines', hookId, 1, current, 'drupal-hook-definition');
+      }
       for (const extended of Array.isArray(current.extends) ? current.extends : current.extends ? [current.extends] : []) {
         const target = nameOf(extended);
         if (target) addRelation(id, 'extends', qualify(target), 0.9, current);
@@ -142,17 +163,31 @@ export function extractPhpGraph(document: NormalizedDocument): GraphExtraction {
       for (const attributeGroup of current.attrGroups ?? []) {
         for (const attribute of attributeGroup.attrs ?? []) {
           const attributeName = nameOf(attribute.name);
-          if (attributeName && /(?:Plugin|Block|FieldType|ContentEntityType|ConfigEntityType)$/i.test(attributeName)) {
-            const pluginName = `${canonical}#${attributeName}`;
+          if (attributeName && /(?:Plugin|Block|FieldType|FieldFormatter|Filter|ContentEntityType|ConfigEntityType)$/i.test(attributeName)) {
+            const attributeArguments = attribute.args ?? attribute.arguments ?? [];
+            const explicitId = attributeArguments.find((argument: AstNode) => nameOf(argument.name) === 'id');
+            const pluginIdentifier = scalarValue(explicitId ?? attributeArguments[0]) ?? canonical;
+            const pluginName = `${attributeName}:${pluginIdentifier}`;
             const pluginId = entityId(document.project ?? 'drupal', document.drupalVersion, 'plugin', pluginName);
-            entities.push({ id: pluginId, kind: 'plugin', canonicalName: pluginName, shortName: shortName(attributeName), project: document.project, drupalVersion: document.drupalVersion, status: 'current', sourceDocumentId: document.id, filePath: document.repositoryPath, ...sourceLines(attribute) });
+            entities.push({ id: pluginId, kind: 'plugin', canonicalName: pluginName, shortName: pluginIdentifier, project: document.project, drupalVersion: document.drupalVersion, status: 'current', sourceDocumentId: document.id, filePath: document.repositoryPath, aliases: [pluginIdentifier, attributeName], ...sourceLines(attribute) });
             addRelation(pluginId, 'implemented_by', id, 1, attribute, 'drupal-attribute');
           }
         }
       }
-      if (kind === 'function' && document.project && rawName.startsWith(`${document.project}_`)) {
-        const hookName = `hook_${rawName.slice(document.project.length + 1)}`;
+      if (kind === 'function' && moduleProject && rawName.startsWith(`${moduleProject}_`)) {
+        const hookName = `hook_${rawName.slice(moduleProject.length + 1)}`;
         addRelation(id, 'implements_hook', hookName, 0.75, current, 'drupal-hook-convention');
+      }
+      if (kind === 'method' && rawName === '__construct' && parentId) {
+        for (const parameter of current.arguments ?? []) {
+          const target = nameOf(parameter.type);
+          if (target && !['string', 'int', 'float', 'bool', 'array', 'callable', 'mixed'].includes(target.toLowerCase())) addRelation(parentId, 'injects', qualify(target), 0.9, parameter, 'php-constructor-type');
+        }
+      }
+      if (kind === 'method' && rawName === 'getSubscribedEvents' && parentId) {
+        const methodSource = sourceSlice(document, current);
+        const eventMatches = methodSource.matchAll(/(?:['"]([^'"]+)['"]|([\\\w]+::[A-Z_]+))\s*=>/g);
+        for (const match of eventMatches) addRelation(parentId, 'subscribes_to', match[1] ?? match[2], 0.9, current, 'event-subscriber-return');
       }
       stack.push(id);
       pushed = true;
@@ -170,10 +205,19 @@ export function extractPhpGraph(document: NormalizedDocument): GraphExtraction {
       if (target) addRelation(ownerId, 'instantiates', qualify(target), 0.9, current);
     }
     if (ownerId && ['call', 'staticcall'].includes(current.kind)) {
-      const what = nameOf(current.what);
-      const offset = nameOf(current.offset);
+      const callable = current.what && typeof current.what === 'object' ? current.what as AstNode : current;
+      const what = nameOf(callable.what ?? current.what);
+      const offset = nameOf(callable.offset ?? current.offset);
       const target = [what ? qualify(what) : undefined, offset].filter(Boolean).join('::');
       if (target) addRelation(ownerId, 'calls', target, current.kind === 'staticcall' ? 0.9 : 0.4, current);
+      if (offset && ['invokeAll', 'invoke'].includes(offset)) {
+        const hook = scalarValue(current.arguments?.[0]);
+        if (hook) addRelation(ownerId, 'invokes_hook', hook.startsWith('hook_') ? hook : `hook_${hook}`, 0.9, current, 'drupal-module-handler-call');
+      }
+      if (offset === 'dispatch') {
+        const event = scalarValue(current.arguments?.[0]) ?? scalarValue(current.arguments?.[1]);
+        if (event) addRelation(ownerId, 'dispatches', event, 0.9, current, 'event-dispatcher-call');
+      }
     }
 
     for (const [key, value] of Object.entries(current)) {

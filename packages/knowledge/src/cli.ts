@@ -1,9 +1,11 @@
 #!/usr/bin/env node
-import path from 'node:path';
+import 'dotenv/config';
 import { buildIndex } from './index/builder.js';
 import { fetchCoreSnapshots } from './index/fetch.js';
 import { findRepoRoot, getDefaultIndexRoot, resolveActiveBuild, statusFromManifest } from './index/manifest.js';
 import { verifyActiveIndex } from './index/verify.js';
+import { runBenchmark } from './index/benchmark.js';
+import { SqliteKnowledgeProvider } from './query/provider.js';
 
 async function main(): Promise<void> {
   const [command = 'status', ...args] = process.argv.slice(2);
@@ -33,7 +35,16 @@ async function main(): Promise<void> {
     process.stdout.write(`${JSON.stringify(statusFromManifest(await resolveActiveBuild(indexRoot)), null, 2)}\n`);
     return;
   }
-  throw new Error(`Unknown command: ${command}. Use fetch, build, rebuild, verify, or status.`);
+  if (command === 'benchmark') {
+    const provider = await SqliteKnowledgeProvider.open(indexRoot);
+    try {
+      const result = await runBenchmark(provider, args.find(argument => argument.startsWith('--version='))?.split('=')[1] ?? '11.4');
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      if (!result.releaseGate) process.exitCode = 1;
+    } finally { provider.close(); }
+    return;
+  }
+  throw new Error(`Unknown command: ${command}. Use fetch, build, rebuild, verify, status, or benchmark.`);
 }
 
 main().catch(error => {
