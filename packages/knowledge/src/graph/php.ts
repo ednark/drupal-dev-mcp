@@ -5,7 +5,8 @@ import type { ExtractedEntity, GraphExtraction, NodeType, NormalizedDocument, Re
 type AstNode = Record<string, any>;
 
 const parser = new PhpParser.Engine({
-  parser: { extractDoc: true, suppressErrors: false },
+  // Drupal 10.6 and 11.4 use PHP 8.5 parenthesized clone expressions.
+  parser: { extractDoc: true, suppressErrors: false, version: '8.5' },
   ast: { withPositions: true, withSource: true },
   lexer: { all_tokens: true, comment_tokens: true, mode_eval: false },
 });

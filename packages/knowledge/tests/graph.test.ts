@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { documentId, contentHash } from '../src/ids.js';
 import { extractPhpGraph } from '../src/graph/php.js';
 import { extractYamlGraph } from '../src/graph/yaml.js';
+import { extractGraph, isGraphEligibleDocument } from '../src/graph/index.js';
 import type { NormalizedDocument } from '../src/types.js';
 
 function document(file: string, content: string): NormalizedDocument {
@@ -42,6 +43,23 @@ function hook_help() {}
   assert.ok(result.relations.some(relation => relation.predicate === 'injects' && relation.confidence === 0.9));
   assert.ok(result.relations.some(relation => relation.predicate === 'subscribes_to' && relation.confidence === 0.9));
   assert.ok(result.relations.some(relation => relation.predicate === 'dispatches' && relation.confidence === 0.9));
+});
+
+test('PHP 8.5 parenthesized clone expressions parse without source rewriting', () => {
+  const result = extractPhpGraph(document('core/lib/Drupal/Core/Example.php', `<?php
+namespace Drupal\\Core;
+final class Example {
+  public function copy(object $value): object { return clone($value); }
+}
+`));
+  assert.deepEqual(result.errors, []);
+  assert.ok(result.entities.some(entity => entity.canonicalName === 'Drupal\\Core\\Example::copy'));
+});
+
+test('CI YAML remains searchable text but is excluded from semantic graph parsing', () => {
+  const ci = document('.gitlab-ci.yml', `variables:\n  VALUE: one\nvariables:\n  VALUE: two\n`);
+  assert.equal(isGraphEligibleDocument(ci), false);
+  assert.deepEqual(extractGraph(ci), { entities: [], relations: [], errors: [] });
 });
 
 test('Drupal YAML extraction records services, injection, tags, routes, and handlers', () => {

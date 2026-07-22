@@ -2,7 +2,7 @@ import { mkdir, rename, writeFile } from 'node:fs/promises';
 import { randomBytes } from 'node:crypto';
 import path from 'node:path';
 import { contentHash, chunkId, documentId, relationId } from '../ids.js';
-import { extractGraph } from '../graph/index.js';
+import { extractGraph, isGraphEligibleDocument } from '../graph/index.js';
 import { SOURCE_BY_KEY } from '../registry.js';
 import { createSchema, openDatabase, SCHEMA_VERSION } from '../storage/schema.js';
 import type { ExtractedEntity, NormalizedDocument, RelationRecord } from '../types.js';
@@ -204,7 +204,7 @@ export async function buildIndex(options: BuildOptions): Promise<BuildResult> {
     embeddingsReused: reusedEmbeddingCount,
     parseErrors: parseErrors.length,
   };
-  const eligibleCode = documents.filter(document => /\.(?:php|module|install|theme|yml)$/.test(document.repositoryPath ?? '')).length;
+  const eligibleCode = documents.filter(isGraphEligibleDocument).length;
   const parseSuccessRate = eligibleCode ? (eligibleCode - parseErrors.length) / eligibleCode : 1;
   const foreignKeyErrors = db.pragma('foreign_key_check') as unknown[];
   const errors: string[] = [];
