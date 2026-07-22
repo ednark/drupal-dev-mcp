@@ -1,4 +1,110 @@
-# drupal-dev-mcp
+# drupal-dev-mcp 0.2
+
+Read-only Drupal development knowledge for MCP clients, with reasoning kept outside the server.
+
+Version 0.2 is a clean-break redesign with three private npm workspaces:
+
+- `@drupal-dev-mcp/knowledge` builds and queries a versioned SQLite, FTS5, semantic-graph, and optional LanceDB index.
+- `@drupal-dev-mcp/server` exposes three deterministic MCP tools and three resource surfaces over a `KnowledgeProvider`.
+- `@drupal-dev-mcp/agent` contains optional OpenAI-backed answer and iterative-research workflows as a library and CLI.
+
+The server itself does not synthesize advice, run indexing, execute commands, fetch arbitrary URLs, or mutate the workspace.
+
+## Quick start
+
+Requirements: Node.js 20+, npm 10+, Git, and enough local disk for two Drupal core checkouts and the generated index.
+
+```bash
+npm install
+npm run build
+npm run index:fetch
+npm run index:rebuild
+npm run index:verify
+npm run mcp:start
+```
+
+The active build defaults to Drupal 11.4. Every query can target Drupal 10.6 or request an explicit cross-version search.
+
+Embeddings are optional. Without them, search remains fully operational through SQLite FTS5 and returns `degraded_mode: "lexical_only"`. To create the unified LanceDB table, explicitly authorize sending indexed chunk text to the configured embedding provider and run:
+
+```bash
+npm run index:rebuild -- --with-embeddings
+```
+
+## MCP surface
+
+The stdio server exposes exactly three read-only, non-destructive, idempotent, closed-world tools:
+
+- `search_drupal` — searches evidence using version, mode, project, source type, entity kind, and limit filters.
+- `get_drupal_entity` — resolves an opaque `ent_…` ID or exact identifier and returns disambiguation, metadata, deprecations, evidence, and relationships.
+- `explore_drupal_relationships` — traverses evidence-backed graph edges with predicate, direction, depth, confidence, and node limits.
+
+Every successful result includes a stable resource URI, version compatibility, provenance, authority, and freshness. Graph traversal defaults to confidence `>= 0.7`.
+
+Resources:
+
+```text
+drupal://index/status
+drupal://entity/{id}
+drupal://document/{id}
+```
+
+Example MCP client entry after `npm run build`:
+
+```json
+{
+  "mcpServers": {
+    "drupal-dev-mcp": {
+      "command": "node",
+      "args": ["/absolute/path/to/drupal-dev-mcp/packages/server/dist/index.js"],
+      "env": {
+        "DRUPAL_MCP_INDEX_ROOT": "/absolute/path/to/drupal-dev-mcp/data/index"
+      }
+    }
+  }
+}
+```
+
+## Maintainer commands
+
+```bash
+npm run index:fetch       # update pinned Drupal 10.6.x and 11.4.x snapshots
+npm run index:build       # build and atomically activate a verified index
+npm run index:verify      # verify active SQLite integrity and references
+npm run index:rebuild     # clean full-index build; no old-index migration
+npm run index:status      # report active run, counts, versions, and warnings
+npm run index:benchmark   # run the 20-question top-five evidence gate
+npm run typecheck
+npm test
+```
+
+Builds live under `data/index/builds/{run-id}`. A build becomes active only after verification passes and `data/index/active.json` is atomically replaced. A failed build leaves the prior active manifest untouched.
+
+## Optional agent
+
+The agent package receives evidence only through `KnowledgeProvider` and explicitly reports insufficient evidence. Tool calls, admitted evidence, iterations, budgets, and stop reasons are observable.
+
+```bash
+npm run agent:ask -- --version 11.4 "How does dependency injection work?"
+npm run agent:research -- --version 11.4 --max-iterations 4 "Compare event subscribers and hooks"
+```
+
+Set `OPENAI_API_KEY` and optionally `OPENAI_AGENT_MODEL` in `.env`. Agent citations retain both stable `drupal://` resource URIs and canonical source URLs.
+
+## Architecture and migration
+
+See [docs/architecture-0.2.md](docs/architecture-0.2.md) for schemas, extraction confidence, retrieval stages, activation, and verification details.
+
+The 0.1 tools `ask_drupal_expert`, `search_drupal_docs`, `deep_research_drupal`, `drupal_skill_guide`, and `initialize_drupal_docs` were removed. Skill guides are normal searchable documents/resources; index creation is a maintainer CLI operation; synthesis and research moved to the agent package.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
+
+<details>
+<summary>Archived 0.1 README (migration reference)</summary>
+
+# drupal-dev-mcp (0.1)
 
 **Drupal development MCP server powered by RAG + LLM** — gives AI assistants direct access to Drupal documentation, source code, best-practice skill guides, and iterative deep-research capabilities via local vector search and OpenAI synthesis.
 
@@ -407,3 +513,5 @@ drupal-dev-mcp/
 ## License
 
 See [LICENSE](LICENSE).
+
+</details>
