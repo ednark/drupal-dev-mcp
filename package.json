@@ -1,12 +1,23 @@
 {
   "name": "drupal-dev-mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/src/index.js",
-    "dev": "tsx src/index.ts",
+    "build": "npm run build -w @drupal-dev-mcp/knowledge && npm run build -w @drupal-dev-mcp/server && npm run build -w @drupal-dev-mcp/agent",
+    "start": "npm run mcp:start",
+    "dev": "npm run dev --workspace @drupal-dev-mcp/server",
+    "mcp:start": "npm run start --workspace @drupal-dev-mcp/server",
+    "agent:ask": "npm run ask --workspace @drupal-dev-mcp/agent --",
+    "agent:research": "npm run research --workspace @drupal-dev-mcp/agent --",
+    "index:fetch": "npm run index:fetch --workspace @drupal-dev-mcp/knowledge --",
+    "index:build": "npm run index:build --workspace @drupal-dev-mcp/knowledge --",
+    "index:verify": "npm run index:verify --workspace @drupal-dev-mcp/knowledge --",
+    "index:rebuild": "npm run index:rebuild --workspace @drupal-dev-mcp/knowledge --",
+    "index:status": "npm run index:status --workspace @drupal-dev-mcp/knowledge --",
     "sync:sources": "bash scripts/sync-docs.sh",
     "fetch:tutorials": "bash scripts/fetch-tutorials.sh",
     "fetch:docset": "bash scripts/fetch-drupal-docset.sh",
@@ -42,7 +53,10 @@
     "research:tools": "npx tsx scripts/research-tools.ts",
     "test:research-tools": "npx tsx tests/research-tools-smoke.ts",
     "test:research-sources": "npx tsx tests/research-sources-smoke.ts",
-    "typecheck": "tsc -p tsconfig.typecheck.json"
+    "typecheck:legacy": "tsc -p tsconfig.typecheck.json",
+    "typecheck": "npm run typecheck -w @drupal-dev-mcp/knowledge && npm run build -w @drupal-dev-mcp/knowledge && npm run typecheck -w @drupal-dev-mcp/server && npm run typecheck -w @drupal-dev-mcp/agent",
+    "test:legacy": "node --import tsx tests/research-tools-smoke.ts && node --import tsx tests/research-sources-smoke.ts",
+    "test": "node --import tsx --test packages/*/tests/*.test.ts"
   },
   "dependencies": {
     "@lancedb/lancedb": "^0.14.0",
@@ -54,12 +68,14 @@
     "cheerio": "^1.0.0",
     "dotenv": "^16.4.0",
     "openai": "^4.77.0",
+    "php-parser": "^3.7.0",
     "p-limit": "^5.0.0",
     "playwright": "^1.58.2",
     "playwright-extra": "^4.3.6",
     "puppeteer": "^24.7.1",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
     "tiktoken": "^1.0.17",
+    "yaml": "^2.8.1",
     "zod": "^3.23.0"
   },
   "devDependencies": {

@@ -1,0 +1,29 @@
+{
+  "name": "@drupal-dev-mcp/knowledge",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "index:fetch": "tsx src/cli.ts fetch",
+    "index:build": "tsx src/cli.ts build",
+    "index:verify": "tsx src/cli.ts verify",
+    "index:rebuild": "tsx src/cli.ts rebuild",
+    "index:status": "tsx src/cli.ts status"
+  },
+  "dependencies": {
+    "@lancedb/lancedb": "^0.14.0",
+    "better-sqlite3": "^9.4.0",
+    "openai": "^4.77.0",
+    "php-parser": "^3.7.0",
+    "yaml": "^2.8.1"
+  }
+}
