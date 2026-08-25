@@ -12,7 +12,8 @@ This index tracks plan lifecycle state and location.
 
 | Name | Status | Last Reviewed | Replaced By | Location |
 |---|---|---|---|---|
-| roadmap-phased-milestones.md | in-progress | 2026-03-31 | - | plans/active/roadmap-phased-milestones.md |
+| agent-loop-integration-recommendations.md | completed | 2026-08-25 | - | plans/active/agent-loop-integration-recommendations.md |
+| roadmap-phased-milestones.md | in-progress | 2026-08-25 | - | plans/active/roadmap-phased-milestones.md |
 | skill-rag-integration-plan.md | in-progress | 2026-03-31 | - | plans/active/skill-rag-integration-plan.md |
 | tutorials-and-examples-implementation-plan.md | in-progress | 2026-03-31 | - | plans/active/tutorials-and-examples-implementation-plan.md |
 

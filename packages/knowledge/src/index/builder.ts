@@ -18,6 +18,7 @@ export interface BuildOptions {
   fixtureLimit?: number;
   withEmbeddings?: boolean;
   activate?: boolean;
+  embed?: (texts: string[]) => Promise<number[][]>;
 }
 
 export interface BuildResult extends ActiveManifest {
@@ -187,8 +188,8 @@ export async function buildIndex(options: BuildOptions): Promise<BuildResult> {
   let reusedEmbeddingCount = 0;
   if (options.withEmbeddings) {
     const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) throw new Error('OPENAI_API_KEY is required with --with-embeddings');
-    const vectorResult = await buildVectorIndex({ buildPath, chunks: vectorChunks, model: embeddingModel!, apiKey, cachePath: path.join(indexRoot, 'embedding-cache.sqlite') });
+    if (!apiKey && !options.embed) throw new Error('OPENAI_API_KEY is required with --with-embeddings');
+    const vectorResult = await buildVectorIndex({ buildPath, chunks: vectorChunks, model: embeddingModel!, apiKey, embed: options.embed, cachePath: path.join(indexRoot, 'embedding-cache.sqlite') });
     vectorCount = vectorResult.vectorCount;
     embeddedCount = vectorResult.embeddedCount;
     reusedEmbeddingCount = vectorResult.reusedCount;

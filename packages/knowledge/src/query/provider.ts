@@ -4,8 +4,9 @@ import path from 'node:path';
 import type Database from 'better-sqlite3';
 import { openDatabase } from '../storage/schema.js';
 import type {
-  EntityRecord, EntityRequest, EntityResponse, IndexStatus, KnowledgeProvider, RelationRecord,
-  RelationshipRequest, RelationshipResponse, ResourceRecord, SearchRequest, SearchResponse, SearchResult,
+  EntityBatchItem, EntitiesRequest, EntitiesResponse, EntityRecord, EntityRequest, EntityResponse, IndexStatus,
+  KnowledgeProvider, RelationRecord, RelationshipRequest, RelationshipResponse, ResourceRecord, SearchRequest,
+  SearchResponse, SearchResult,
 } from '../types.js';
 import { DEFAULT_DRUPAL_VERSION, isCompatible } from '../version.js';
 import { getDefaultIndexRoot, resolveActiveBuild, statusFromManifest, type ActiveManifest } from '../index/manifest.js';
@@ -57,18 +58,23 @@ function relationFromRow(row: Row): RelationRecord {
   };
 }
 
+export interface ProviderOptions {
+  queryEmbedder?: (query: string) => Promise<number[]>;
+}
+
 export class SqliteKnowledgeProvider implements KnowledgeProvider {
   private constructor(
     private readonly manifest: ActiveManifest,
     private readonly db: Database.Database,
+    private readonly queryEmbedder?: (query: string) => Promise<number[]>,
   ) {}
 
-  static async open(indexRoot = getDefaultIndexRoot()): Promise<SqliteKnowledgeProvider> {
+  static async open(indexRoot = getDefaultIndexRoot(), options: ProviderOptions = {}): Promise<SqliteKnowledgeProvider> {
     const manifest = await resolveActiveBuild(indexRoot);
     if (!manifest?.verification.passed) throw new Error('No verified active Drupal knowledge index. Run npm run index:rebuild.');
     const db = openDatabase(path.join(manifest.buildPath, 'knowledge.sqlite'), true);
     db.function('drupal_compatible', (constraint: unknown, target: unknown) => isCompatible(typeof constraint === 'string' ? constraint : undefined, String(target)) ? 1 : 0);
-    return new SqliteKnowledgeProvider(manifest, db);
+    return new SqliteKnowledgeProvider(manifest, db, options.queryEmbedder);
   }
 
   close(): void { this.db.close(); }
@@ -82,6 +88,8 @@ export class SqliteKnowledgeProvider implements KnowledgeProvider {
     const limit = Math.min(25, Math.max(1, request.limit ?? 8));
     const mode = request.mode ?? 'hybrid';
     const includeSnippets = request.includeSnippets ?? true;
+    const snippetMaxChars = request.snippetMaxChars === undefined ? 500 : Math.min(2000, Math.max(40, Math.floor(request.snippetMaxChars)));
+    const clip = (text: string) => (text.length > snippetMaxChars ? text.slice(0, snippetMaxChars) : text);
     const match = ftsQuery(query);
     if (!match) return { query, appliedFilters: { drupalVersion: version, mode }, index: await this.getIndexStatus(), results: [] };
 
@@ -102,9 +110,9 @@ export class SqliteKnowledgeProvider implements KnowledgeProvider {
         snippet(document_fts, 3, '[', ']', ' … ', 30) AS snippet
         FROM document_fts JOIN documents d ON d.id = document_fts.document_id
         WHERE document_fts MATCH ? AND ${where}
-        ORDER BY rank LIMIT ?`).all(match, ...params, limit * 3) as Row[];
+        ORDER BY rank, d.id LIMIT ?`).all(match, ...params, limit * 3) as Row[];
       docs.forEach((row, index) => lexicalResults.push({
-        id: row.id, resultType: 'document', title: row.title, snippet: includeSnippets ? row.snippet : undefined,
+        id: row.id, resultType: 'document', title: row.title, snippet: includeSnippets ? clip(row.snippet) : undefined,
         score: 1 / (60 + index + 1), lexicalRank: index + 1, exactMatch: row.title.toLowerCase() === query.toLowerCase(),
         sourceType: row.source_type, authority: row.authority, project: row.project || undefined,
         drupalVersion: row.drupal_version, compatibility: version === 'all' ? 'cross_version' : 'compatible', status: row.status, canonicalUrl: row.canonical_url || undefined,
@@ -122,10 +130,10 @@ export class SqliteKnowledgeProvider implements KnowledgeProvider {
         bm25(entity_fts) AS rank FROM entity_fts JOIN entities e ON e.id = entity_fts.entity_id
         LEFT JOIN documents d ON d.id = e.source_document_id
         WHERE entity_fts MATCH ? AND ${entityFilters.join(' AND ')}
-        ORDER BY CASE WHEN lower(e.canonical_name)=lower(?) OR lower(e.short_name)=lower(?) THEN 0 ELSE 1 END, rank LIMIT ?`).all(match, ...entityParams, query, query, limit * 3) as Row[];
+        ORDER BY CASE WHEN lower(e.canonical_name)=lower(?) OR lower(e.short_name)=lower(?) THEN 0 ELSE 1 END, rank, e.id LIMIT ?`).all(match, ...entityParams, query, query, limit * 3) as Row[];
       entityRows.forEach((row, index) => lexicalResults.push({
         id: row.id, resultType: 'entity', title: row.canonical_name,
-        snippet: includeSnippets ? `${row.kind} ${row.canonical_name}${row.status === 'deprecated' ? ' (deprecated)' : ''}` : undefined,
+        snippet: includeSnippets ? clip(`${row.kind} ${row.canonical_name}${row.status === 'deprecated' ? ' (deprecated)' : ''}`) : undefined,
         score: 1 / (60 + index + 1), lexicalRank: index + 1,
         exactMatch: [row.canonical_name, row.short_name].some((name: string) => name.toLowerCase() === query.toLowerCase()),
         sourceType: row.source_type ?? 'core_code', authority: row.authority ?? 100, project: row.project || undefined,
@@ -139,13 +147,14 @@ export class SqliteKnowledgeProvider implements KnowledgeProvider {
 
     let semanticRows: Array<{ chunk_id: string; _distance: number }> = [];
     let degradedMode: 'lexical_only' | undefined;
-    if (mode !== 'lexical' && this.manifest.embeddingModel && process.env.OPENAI_API_KEY) {
+    if (mode !== 'lexical' && this.manifest.embeddingModel && (this.queryEmbedder || process.env.OPENAI_API_KEY)) {
       try {
-        const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-        const embedded = await client.embeddings.create({ model: this.manifest.embeddingModel, input: query });
+        const embedding = this.queryEmbedder
+          ? await this.queryEmbedder(query)
+          : (await new OpenAI({ apiKey: process.env.OPENAI_API_KEY }).embeddings.create({ model: this.manifest.embeddingModel, input: query })).data[0].embedding;
         const vectorDb = await lancedb.connect(path.join(this.manifest.buildPath, 'vectors.lance'));
         const table = await vectorDb.openTable('chunk_vectors');
-        let vectorQuery = table.vectorSearch(embedded.data[0].embedding).limit(limit * 3);
+        let vectorQuery = table.vectorSearch(embedding).limit(limit * 3);
         if (version !== 'all') vectorQuery = vectorQuery.where(`drupal_version = '${String(version).replace(/'/g, "''")}' OR drupal_version = 'all'`);
         semanticRows = await vectorQuery.toArray() as unknown as Array<{ chunk_id: string; _distance: number }>;
       } catch { degradedMode = 'lexical_only'; }
@@ -165,11 +174,12 @@ export class SqliteKnowledgeProvider implements KnowledgeProvider {
       if (existing) merged.set(document.id, { ...existing, semanticRank: index + 1, score: existing.score + semanticScore });
       else merged.set(document.id, {
         id: document.id, resultType: 'document', title: document.title,
-        snippet: includeSnippets ? document.text.slice(0, 500) : undefined, score: semanticScore,
+        snippet: includeSnippets ? clip(document.text) : undefined, score: semanticScore,
         semanticRank: index + 1, exactMatch: false, sourceType: document.source_type, authority: document.authority,
         project: document.project || undefined, drupalVersion: document.drupal_version, compatibility: version === 'all' ? 'cross_version' : 'compatible', status: document.status,
         canonicalUrl: document.canonical_url || undefined, repositoryPath: document.repository_path || undefined,
         commit: document.commit_sha || undefined, freshness: document.modified_at || this.manifest.builtAt,
+        chunkId: row.chunk_id, chunkResourceUri: `drupal://document/${document.id}#chunk/${row.chunk_id}`,
         provenance: { sourceKey: document.source_key, sourceType: document.source_type, authority: document.authority, canonicalUrl: document.canonical_url || undefined, repositoryPath: document.repository_path || undefined, commit: document.commit_sha || undefined },
         resourceUri: `drupal://document/${document.id}`,
       });
@@ -208,7 +218,7 @@ export class SqliteKnowledgeProvider implements KnowledgeProvider {
       if (request.kind) { clauses.push('e.kind=?'); params.push(request.kind); }
       rows = this.db.prepare(`SELECT e.*, d.canonical_url, d.commit_sha, d.modified_at FROM entities e
         LEFT JOIN documents d ON d.id=e.source_document_id WHERE ${clauses.join(' AND ')}
-        ORDER BY e.drupal_version DESC, e.canonical_name LIMIT 25`).all(...params) as Row[];
+        ORDER BY e.drupal_version DESC, e.canonical_name, e.id LIMIT 25`).all(...params) as Row[];
     }
     if (rows.length === 0) return { status: 'not_found' };
     if (rows.length > 1) return { status: 'ambiguous', candidates: rows.map(row => entityFromRow(row, this.manifest.builtAt)) };
@@ -216,9 +226,26 @@ export class SqliteKnowledgeProvider implements KnowledgeProvider {
     const evidence = entity.evidenceResourceUri ? [{ resourceUri: entity.evidenceResourceUri, canonicalUrl: entity.canonicalUrl, filePath: entity.filePath, startLine: entity.startLine, endLine: entity.endLine }] : [];
     if (request.includeRelations === false) return { status: 'found', entity, evidence };
     const limit = Math.min(100, Math.max(1, request.relationLimit ?? 25));
-    const outgoing = (this.db.prepare('SELECT * FROM relations WHERE from_id=? ORDER BY confidence DESC, predicate LIMIT ?').all(entity.id, limit) as Row[]).map(relationFromRow);
-    const incoming = (this.db.prepare('SELECT * FROM relations WHERE to_id=? ORDER BY confidence DESC, predicate LIMIT ?').all(entity.id, limit) as Row[]).map(relationFromRow);
+    const outgoing = (this.db.prepare('SELECT * FROM relations WHERE from_id=? ORDER BY confidence DESC, predicate, id LIMIT ?').all(entity.id, limit) as Row[]).map(relationFromRow);
+    const incoming = (this.db.prepare('SELECT * FROM relations WHERE to_id=? ORDER BY confidence DESC, predicate, id LIMIT ?').all(entity.id, limit) as Row[]).map(relationFromRow);
     return { status: 'found', entity, outgoing, incoming, evidence };
+  }
+
+  async getEntities(request: EntitiesRequest): Promise<EntitiesResponse> {
+    const entityIds = [...new Set(request.entityIds ?? [])].slice(0, 25);
+    const results: EntityBatchItem[] = [];
+    for (const entityId of entityIds) {
+      const response = await this.getEntity({
+        entityId,
+        drupalVersion: request.drupalVersion,
+        includeRelations: request.includeRelations,
+        relationLimit: request.relationLimit,
+      });
+      results.push(response.entity
+        ? { entityId, status: 'found', entity: response.entity, incoming: response.incoming, outgoing: response.outgoing, evidence: response.evidence }
+        : { entityId, status: 'not_found' });
+    }
+    return { results };
   }
 
   async exploreRelationships(request: RelationshipRequest): Promise<RelationshipResponse> {
@@ -256,7 +283,7 @@ export class SqliteKnowledgeProvider implements KnowledgeProvider {
     const nodes = ids.length
       ? (this.db.prepare(`SELECT e.*, d.canonical_url, d.commit_sha, d.modified_at FROM entities e LEFT JOIN documents d ON d.id=e.source_document_id WHERE e.id IN (${ids.map(() => '?').join(',')})`).all(...ids) as Row[]).map(row => entityFromRow(row, this.manifest.builtAt))
       : [];
-    return { startEntity: found.entity, nodes, edges: [...edges.values()].sort((a, b) => b.confidence - a.confidence || a.predicate.localeCompare(b.predicate)), truncated };
+    return { startEntity: found.entity, nodes, edges: [...edges.values()].sort((a, b) => b.confidence - a.confidence || a.predicate.localeCompare(b.predicate) || a.id.localeCompare(b.id)), truncated };
   }
 
   async readResource(uri: string): Promise<ResourceRecord | null> {
@@ -266,11 +293,18 @@ export class SqliteKnowledgeProvider implements KnowledgeProvider {
       const response = await this.getEntity({ entityId: entityMatch[1], includeRelations: true, relationLimit: 100 });
       return response.entity ? { uri, mimeType: 'application/json', text: JSON.stringify(response, null, 2) } : null;
     }
-    const documentMatch = uri.match(/^drupal:\/\/document\/(doc_[A-Za-z0-9_-]+)$/);
+    const documentMatch = uri.match(/^drupal:\/\/document\/(doc_[A-Za-z0-9_-]+)(?:#chunk\/(chk_[A-Za-z0-9_-]+))?$/);
     if (documentMatch) {
       const row = this.db.prepare('SELECT * FROM documents WHERE id=?').get(documentMatch[1]) as Row | undefined;
       if (!row) return null;
-      const header = [`# ${row.title}`, '', `Source: ${row.canonical_url ?? row.repository_path ?? 'local corpus'}`, `Drupal: ${row.drupal_version}`, `Indexed commit: ${row.commit_sha ?? 'n/a'}`, '', '---', ''];
+      const provenanceLines = ['', `Source: ${row.canonical_url ?? row.repository_path ?? 'local corpus'}`, `Drupal: ${row.drupal_version}`, `Indexed commit: ${row.commit_sha ?? 'n/a'}`, '', '---', ''];
+      if (documentMatch[2]) {
+        const chunk = this.db.prepare('SELECT * FROM chunks WHERE id=? AND document_id=?').get(documentMatch[2], documentMatch[1]) as Row | undefined;
+        if (!chunk) return null;
+        const header = [`# ${row.title} — chunk ${chunk.ordinal} (${chunk.locator})`, ...provenanceLines];
+        return { uri, mimeType: 'text/plain', text: `${header.join('\n')}${chunk.text}` };
+      }
+      const header = [`# ${row.title}`, ...provenanceLines];
       return { uri, mimeType: row.mime_type || 'text/plain', text: `${header.join('\n')}${row.content}` };
     }
     return null;

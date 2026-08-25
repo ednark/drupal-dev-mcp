@@ -18,6 +18,7 @@ function provider(results: SearchResult[]): KnowledgeProvider {
   return {
     async search() { return { query: 'q', appliedFilters: {}, index: await this.getIndexStatus(), results }; },
     async getEntity() { return { status: 'not_found' }; },
+    async getEntities() { return { results: [] }; },
     async exploreRelationships() { throw new Error('not used'); },
     async readResource() { return null; },
     async getIndexStatus() { return { ready: true, schemaVersion: 1, defaultDrupalVersion: '11.4', availableDrupalVersions: ['11.4'], counts: {} }; },

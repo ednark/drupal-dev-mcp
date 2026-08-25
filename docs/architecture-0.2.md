@@ -10,7 +10,7 @@ The repository has three layers joined by the `KnowledgeProvider` interface.
                  |
                  v
 KnowledgeProvider
-  search | getEntity | exploreRelationships | readResource | getIndexStatus
+  search | getEntity | getEntities | exploreRelationships | readResource | getIndexStatus
                  ^
                  |
 @drupal-dev-mcp/server
@@ -102,6 +102,8 @@ Tool annotations are fixed to:
 ```
 
 The only runtime transport is local stdio.
+
+Tools cover evidence search, single and batch entity resolution, graph traversal, exact document/chunk retrieval for citation verification, and index status. Semantic search hits carry chunk-level citation URIs (`drupal://document/{docId}#chunk/{chunkId}`) that `readResource` resolves to exact indexed chunk text. See [integration-agent-loops.md](integration-agent-loops.md) for external agent-loop integration.
 
 ## Verification gates
 

@@ -1,110 +1,93 @@
 ---
 status: in-progress
-phase: planning
+phase: execution
 completed_at: null
-last_reviewed_at: 2026-03-31
+last_reviewed_at: 2026-08-25
 depends_on: []
 supersedes:
   - plans/archived/new-search-tools-plan.md
 related_artifacts:
-  - src/lib/retrieval.ts
-  - src/tools/search-drupal-docs.ts
-  - src/tools/ask-drupal-expert.ts
-  - src/lib/deep-research.ts
-  - src/tools/deep-research-drupal.ts
-  - plans/active/skill-rag-integration-plan.md
-  - plans/active/tutorials-and-examples-implementation-plan.md
+  - packages/knowledge/src/query/provider.ts
+  - packages/server/src/server.ts
+  - packages/agent/src/agent.ts
+  - docs/architecture-0.2.md
+  - docs/integration-agent-loops.md
+  - plans/active/agent-loop-integration-recommendations.md
 ---
 
-# Phased Roadmap — Drupal Architect MCP Server
+# Phased Roadmap — Drupal Dev MCP 0.2
 
 ## Goal
-Track the remaining work after the main search-tool split shipped, with active phases aligned to the current layered architecture.
+Track remaining work for the 0.2 architecture: a read-only evidence server (`@drupal-dev-mcp/server`) over a versioned knowledge index (`@drupal-dev-mcp/knowledge`), with reasoning kept outside the server (`@drupal-dev-mcp/agent` or any external agent loop).
 
-## Current Status
-- [x] Discovery
-- [x] Architecture split implemented
-- [ ] Remaining quality and corpus work
+## Note: 2026-08-25 re-anchoring
+This roadmap previously described the removed 0.1 surface (`src/tools/*.ts`, `src/lib/retrieval.ts`, the `ask_drupal_expert`/`search_drupal_docs`/`deep_research_drupal` tools). It has been re-anchored to the 0.2 workspace layout. The 0.1-era phases map onto 0.2 work as follows:
+
+- "Source gaps" → fetcher/verification completeness for `SOURCE_REGISTRY` (`packages/knowledge/src/registry.ts`).
+- "Skill-aware prompt quality" and "tutorials/examples hardening" → these concerned 0.1 prompt assembly. In 0.2, skill guides and tutorials are ordinary index sources (`drupal_skills`, `tutorials`, `drupal_examples`); their remaining work is corpus quality, tracked under Phase 1. The plans `skill-rag-integration-plan.md`, `tutorials-and-examples-implementation-plan.md`, and `etl-trigger-from-mcp-plan.md` target the removed 0.1 surface and are **archive candidates**.
 
 ## Implemented Architecture Baseline
-- Shared retrieval policy is now centralised in [`src/lib/retrieval.ts`](src/lib/retrieval.ts:174)
-- Raw evidence for AI coders is exposed by [`search_drupal_docs`](src/tools/search-drupal-docs.ts:43)
-- Human-facing explanation remains in [`ask_drupal_expert`](src/tools/ask-drupal-expert.ts:180)
-- Planning and advisory research run through [`runDeepResearch()`](src/lib/deep-research.ts:154) and [`deep_research_drupal`](src/tools/deep-research-drupal.ts:56)
-- Skill guidance is separately available through [`drupal_skill_guide`](src/tools/drupal-skill-guide.ts:28)
+- `@drupal-dev-mcp/knowledge`: source registry, dual Drupal core snapshots (10.6/11.4), SQLite + FTS5 + deterministic graph, optional LanceDB vectors, verified atomic activation. See [`docs/architecture-0.2.md`](../../docs/architecture-0.2.md).
+- `@drupal-dev-mcp/server`: read-only MCP tools with full annotations and declared output schemas over `KnowledgeProvider`.
+- `@drupal-dev-mcp/agent`: optional OpenAI-backed ask/research workflows with observable evidence admission and budgets.
 
 ## Active Phases
 
-### Phase 1 — Finish source gaps that feed the shared retrieval layer
-Focus on corpus gaps that improve all three retrieval consumers, not just one tool.
+### Phase 1 — Corpus completeness for the 0.2 source registry
+Focus: every `SOURCE_REGISTRY` entry fetches, parses, verifies, and is retrievable.
 
 Next actions:
-- Add ETL and verification for `contrib_module_handbook`
-- Finish ETL and verification for `drupal_module_handbook`
-- Validate that both sources are retrievable through [`src/lib/retrieval.ts`](src/lib/retrieval.ts:174) and visible to all tool surfaces
+- Validate fetcher/parser coverage for each registry source (module handbook, contrib docs, examples, skills, tutorials, upstream docs).
+- Confirm sources surface in lexical search and benchmark questions.
 
 Exit criteria:
-- Both datasets are fetched, parsed, loaded, and verified
-- Queries for module creation and extension work surface those datasets in raw and synthesized flows
+- `npm run index:fetch && npm run index:rebuild && npm run index:verify` succeeds for the full registry.
+- Benchmark gate (`npm run index:benchmark`) meets the 16/20 threshold.
 
-### Phase 2 — Finish skill-aware prompt quality work
-Reference: [`plans/active/skill-rag-integration-plan.md`](plans/active/skill-rag-integration-plan.md)
+### Phase 2 — Agent-loop integration (from downstream-consumer recommendations)
+Reference: [`plans/active/agent-loop-integration-recommendations.md`](agent-loop-integration-recommendations.md) (triaged 2026-08-25).
+
+Adopted items:
+- [x] R1 — token budgeting: `snippet_max_chars` on `search_drupal`; compact JSON text serialization.
+- [x] R2-min — `get_drupal_document` tool exposing exact indexed text (document or chunk) to tools-only clients.
+- [x] R3 — `get_drupal_entities` batch resolution tool.
+- [x] R5 — `get_index_status` tool.
+- [x] R7-min — deterministic ordering tie-breakers; stability documented in tool descriptions.
+- [x] R8 — integration guide: [`docs/integration-agent-loops.md`](../../docs/integration-agent-loops.md).
+- [x] R9 — chunk-level citation URIs (`drupal://document/{docId}#chunk/{chunkId}`) for semantic hits.
+
+Explicitly declined or deferred (rationale in the triage):
+- R2-full `verify_citation` verdict — reasoning belongs client-side.
+- R4 `migration_impact` — deferred until a third Drupal version exists.
+- R6 full error-code taxonomy — deferred; structured `found/ambiguous/not_found` statuses cover the common repair path.
+- R7 cursor paging — no demonstrated need with `limit` capped at 25.
+- R1 `verbosity`/`fields` knobs — existing knobs already bound response size.
+
+Exit criteria:
+- New tools are schema-validated, annotated, and covered by `npm test`.
+- Integration guide linked from the README.
+
+### Phase 3 — Retrieval quality and benchmarking
+Focus: measurable retrieval quality on the 0.2 index.
 
 Next actions:
-- Tighten skill-domain detection quality in [`handleAskDrupalExpert()`](src/tools/ask-drupal-expert.ts:218)
-- Add the deferred soft-intent fallback only if deterministic routing is insufficient
-- Add validation coverage for skill injection and guard against prompt bloat
+- Denoise noisy corpora before embedding.
+- Tune ranking weights and thresholds in [`packages/knowledge/src/query/provider.ts`](../../packages/knowledge/src/query/provider.ts).
+- Expand the benchmark question set and track regressions per build.
 
 Exit criteria:
-- Skill injection is reliable on benchmark questions
-- Prompt assembly remains bounded and auditable
-
-### Phase 3 — Harden tutorials and examples as shared retrieval assets
-Reference: [`plans/active/tutorials-and-examples-implementation-plan.md`](plans/active/tutorials-and-examples-implementation-plan.md)
-
-Next actions:
-- Validate tutorial/example parsing and metadata quality
-- Ensure tutorial assets improve raw search, synthesized answers, and deep research planning
-- Add only the minimum metadata filters that materially improve retrieval quality
-
-Exit criteria:
-- `drupal_tutorials` chunks are trustworthy and discoverable across all tool surfaces
-- Example-oriented questions consistently surface tutorial/example evidence
-
-### Phase 4 — Retrieval quality and observability
-Focus on shared improvements that benefit the full stack.
-
-Next actions:
-- Denoise noisy corpora before embedding
-- Tune dataset-specific thresholds and ranking in [`src/lib/retrieval.ts`](src/lib/retrieval.ts:174)
-- Expand benchmark coverage and query metrics for regression detection
-
-Exit criteria:
-- Retrieval quality improvements are measured against repeatable benchmark questions
-- Logs and manual checks make ranking regressions visible
+- Retrieval changes are judged against repeatable `npm run index:benchmark` runs.
+- Ranking regressions are visible in verification output.
 
 ## Milestone Checklist
-- [x] Shared retrieval extracted
-- [x] Raw search tool implemented
-- [x] Human explanatory tool aligned to shared retrieval
-- [x] Deep research planner implemented
-- [ ] Module handbook sources completed
-- [ ] Skill-routing quality completed
-- [ ] Tutorials/examples hardening completed
+- [x] 0.2 architecture implemented (knowledge/server/agent workspaces)
+- [x] Agent-loop recommendations triaged
+- [x] Agent-loop integration items implemented (R1, R2-min, R3, R5, R7-min, R8, R9)
+- [ ] Full source registry fetch/verify completeness
 - [ ] Retrieval benchmarking and tuning completed
-
-## Dependency View
-```mermaid
-flowchart TD
-  A[Shared retrieval baseline shipped] --> B[Source gaps closed]
-  A --> C[Skill prompt quality]
-  A --> D[Tutorial and examples hardening]
-  B --> E[Shared retrieval tuning]
-  C --> E
-  D --> E
-```
+- [ ] 0.1-era active plans archived
 
 ## Key Decisions
-- Keep active plans focused on unfinished work, not architecture already implemented
-- Treat tutorials, examples, and new handbook sources as corpus improvements that should benefit every retrieval consumer
-- Preserve a strict separation between raw retrieval output, human explanation, and advisory planning
+- Keep the server read-only, closed-world, and reasoning-free; every adopted recommendation strengthens that stance.
+- Prefer few explicit knobs (`limit`, `include_snippets`, `snippet_max_chars`) over open-ended field selection.
+- Batch and document/chunk tools exist to cut round-trips for step-budgeted agent loops, not to add synthesis.

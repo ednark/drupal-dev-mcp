@@ -63,6 +63,7 @@ export interface SearchRequest {
   entityKinds?: NodeType[];
   limit?: number;
   includeSnippets?: boolean;
+  snippetMaxChars?: number;
 }
 
 export interface SearchResult {
@@ -84,6 +85,8 @@ export interface SearchResult {
   repositoryPath?: string;
   commit?: string;
   freshness: string;
+  chunkId?: string;
+  chunkResourceUri?: string;
   provenance: {
     sourceKey: string;
     sourceType: string;
@@ -158,6 +161,26 @@ export interface EntityResponse {
   evidence?: Array<{ resourceUri: string; canonicalUrl?: string; filePath?: string; startLine?: number; endLine?: number }>;
 }
 
+export interface EntitiesRequest {
+  entityIds: string[];
+  drupalVersion?: DrupalVersion | string;
+  includeRelations?: boolean;
+  relationLimit?: number;
+}
+
+export interface EntityBatchItem {
+  entityId: string;
+  status: 'found' | 'not_found';
+  entity?: EntityRecord;
+  incoming?: RelationRecord[];
+  outgoing?: RelationRecord[];
+  evidence?: EntityResponse['evidence'];
+}
+
+export interface EntitiesResponse {
+  results: EntityBatchItem[];
+}
+
 export interface RelationshipRequest {
   entityId: string;
   predicates?: RelationPredicate[];
@@ -184,6 +207,7 @@ export interface ResourceRecord {
 export interface KnowledgeProvider {
   search(request: SearchRequest): Promise<SearchResponse>;
   getEntity(request: EntityRequest): Promise<EntityResponse>;
+  getEntities(request: EntitiesRequest): Promise<EntitiesResponse>;
   exploreRelationships(request: RelationshipRequest): Promise<RelationshipResponse>;
   readResource(uri: string): Promise<ResourceRecord | null>;
   getIndexStatus(): Promise<IndexStatus>;

@@ -69,3 +69,52 @@ test('a failed build never replaces the prior active manifest', async () => {
   assert.equal(await readFile(path.join(indexRoot, 'active.json'), 'utf8'), before);
   assert.equal((await resolveActiveBuild(indexRoot))?.runId, first.runId);
 });
+
+test('batch entity resolution, snippet budgeting, and stable ordering', async () => {
+  const { repoRoot, indexRoot } = await fixtureRepo();
+  await buildIndex({ repoRoot, indexRoot, withEmbeddings: false, activate: true });
+  const provider = await SqliteKnowledgeProvider.open(indexRoot);
+  try {
+    const v11 = await provider.getEntity({ identifier: 'Drupal\\Core\\Example\\ExampleManager', drupalVersion: '11.4' });
+    const v10 = await provider.getEntity({ identifier: 'Drupal\\Core\\Example\\ExampleManager', drupalVersion: '10.6' });
+    assert.equal(v10.status, 'found');
+
+    const batch = await provider.getEntities({
+      entityIds: [v11.entity!.id, v11.entity!.id, v10.entity!.id, 'ent_missing00000000000000'],
+      drupalVersion: 'all',
+    });
+    assert.deepEqual(batch.results.map(item => item.status), ['found', 'found', 'not_found']);
+    assert.equal(batch.results[1].entity?.drupalVersion, '10.6');
+
+    const clipped = await provider.search({ query: 'ExampleManager', drupalVersion: '11.4', mode: 'lexical', snippetMaxChars: 60 });
+    assert.ok(clipped.results.length > 0);
+    for (const result of clipped.results) {
+      if (result.snippet !== undefined) assert.ok(result.snippet.length <= 60, `snippet exceeds budget: ${result.snippet}`);
+    }
+
+    const first = await provider.search({ query: 'ExampleManager example', drupalVersion: 'all', mode: 'lexical', limit: 25 });
+    const second = await provider.search({ query: 'ExampleManager example', drupalVersion: 'all', mode: 'lexical', limit: 25 });
+    assert.ok(first.results.length > 1);
+    assert.deepEqual(second.results.map(result => result.id), first.results.map(result => result.id));
+  } finally { provider.close(); }
+});
+
+test('semantic hits carry chunk-level citation URIs that resolve to exact chunk text', async () => {
+  const { repoRoot, indexRoot } = await fixtureRepo();
+  const embed = async (texts: string[]) => texts.map(text => [text.length % 7, (text.length * 3) % 11]);
+  const build = await buildIndex({ repoRoot, indexRoot, withEmbeddings: true, activate: true, embed });
+  assert.ok(build.counts.vectors > 0);
+  const provider = await SqliteKnowledgeProvider.open(indexRoot, { queryEmbedder: async () => [3, 5] });
+  try {
+    const search = await provider.search({ query: 'ExampleManager', drupalVersion: '11.4', mode: 'semantic', limit: 5 });
+    assert.equal(search.degradedMode, undefined);
+    const chunkHit = search.results.find(result => result.chunkResourceUri);
+    assert.ok(chunkHit, 'expected a semantic hit carrying a chunk-level URI');
+    assert.match(chunkHit!.chunkResourceUri!, /^drupal:\/\/document\/doc_[A-Za-z0-9_-]+#chunk\/chk_[A-Za-z0-9_-]+$/);
+    assert.equal(chunkHit!.chunkId, chunkHit!.chunkResourceUri!.split('#chunk/')[1]);
+    const chunkResource = await provider.readResource(chunkHit!.chunkResourceUri!);
+    assert.ok(chunkResource?.text.includes('ExampleManager'), 'chunk resource returns exact indexed chunk text');
+    const missingChunk = await provider.readResource(`drupal://document/${chunkHit!.id}#chunk/chk_doesnotexist0000000000`);
+    assert.equal(missingChunk, null);
+  } finally { provider.close(); }
+});

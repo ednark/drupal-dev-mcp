@@ -24,7 +24,8 @@ const SearchOutputSchema = z.object({
     snippet: z.string().optional(), score: z.number(), exactMatch: z.boolean(),
     sourceType: z.string(), authority: z.number(), project: z.string().optional(),
     drupalVersion: z.string(), compatibility: z.enum(['compatible', 'cross_version']), status: z.string(),
-    freshness: z.string(), provenance: z.record(z.string(), z.unknown()), resourceUri: z.string(),
+    freshness: z.string(), chunkId: z.string().optional(), chunkResourceUri: z.string().optional(),
+    provenance: z.record(z.string(), z.unknown()), resourceUri: z.string(),
   }).passthrough()),
 });
 const EntityOutputSchema = z.object({
@@ -33,6 +34,34 @@ const EntityOutputSchema = z.object({
   candidates: z.array(z.record(z.string(), z.unknown())).optional(),
   incoming: z.array(z.record(z.string(), z.unknown())).optional(),
   outgoing: z.array(z.record(z.string(), z.unknown())).optional(),
+});
+const EntitiesOutputSchema = z.object({
+  results: z.array(z.object({
+    entityId: z.string(),
+    status: z.enum(['found', 'not_found']),
+    entity: z.record(z.string(), z.unknown()).optional(),
+    incoming: z.array(z.record(z.string(), z.unknown())).optional(),
+    outgoing: z.array(z.record(z.string(), z.unknown())).optional(),
+    evidence: z.array(z.record(z.string(), z.unknown())).optional(),
+  })),
+});
+const DocumentOutputSchema = z.object({
+  status: z.enum(['found', 'not_found']),
+  uri: z.string().optional(),
+  mimeType: z.string().optional(),
+  text: z.string().optional(),
+});
+const IndexStatusOutputSchema = z.object({
+  ready: z.boolean(),
+  schemaVersion: z.number(),
+  runId: z.string().optional(),
+  builtAt: z.string().optional(),
+  defaultDrupalVersion: z.string(),
+  availableDrupalVersions: z.array(z.string()),
+  counts: z.record(z.string(), z.number()),
+  embeddingModel: z.string().optional(),
+  buildPath: z.string().optional(),
+  verification: z.object({ passed: z.boolean(), errors: z.array(z.string()), warnings: z.array(z.string()) }).optional(),
 });
 const RelationshipOutputSchema = z.object({
   startEntity: z.record(z.string(), z.unknown()),
@@ -51,7 +80,7 @@ const READ_ONLY_ANNOTATIONS = {
 function toolResult(payload: Record<string, unknown>, resourceUris: string[]) {
   const links = [...new Set(resourceUris)].map(uri => ({ type: 'resource_link' as const, uri, name: uri }));
   return {
-    content: [{ type: 'text' as const, text: JSON.stringify(payload, null, 2) }, ...links],
+    content: [{ type: 'text' as const, text: JSON.stringify(payload) }, ...links],
     structuredContent: payload,
   };
 }
@@ -65,7 +94,7 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
 
   server.registerTool('search_drupal', {
     title: 'Search Drupal evidence',
-    description: 'Search the closed, versioned Drupal knowledge index. Returns evidence and provenance, never generated advice.',
+    description: 'Search the closed, versioned Drupal knowledge index. Returns evidence and provenance, never generated advice. Ordering is deterministic within a single index build. Semantic hits carry chunk-level citation URIs (chunkResourceUri). Use include_snippets, snippet_max_chars, and limit to bound response size.',
     inputSchema: z.object({
       query: z.string().min(1),
       drupal_version: DrupalVersionSchema.default('11.4'),
@@ -75,6 +104,7 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
       entity_kinds: z.array(NodeTypeSchema).optional(),
       limit: z.number().int().min(1).max(25).default(8),
       include_snippets: z.boolean().default(true),
+      snippet_max_chars: z.number().int().min(40).max(2000).optional(),
     }),
     outputSchema: SearchOutputSchema,
     annotations: READ_ONLY_ANNOTATIONS,
@@ -88,13 +118,14 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
       entityKinds: input.entity_kinds as NodeType[] | undefined,
       limit: input.limit,
       includeSnippets: input.include_snippets,
+      snippetMaxChars: input.snippet_max_chars,
     });
-    return toolResult(response as unknown as Record<string, unknown>, response.results.map(result => result.resourceUri));
+    return toolResult(response as unknown as Record<string, unknown>, response.results.map(result => result.chunkResourceUri ?? result.resourceUri));
   });
 
   server.registerTool('get_drupal_entity', {
     title: 'Get Drupal entity',
-    description: 'Resolve one indexed Drupal entity by opaque ID or exact identifier with explicit disambiguation.',
+    description: 'Resolve one indexed Drupal entity by opaque ID or exact identifier with explicit disambiguation. Candidate ordering is deterministic within a single index build.',
     inputSchema: z.object({
       entity_id: z.string().startsWith('ent_').optional(),
       identifier: z.string().min(1).optional(),
@@ -118,6 +149,55 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
     });
     const uris = [response.entity, ...(response.candidates ?? [])].filter(Boolean).map(entity => entity!.resourceUri);
     return toolResult(response as unknown as Record<string, unknown>, uris);
+  });
+
+  server.registerTool('get_drupal_entities', {
+    title: 'Get Drupal entities in batch',
+    description: 'Resolve up to 25 indexed Drupal entities by opaque ID in one call. Unknown IDs are reported per item as not_found instead of failing the batch. Relations are omitted unless requested.',
+    inputSchema: z.object({
+      entity_ids: z.array(z.string().startsWith('ent_')).min(1).max(25),
+      drupal_version: DrupalVersionSchema.default('11.4'),
+      include_relations: z.boolean().default(false),
+      relation_limit: z.number().int().min(1).max(100).default(25),
+    }),
+    outputSchema: EntitiesOutputSchema,
+    annotations: READ_ONLY_ANNOTATIONS,
+  }, async input => {
+    const response = await provider.getEntities({
+      entityIds: input.entity_ids,
+      drupalVersion: input.drupal_version,
+      includeRelations: input.include_relations,
+      relationLimit: input.relation_limit,
+    });
+    const uris = response.results.filter(item => item.entity).map(item => item.entity!.resourceUri);
+    return toolResult(response as unknown as Record<string, unknown>, uris);
+  });
+
+  server.registerTool('get_drupal_document', {
+    title: 'Get Drupal source document',
+    description: 'Return the exact indexed text of one source document, or of a single chunk when chunk_id is given. Use this to verify a citation against source content without re-searching.',
+    inputSchema: z.object({
+      document_id: z.string().startsWith('doc_'),
+      chunk_id: z.string().startsWith('chk_').optional(),
+    }),
+    outputSchema: DocumentOutputSchema,
+    annotations: READ_ONLY_ANNOTATIONS,
+  }, async input => {
+    const uri = input.chunk_id ? `drupal://document/${input.document_id}#chunk/${input.chunk_id}` : `drupal://document/${input.document_id}`;
+    const resource = await provider.readResource(uri);
+    if (!resource) return toolResult({ status: 'not_found' }, []);
+    return toolResult({ status: 'found', uri: resource.uri, mimeType: resource.mimeType, text: resource.text }, [resource.uri]);
+  });
+
+  server.registerTool('get_index_status', {
+    title: 'Get Drupal knowledge index status',
+    description: 'Report the active verified index build: readiness, build date, versions, counts, and verification. Use this to decide whether to trust evidence freshness.',
+    inputSchema: z.object({}),
+    outputSchema: IndexStatusOutputSchema,
+    annotations: READ_ONLY_ANNOTATIONS,
+  }, async () => {
+    const status = await provider.getIndexStatus();
+    return toolResult(status as unknown as Record<string, unknown>, ['drupal://index/status']);
   });
 
   server.registerTool('explore_drupal_relationships', {

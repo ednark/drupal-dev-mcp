@@ -5,7 +5,7 @@ Read-only Drupal development knowledge for MCP clients, with reasoning kept outs
 Version 0.2 is a clean-break redesign with three private npm workspaces:
 
 - `@drupal-dev-mcp/knowledge` builds and queries a versioned SQLite, FTS5, semantic-graph, and optional LanceDB index.
-- `@drupal-dev-mcp/server` exposes three deterministic MCP tools and three resource surfaces over a `KnowledgeProvider`.
+- `@drupal-dev-mcp/server` exposes six deterministic MCP tools and three resource surfaces over a `KnowledgeProvider`.
 - `@drupal-dev-mcp/agent` contains optional OpenAI-backed answer and iterative-research workflows as a library and CLI.
 
 The server itself does not synthesize advice, run indexing, execute commands, fetch arbitrary URLs, or mutate the workspace.
@@ -33,11 +33,14 @@ npm run index:rebuild -- --with-embeddings
 
 ## MCP surface
 
-The stdio server exposes exactly three read-only, non-destructive, idempotent, closed-world tools:
+The stdio server exposes exactly six read-only, non-destructive, idempotent, closed-world tools:
 
-- `search_drupal` — searches evidence using version, mode, project, source type, entity kind, and limit filters.
+- `search_drupal` — searches evidence using version, mode, project, source type, entity kind, limit, and snippet-budget filters. Ordering is deterministic within an index build; semantic hits carry chunk-level citation URIs.
 - `get_drupal_entity` — resolves an opaque `ent_…` ID or exact identifier and returns disambiguation, metadata, deprecations, evidence, and relationships.
+- `get_drupal_entities` — resolves up to 25 opaque `ent_…` IDs in one call; unknown IDs are reported per item instead of failing the batch.
 - `explore_drupal_relationships` — traverses evidence-backed graph edges with predicate, direction, depth, confidence, and node limits.
+- `get_drupal_document` — returns the exact indexed text of a document or a single chunk, for verifying citations against source without re-searching.
+- `get_index_status` — reports the active verified build: readiness, build date, versions, counts, and verification.
 
 Every successful result includes a stable resource URI, version compatibility, provenance, authority, and freshness. Graph traversal defaults to confidence `>= 0.7`.
 
@@ -47,7 +50,10 @@ Resources:
 drupal://index/status
 drupal://entity/{id}
 drupal://document/{id}
+drupal://document/{id}#chunk/{chunkId}
 ```
+
+Running your own agent loop around this server? See [docs/integration-agent-loops.md](docs/integration-agent-loops.md) for the canonical client config, annotation-based policy mapping, recommended call patterns, and token-budgeting knobs.
 
 Example MCP client entry after `npm run build`:
 
