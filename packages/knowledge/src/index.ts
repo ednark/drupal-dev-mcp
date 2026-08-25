@@ -1,0 +1,11 @@
+export * from './types.js';
+export * from './ids.js';
+export * from './version.js';
+export * from './registry.js';
+export { SqliteKnowledgeProvider, type ProviderOptions } from './query/provider.js';
+export { resolveActiveBuild, getDefaultIndexRoot } from './index/manifest.js';
+export { buildIndex } from './index/builder.js';
+export { verifyBuild, verifyActiveIndex } from './index/verify.js';
+export { runBenchmark, BENCHMARK_CASES } from './index/benchmark.js';
+export { extractPhpGraph } from './graph/php.js';
+export { extractYamlGraph } from './graph/yaml.js';

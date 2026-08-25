@@ -4,6 +4,7 @@ node_modules/
 # ─── Build output ────────────────────────────────────────────────────────────
 dist/
 build/
+*.tsbuildinfo
 
 # ─── Compiled TypeScript output ──────────────────────────────────────────────
 # These are emitted by tsc from the src/, etl/, scripts/, and tests/ trees.
@@ -37,6 +38,10 @@ data/sources/**
 # Runtime cache files
 data/cache/**
 !data/cache/.gitkeep
+
+# Versioned knowledge-index builds and atomic activation manifest.
+data/index/**
+!data/index/.gitkeep
 
 # ─── Database files ──────────────────────────────────────────────────────────
 *.sqlite

@@ -1,0 +1,23 @@
+{
+  "name": "@drupal-dev-mcp/agent",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "exports": "./dist/index.js",
+  "bin": {
+    "drupal-agent": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "ask": "tsx src/cli.ts ask",
+    "research": "tsx src/cli.ts research"
+  },
+  "dependencies": {
+    "@drupal-dev-mcp/knowledge": "0.2.0",
+    "commander": "^12.1.0",
+    "dotenv": "^16.4.7",
+    "openai": "^4.77.0"
+  }
+}
