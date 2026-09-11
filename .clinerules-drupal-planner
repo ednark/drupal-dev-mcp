@@ -6,11 +6,14 @@
 - Keep responses scoped to Drupal 11 unless the request specifies another version.
 
 ## Mandatory Research Workflow
-1. Run [`search_drupal_docs()`](src/tools/search-drupal-docs.ts:44) to gather primary references.
-2. Consult [`drupal_skill_guide()`](src/tools/drupal-skill-guide.ts:29) for best-practice guardrails.
-3. Escalate to [`deep_research_drupal()`](src/tools/deep-research-drupal.ts:57) when tasks cross subsystems or need corroborating datasets.
-4. Use [`ask_drupal_expert()`](src/tools/ask-drupal-expert.ts:181) last to synthesize or explain, citing all prior evidence.
-5. If a required tool fails or lacks coverage, document the gap, retry strategy, and contingency before proceeding.
+The 0.2 server exposes six read-only retrieval MCP tools plus one opt-in synthesis tool (`ask_a_drupal_expert`, which requires an LLM API key and returns cited, trade-off-aware answers for "where should this live / when to use X" questions). Deep iterative research also remains available in the separate agent package (`npm run agent:ask` / `npm run agent:research`).
+
+1. Run `get_index_status()` to confirm the active index build is verified and fresh enough to trust.
+2. Run `search_drupal()` to gather primary references. Use several short keyword or identifier queries ("hook_entity_presave", "EntityTypeManagerInterface", "cache tags render array") rather than one natural-language sentence; narrow with `source_types` (e.g. `["core_code"]` for normative APIs, `["change_record"]` for why an API changed, `["guidance"]` for change-placement conventions) and `projects` filters when results are too broad.
+3. Resolve specific APIs with `get_drupal_entity()` and traverse their genealogy with `explore_drupal_relationships()` — what implements a hook (`implements_hook`), what a service `injects`, what `deprecated_by` an API, which change record `changed_by` it.
+4. Verify every claim you will rely on with `get_drupal_document()` against the exact indexed chunk text (pass `chunk_id` for chunk-level citations) before citing it.
+5. For placement decisions ("which layer hosts this change", "custom theme vs sub-theme vs module"), either search the curated placement corpus yourself (`source_types: ["guidance"]`) or delegate once to `ask_a_drupal_expert()` and verify its citations with step 4.
+6. If a required tool fails or lacks coverage, document the gap, retry strategy, and contingency before proceeding.
 
 ## Planning Deliverable Requirements
 - **Evidence Digest**: Summarize findings with explicit citations back to each MCP tool invocation.

@@ -10,7 +10,12 @@ export type SourceType =
   | 'php'
   | 'symfony'
   | 'tutorial'
-  | 'training';
+  | 'training'
+  | 'user_guide'
+  | 'tooling'
+  | 'standards'
+  | 'methodology'
+  | 'guidance';
 
 export interface SourceDefinition {
   key: string;
@@ -42,6 +47,18 @@ export const SOURCE_REGISTRY: readonly SourceDefinition[] = [
   { key: 'symfony_docs', displayName: 'Symfony documentation', type: 'symfony', authority: 75, defaultSearch: true, fetcher: 'symfony-git', parser: 'markdown', canonicalBaseUrl: 'https://symfony.com/doc/current', versionPolicy: 'upstream', lexical: true, vector: true, graph: false },
   { key: 'php_docs', displayName: 'PHP manual', type: 'php', authority: 75, defaultSearch: true, fetcher: 'php-manual', parser: 'html', canonicalBaseUrl: 'https://www.php.net/manual/en', versionPolicy: 'upstream', lexical: true, vector: true, graph: false },
   { key: 'certification', displayName: 'Certification material', type: 'training', authority: 55, defaultSearch: false, fetcher: 'certification', parser: 'markdown', canonicalBaseUrl: 'https://www.acquia.com/support/training-certification', versionPolicy: 'agnostic', lexical: true, vector: true, graph: false },
+  { key: 'drupal_user_guide', displayName: 'Drupal user guide', type: 'user_guide', authority: 95, defaultSearch: true, fetcher: 'supplemental-docs', parser: 'markdown', canonicalBaseUrl: 'https://www.drupal.org/docs/user_guide/en', versionPolicy: 'agnostic', lexical: true, vector: true, graph: false },
+  { key: 'drush_docs', displayName: 'Drush documentation', type: 'tooling', authority: 88, defaultSearch: true, fetcher: 'supplemental-docs', parser: 'markdown', canonicalBaseUrl: 'https://www.drush.org/13.x', versionPolicy: 'upstream', lexical: true, vector: true, graph: false },
+  { key: 'twig_docs', displayName: 'Twig documentation', type: 'tooling', authority: 88, defaultSearch: true, fetcher: 'supplemental-docs', parser: 'markdown', canonicalBaseUrl: 'https://twig.symfony.com/doc/3.x', versionPolicy: 'upstream', lexical: true, vector: true, graph: false },
+  { key: 'drupal_coding_standards', displayName: 'Drupal coding standards', type: 'standards', authority: 95, defaultSearch: true, fetcher: 'supplemental-docs', parser: 'markdown', canonicalBaseUrl: 'https://www.drupal.org/docs/develop/coding-standards', versionPolicy: 'agnostic', lexical: true, vector: true, graph: false },
+  { key: 'php_fig', displayName: 'PHP-FIG PSR standards', type: 'standards', authority: 90, defaultSearch: true, fetcher: 'supplemental-docs', parser: 'markdown', canonicalBaseUrl: 'https://www.php-fig.org/psr', versionPolicy: 'agnostic', lexical: true, vector: true, graph: false },
+  { key: 'twelve_factor', displayName: 'Twelve-Factor App methodology', type: 'methodology', authority: 80, defaultSearch: true, fetcher: 'supplemental-docs', parser: 'markdown', canonicalBaseUrl: 'https://12factor.net', versionPolicy: 'agnostic', lexical: true, vector: true, graph: false },
+  { key: 'fowler', displayName: 'Martin Fowler articles and patterns', type: 'methodology', authority: 85, defaultSearch: true, fetcher: 'fowler', parser: 'markdown', canonicalBaseUrl: 'https://martinfowler.com', versionPolicy: 'agnostic', lexical: true, vector: true, graph: false },
+  { key: 'ms_cloud_patterns', displayName: 'Cloud design patterns', type: 'methodology', authority: 85, defaultSearch: true, fetcher: 'supplemental-docs', parser: 'markdown', canonicalBaseUrl: 'https://learn.microsoft.com/en-us/azure/architecture/patterns', versionPolicy: 'agnostic', lexical: true, vector: true, graph: false },
+  { key: 'eip_patterns', displayName: 'Enterprise integration patterns', type: 'methodology', authority: 85, defaultSearch: true, fetcher: 'supplemental-docs', parser: 'markdown', canonicalBaseUrl: 'https://www.enterpriseintegrationpatterns.com/patterns/messaging', versionPolicy: 'agnostic', lexical: true, vector: true, graph: false },
+  { key: 'gof_patterns', displayName: 'Design patterns (GoF catalog)', type: 'methodology', authority: 80, defaultSearch: true, fetcher: 'supplemental-docs', parser: 'markdown', canonicalBaseUrl: 'https://sourcemaking.com/design_patterns', versionPolicy: 'agnostic', lexical: true, vector: true, graph: false },
+  { key: 'drupal_theming_guide', displayName: 'Drupal theming guide', type: 'official_guide', authority: 95, defaultSearch: true, fetcher: 'theming-guide', parser: 'markdown', canonicalBaseUrl: 'https://www.drupal.org/docs/develop/theming-drupal', versionPolicy: 'agnostic', lexical: true, vector: true, graph: false },
+  { key: 'drupal_placement_guidance', displayName: 'Drupal change placement guidance (curated)', type: 'guidance', authority: 90, defaultSearch: true, fetcher: 'curated-local', parser: 'markdown', canonicalBaseUrl: 'https://www.drupal.org/docs', versionPolicy: 'agnostic', lexical: true, vector: true, graph: false },
 ] as const;
 
 export const SOURCE_BY_KEY = new Map(SOURCE_REGISTRY.map(source => [source.key, source]));

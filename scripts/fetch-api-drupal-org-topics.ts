@@ -1,10 +1,15 @@
 /**
  * Fetch api.drupal.org topic/group pages via Jina reader and save as Markdown.
  *
- * Jina (https://r.jina.ai/) renders JavaScript SPAs and returns clean markdown.
  * api.drupal.org is a React SPA — direct curl returns only a ~3 KB shell page.
+ * Jina (https://r.jina.ai/) renders the page and returns clean markdown.
  *
- * Files are saved to data/sources/api-drupal-org/ as {slug}.md.
+ * The topic list is discovered from the rendered groups index
+ * (https://api.drupal.org/api/drupal/groups/11.x) rather than hardcoded:
+ * a previous hardcoded URL list used incorrect file paths and silently
+ * fetched "path cannot be matched" error pages.
+ *
+ * Files are saved to data/sources/api-drupal-org/ as {group}.md.
  * Skips files that already exist and are larger than 1000 bytes.
  *
  * Usage:
@@ -15,6 +20,7 @@ import { writeFile, mkdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 
 const DEST_DIR = 'data/sources/api-drupal-org';
+const GROUPS_URL = 'https://api.drupal.org/api/drupal/groups/11.x';
 
 /** Snapshot header prepended to each saved file. */
 function snapshotHeader(url: string): string {
@@ -23,68 +29,6 @@ function snapshotHeader(url: string): string {
     + `<!-- source: ${url} -->\n\n`
   );
 }
-
-interface TopicPage {
-  /** Slug used as filename (without extension). */
-  slug: string;
-  /** Original api.drupal.org URL to fetch via Jina. */
-  url: string;
-}
-
-const TOPIC_PAGES: TopicPage[] = [
-  {
-    slug: 'groups',
-    url: 'https://api.drupal.org/api/drupal/groups/11.x',
-  },
-  {
-    slug: 'routing',
-    url: 'https://api.drupal.org/api/drupal/core!lib!Drupal!Core!Routing!routing.api.php/group/routing/11.x',
-  },
-  {
-    slug: 'entity_api',
-    url: 'https://api.drupal.org/api/drupal/core!lib!Drupal!Core!Entity!entity.api.php/group/entity_api/11.x',
-  },
-  {
-    slug: 'plugin_api',
-    url: 'https://api.drupal.org/api/drupal/core!lib!Drupal!Core!Plugin!plugin.api.php/group/plugin_api/11.x',
-  },
-  {
-    slug: 'cache',
-    url: 'https://api.drupal.org/api/drupal/core!lib!Drupal!Core!Cache!cache.api.php/group/cache/11.x',
-  },
-  {
-    slug: 'form_api',
-    url: 'https://api.drupal.org/api/drupal/core!lib!Drupal!Core!Form!form.api.php/group/form_api/11.x',
-  },
-  {
-    slug: 'hooks',
-    url: 'https://api.drupal.org/api/drupal/core!lib!Drupal!Core!Hook!hook.api.php/group/hooks/11.x',
-  },
-  {
-    slug: 'themeable',
-    url: 'https://api.drupal.org/api/drupal/core!lib!Drupal!Core!Render!theme.api.php/group/themeable/11.x',
-  },
-  {
-    slug: 'database',
-    url: 'https://api.drupal.org/api/drupal/core!lib!Drupal!Core!Database!database.api.php/group/database/11.x',
-  },
-  {
-    slug: 'module_api',
-    url: 'https://api.drupal.org/api/drupal/core!lib!Drupal!Core!Extension!module.api.php/group/module_api/11.x',
-  },
-  {
-    slug: 'queue',
-    url: 'https://api.drupal.org/api/drupal/core!lib!Drupal!Core!Queue!queue.api.php/group/queue/11.x',
-  },
-  {
-    slug: 'mail_api',
-    url: 'https://api.drupal.org/api/drupal/core!lib!Drupal!Core!Mail!mail.api.php/group/mail_api/11.x',
-  },
-  {
-    slug: 'render_api',
-    url: 'https://api.drupal.org/api/drupal/core!lib!Drupal!Core!Render!render.api.php/group/render_api/11.x',
-  },
-];
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -124,53 +68,61 @@ async function fetchViaJina(url: string): Promise<string | null> {
   }
 }
 
+/** Extracts topic URLs from the rendered groups index markdown. */
+function topicUrlsFromGroupsIndex(markdown: string): Array<{ slug: string; url: string }> {
+  const urls = [...new Set(markdown.match(/https:\/\/api\.drupal\.org\/api\/drupal\/[^)\s]*\/group\/[^)\s]*/g) ?? [])];
+  return urls.map(url => {
+    const group = url.match(/\/group\/([^/\s]+)\//)?.[1] ?? url.slice(-40);
+    return { slug: group, url };
+  });
+}
+
 async function main(): Promise<void> {
-  // Ensure destination directory exists
   await mkdir(DEST_DIR, { recursive: true });
 
-  console.log('=== Fetching api.drupal.org topic pages via Jina ===');
-  console.log(`Destination : ${DEST_DIR}`);
-  console.log(`Topics      : ${TOPIC_PAGES.length}\n`);
+  console.log('=== Fetching api.drupal.org groups index via Jina ===');
+  const groupsMarkdown = await fetchViaJina(GROUPS_URL);
+  if (!groupsMarkdown) {
+    console.error('Failed to fetch groups index; aborting.');
+    process.exitCode = 1;
+    return;
+  }
+  const topics = topicUrlsFromGroupsIndex(groupsMarkdown);
+  console.log(`Discovered ${topics.length} topics from ${GROUPS_URL}\n`);
+
+  // Always refresh the groups index artifact itself.
+  const groupsPath = path.join(DEST_DIR, 'groups.md');
+  await writeFile(groupsPath, snapshotHeader(GROUPS_URL) + groupsMarkdown, 'utf-8');
+  console.log(`✓  groups.md saved (${(await stat(groupsPath)).size} bytes)`);
 
   let fetched = 0;
   let skipped = 0;
   let failed = 0;
 
-  for (const topic of TOPIC_PAGES) {
-    const destFile = path.join(DEST_DIR, `${topic.slug}.md`);
-
-    // Skip if already exists and large enough
-    if (await fileExistsAndLarge(destFile, 1000)) {
-      console.log(`  ↷  ${topic.slug}.md already exists — skipping`);
-      skipped++;
+  for (const topic of topics) {
+    const filePath = path.join(DEST_DIR, `${topic.slug}.md`);
+    process.stdout.write(`  ↓  ${topic.slug} ... `);
+    if (await fileExistsAndLarge(filePath)) {
+      console.log('✓ (cached)');
+      skipped += 1;
       continue;
     }
-
-    console.log(`  ↓  Fetching ${topic.slug} from ${topic.url} ...`);
-    const content = await fetchViaJina(topic.url);
-
-    if (!content || content.trim().length < 100) {
-      console.warn(`  ⚠  ${topic.slug}: content too short or empty — skipping`);
-      failed++;
+    const markdown = await fetchViaJina(topic.url);
+    if (!markdown || markdown.includes('cannot be matched against any page')) {
+      console.log('✗ (no content)');
+      failed += 1;
+      continue;
     }
-    else {
-      const fileContent = snapshotHeader(topic.url) + content;
-      await writeFile(destFile, fileContent, 'utf8');
-      console.log(`  ✓  ${topic.slug}.md saved (${fileContent.length} bytes)`);
-      fetched++;
-    }
-
-    // Polite delay between requests
-    await sleep(1_500);
+    await writeFile(filePath, snapshotHeader(topic.url) + markdown, 'utf-8');
+    console.log(`✓ saved (${markdown.length} bytes)`);
+    fetched += 1;
+    await sleep(1500);
   }
 
-  console.log('\n=== Fetch complete ===');
+  console.log(`\n=== Fetch complete ===`);
   console.log(`  Fetched : ${fetched}`);
   console.log(`  Skipped : ${skipped} (already existed)`);
   console.log(`  Failed  : ${failed}`);
 }
 
-main().catch((err) => {
-  console.error('Fatal:', err);
-  process.exit(1);
-});
+void main();

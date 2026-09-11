@@ -51,6 +51,8 @@ export interface IndexStatus {
   counts: Record<string, number>;
   embeddingModel?: string;
   buildPath?: string;
+  /** Set when the build indexed only a per-directory file subset (dev/test builds). */
+  fixtureLimit?: number;
   verification?: { passed: boolean; errors: string[]; warnings: string[] };
 }
 
@@ -64,6 +66,7 @@ export interface SearchRequest {
   limit?: number;
   includeSnippets?: boolean;
   snippetMaxChars?: number;
+  minScore?: number;
 }
 
 export interface SearchResult {

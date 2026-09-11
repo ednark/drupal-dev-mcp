@@ -9,6 +9,15 @@ const CODE_EXTENSIONS = new Set(['.php', '.module', '.install', '.theme', '.yml'
 const TEXT_EXTENSIONS = new Set(['.md', '.txt', '.rst', '.html', '.htm', '.json']);
 const SKIP_DIRECTORIES = new Set(['.git', 'node_modules', 'vendor', 'tests', 'test', 'fixtures', 'css', 'js', 'images']);
 
+/** File-eligibility limits mirrored from documentsFromDirectory. */
+export const SOURCE_FILE_LIMITS = { minContentChars: 40, maxFileBytes: 500_000 } as const;
+
+/**
+ * Shared file-selection rules for discovery and freshness checks.
+ * Additive exports only — documentsFromDirectory behavior is unchanged.
+ */
+export const SOURCE_FILE_SELECTION = { codeExtensions: CODE_EXTENSIONS, textExtensions: TEXT_EXTENSIONS, skipDirectories: SKIP_DIRECTORIES } as const;
+
 async function walk(directory: string, limit = Number.POSITIVE_INFINITY): Promise<string[]> {
   const files: string[] = [];
   async function visit(current: string): Promise<void> {
@@ -37,13 +46,44 @@ async function gitCommit(directory: string): Promise<string | undefined> {
   } catch { return undefined; }
 }
 
+/** Exported for freshness checks: same commit resolution the build records. */
+export const readGitCommit = gitCommit;
+
+/** Exported for freshness checks: same traversal order discovery relies on. */
+export const walkFiles = (directory: string): Promise<string[]> => walk(directory);
+
 function titleFromContent(file: string, content: string): string {
   const heading = content.match(/^#\s+(.+)$/m)?.[1] ?? content.match(/^Title:\s*(.+)$/m)?.[1];
-  return heading?.trim() || path.basename(file);
+  // Rendered docs sometimes embed anchor links in headings (e.g. "config:import[¶](https://...)").
+  return heading?.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1').trim() || path.basename(file);
 }
 
 function urlFromContent(content: string): string | undefined {
   return content.match(/^(?:URL Source|Source|Project page):\s*(https?:\/\/\S+)/m)?.[1];
+}
+
+/**
+ * Content-quality gate applied before a document is admitted to the index.
+ * Corpus audit (docs/score-calibration.md history, 2026-08-25) found fetchers
+ * leaving behind three kinds of junk that search surfaced aggressively:
+ * content-free stubs, raw unextracted HTML pages, and placeholder READMEs.
+ */
+const STUB_MARKERS = [
+  'This chapter covers:',
+  'Place PDF, ePub, or Markdown files here for indexing',
+];
+
+export function isJunkContent(content: string): boolean {
+  const trimmed = content.trim();
+  // Raw HTML snapshot: fetcher saved the page without content extraction,
+  // either at the start of the file or shortly after a markdown preamble.
+  if (/^\s*<(?:!DOCTYPE|html)[\s>]/i.test(trimmed)) return true;
+  if (/\n```html\s*\n\s*<(?:!DOCTYPE|html)[\s>]/i.test(trimmed.slice(0, 500))) return true;
+  // Boilerplate-only stubs: tiny documents whose substance is template text.
+  // Note: short documents with real metadata (e.g. change records with title,
+  // version, date, and a drupal.org link) are legitimate and must survive this.
+  if (trimmed.length < 1_000 && STUB_MARKERS.some(marker => content.includes(marker))) return true;
+  return false;
 }
 
 async function documentsFromDirectory(options: {
@@ -68,6 +108,7 @@ async function documentsFromDirectory(options: {
     let content: string;
     try { content = await readFile(file, 'utf8'); } catch { continue; }
     if (content.trim().length < 40) continue;
+    if (isJunkContent(content)) continue;
     const relative = path.relative(options.directory, file).split(path.sep).join('/');
     const project = options.project ?? relative.split('/')[0];
     const locator = `${project}:${relative}`;
@@ -135,10 +176,31 @@ export async function discoverDocuments(repoRoot: string, fixtureLimit?: number)
     ['drupal-skills', 'drupal_skills'], ['tutorials', 'tutorials'], ['symfony-docs', 'symfony_docs'],
     ['php-manual', 'php_docs'], ['certification', 'certification'], ['contrib-modules', 'contrib_docs'],
     ['api-drupal-org', 'api_drupal_org'], ['change-records', 'change_records'],
+    ['drupal-user-guide', 'drupal_user_guide'], ['drush-docs', 'drush_docs'], ['twig-docs', 'twig_docs'],
+    ['drupal-coding-standards', 'drupal_coding_standards'], ['php-fig', 'php_fig'],
+    ['drupal-theming-guide', 'drupal_theming_guide'],
+    ['drupal-placement-guidance', 'drupal_placement_guidance'],
+    ['twelve-factor', 'twelve_factor'], ['fowler', 'fowler'],
+    ['ms-cloud-patterns', 'ms_cloud_patterns'], ['eip-patterns', 'eip_patterns'],
+    ['gof-patterns', 'gof_patterns'],
   ] as const;
   for (const [folder, sourceKey] of textSources) {
     const directory = path.join(sources, folder);
-    documents.push(...await documentsFromDirectory({ directory, sourceKey, drupalVersion: 'all', includeCode: false, limit: fixtureLimit }));
+    // Git-backed text sources (skills, symfony docs) record their commit for
+    // snapshot provenance; readGitCommit is a no-op read for plain directories.
+    documents.push(...await documentsFromDirectory({ directory, sourceKey, drupalVersion: 'all', commit: await gitCommit(directory), includeCode: false, limit: fixtureLimit }));
   }
-  return documents;
+
+  // Per-source dedupe by content hash: fetchers occasionally write the same
+  // content to multiple paths (different filenames, same payload), which would
+  // otherwise index duplicate documents that both match every query.
+  const seen = new Set<string>();
+  const deduped: NormalizedDocument[] = [];
+  for (const document of documents) {
+    const key = `${document.sourceKey}:${document.drupalVersion}:${document.contentHash}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(document);
+  }
+  return deduped;
 }

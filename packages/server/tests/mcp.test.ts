@@ -48,7 +48,7 @@ const provider: KnowledgeProvider = {
   },
 };
 
-test('MCP exposes exactly six closed-world read tools and three resource surfaces', async () => {
+test('MCP exposes exactly seven closed-world read tools and three resource surfaces', async () => {
   const server = createDrupalMcpServer(provider);
   const client = new Client({ name: 'test-client', version: '1.0.0' });
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
@@ -56,15 +56,18 @@ test('MCP exposes exactly six closed-world read tools and three resource surface
   try {
     const tools = await client.listTools();
     assert.deepEqual(tools.tools.map(tool => tool.name).sort(), [
-      'explore_drupal_relationships', 'get_drupal_document', 'get_drupal_entities', 'get_drupal_entity', 'get_index_status', 'search_drupal',
+      'ask_a_drupal_expert', 'explore_drupal_relationships', 'get_drupal_document', 'get_drupal_entities', 'get_drupal_entity', 'get_index_status', 'search_drupal',
     ]);
     for (const tool of tools.tools) {
       assert.equal(tool.annotations?.readOnlyHint, true);
       assert.equal(tool.annotations?.destructiveHint, false);
-      assert.equal(tool.annotations?.idempotentHint, true);
-      assert.equal(tool.annotations?.openWorldHint, false);
       assert.ok(tool.inputSchema);
       assert.ok(tool.outputSchema);
+    }
+    const retrievalTools = tools.tools.filter(tool => tool.name !== 'ask_a_drupal_expert');
+    for (const tool of retrievalTools) {
+      assert.equal(tool.annotations?.idempotentHint, true);
+      assert.equal(tool.annotations?.openWorldHint, false);
     }
     const resources = await client.listResources();
     assert.deepEqual(resources.resources.map(resource => resource.uri), ['drupal://index/status']);
@@ -94,6 +97,15 @@ test('MCP exposes exactly six closed-world read tools and three resource surface
 
     const resource = await client.readResource({ uri: 'drupal://index/status' });
     assert.equal(resource.contents[0].mimeType, 'application/json');
+
+    const priorKey = process.env.OPENAI_API_KEY;
+    delete process.env.OPENAI_API_KEY;
+    try {
+      const expert = await client.callTool({ name: 'ask_a_drupal_expert', arguments: { question: 'Where do style changes live?' } });
+      assert.equal((expert.structuredContent as { status: string }).status, 'unavailable');
+    } finally {
+      if (priorKey !== undefined) process.env.OPENAI_API_KEY = priorKey;
+    }
   } finally {
     await client.close();
     await server.close();

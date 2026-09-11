@@ -11,6 +11,8 @@ export interface ActiveManifest {
   availableDrupalVersions: string[];
   embeddingModel?: string;
   counts: Record<string, number>;
+  /** Per-directory file cap used at build time, if any (fixture builds). */
+  fixtureLimit?: number;
   verification: { passed: boolean; errors: string[]; warnings: string[] };
 }
 
@@ -65,6 +67,7 @@ export function statusFromManifest(manifest: ActiveManifest | null): IndexStatus
     counts: manifest.counts,
     embeddingModel: manifest.embeddingModel,
     buildPath: manifest.buildPath,
+    fixtureLimit: manifest.fixtureLimit,
     verification: manifest.verification,
   };
 }

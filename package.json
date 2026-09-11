@@ -18,6 +18,7 @@
     "index:verify": "npm run index:verify --workspace @drupal-dev-mcp/knowledge --",
     "index:rebuild": "npm run index:rebuild --workspace @drupal-dev-mcp/knowledge --",
     "index:status": "npm run index:status --workspace @drupal-dev-mcp/knowledge --",
+    "index:freshness": "npm run index:freshness --workspace @drupal-dev-mcp/knowledge --",
     "index:benchmark": "npm run index:benchmark --workspace @drupal-dev-mcp/knowledge --",
     "typecheck": "npm run typecheck -w @drupal-dev-mcp/knowledge && npm run build -w @drupal-dev-mcp/knowledge && npm run typecheck -w @drupal-dev-mcp/server && npm run typecheck -w @drupal-dev-mcp/agent",
     "test": "node --import tsx --test packages/*/tests/*.test.ts"

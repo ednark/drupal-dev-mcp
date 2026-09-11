@@ -26,8 +26,8 @@ export interface BuildResult extends ActiveManifest {
 }
 
 function splitDocument(document: NormalizedDocument): Array<{ id: string; ordinal: number; locator: string; text: string; hash: string; tokenCount: number }> {
-  const max = 4_000;
-  const overlap = 300;
+  const max = 2_000;
+  const overlap = 200;
   const chunks = [];
   let offset = 0;
   let ordinal = 0;
@@ -217,7 +217,7 @@ export async function buildIndex(options: BuildOptions): Promise<BuildResult> {
   if (!documents.some(document => document.drupalVersion === '10.6')) warnings.push('Drupal 10.6 source snapshot is absent');
   const verification = { passed: errors.length === 0, errors, warnings };
   const completedAt = new Date().toISOString();
-  db.prepare('UPDATE index_runs SET completed_at = ?, status = ?, metadata_json = ? WHERE id = ?').run(completedAt, verification.passed ? 'verified' : 'failed', JSON.stringify({ counts, parseSuccessRate }), runId);
+  db.prepare('UPDATE index_runs SET completed_at = ?, status = ?, metadata_json = ? WHERE id = ?').run(completedAt, verification.passed ? 'verified' : 'failed', JSON.stringify({ counts, parseSuccessRate, fixtureLimit: options.fixtureLimit ?? null }), runId);
   db.pragma('wal_checkpoint(TRUNCATE)');
   db.close();
 
@@ -230,6 +230,7 @@ export async function buildIndex(options: BuildOptions): Promise<BuildResult> {
     availableDrupalVersions: ['10.6', '11.4'],
     embeddingModel,
     counts,
+    fixtureLimit: options.fixtureLimit,
     verification,
     parseErrors,
   };

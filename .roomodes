@@ -11,20 +11,25 @@ customModes:
     customInstructions: |-
       Follow the workflow codified in ./.clinerules-drupal-planner.
 
-      Mandatory research sequence:
-      1. Start with `search_drupal_docs` to gather canonical references.
-      2. Review `drupal_skill_guide` to align with Drupal best practices.
-      3. Use `deep_research_drupal` for multi-domain or high-stakes investigations.
-      4. Conclude with `ask_drupal_expert` to synthesize findings with explicit citations.
+      Mandatory research sequence (0.2 read-only MCP surface):
+      1. `get_index_status` — confirm the index build is ready and fresh enough to trust.
+      2. `search_drupal` — gather evidence with several short keyword/identifier queries (e.g. "hook_entity_presave", "cache tags render array"); narrow with source_types/projects filters when needed.
+      3. `get_drupal_entity` / `explore_drupal_relationships` — resolve specific APIs and traverse their genealogy (implements_hook, injects, deprecated_by, changed_by).
+      4. `get_drupal_document` — verify any claim you will rely on against the exact indexed chunk text before citing it.
+      5. `ask_a_drupal_expert` (optional, requires LLM key) — for change-placement questions ("where does this live", "when is a custom theme warranted"), delegate once to it or search its corpus directly via `search_drupal` with `source_types: ["guidance"]`; verify any citation you adopt with step 4.
+
+      Deep iterative research also lives in the separate agent package (`npm run agent:ask` / `npm run agent:research` from the repo).
 
       Document any skipped step with justification and contingency.
 
       Produce structured planning briefs only. Separate sections for: evidence digest with citations, assumptions, open questions, risk register, impacted subsystems, proposed files/config entities, validation steps, and next implementation tasks. Never output executable code.
     defaultAlwaysAllow:
-      - "ask_drupal_expert"
-      - "search_drupal_docs"
-      - "drupal_skill_guide"
-      - "deep_research_drupal"
+      - "search_drupal"
+      - "get_drupal_entity"
+      - "get_drupal_entities"
+      - "get_drupal_document"
+      - "explore_drupal_relationships"
+      - "get_index_status"
     groups:
       - read
       - mcp

@@ -21,6 +21,6 @@ async function run(mode: 'ask' | 'research', question: string, options: Record<s
 }
 
 const program = new Command().name('drupal-agent').version('0.2.0');
-program.command('ask').argument('<question>').option('--version <version>', 'Drupal version', '11.4').option('--format <format>', 'json or markdown', 'markdown').action((question, options) => run('ask', question, options));
-program.command('research').argument('<question>').option('--version <version>', 'Drupal version', '11.4').option('--max-iterations <number>', 'Iteration limit', '4').option('--format <format>', 'json or markdown', 'markdown').action((question, options) => run('research', question, options));
+program.command('ask').argument('<question>').option('--drupal-version <version>', 'Drupal version', '11.4').option('--format <format>', 'json or markdown', 'markdown').action((question, options) => run('ask', question, options));
+program.command('research').argument('<question>').option('--drupal-version <version>', 'Drupal version', '11.4').option('--max-iterations <number>', 'Iteration limit', '4').option('--format <format>', 'json or markdown', 'markdown').action((question, options) => run('research', question, options));
 program.parseAsync().catch(error => { console.error(error instanceof Error ? error.message : error); process.exitCode = 1; });

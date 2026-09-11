@@ -5,10 +5,10 @@ Read-only Drupal development knowledge for MCP clients, with reasoning kept outs
 Version 0.2 is a clean-break redesign with three private npm workspaces:
 
 - `@drupal-dev-mcp/knowledge` builds and queries a versioned SQLite, FTS5, semantic-graph, and optional LanceDB index.
-- `@drupal-dev-mcp/server` exposes six deterministic MCP tools and three resource surfaces over a `KnowledgeProvider`.
-- `@drupal-dev-mcp/agent` contains optional OpenAI-backed answer and iterative-research workflows as a library and CLI.
+- `@drupal-dev-mcp/server` exposes seven deterministic MCP tools (six retrieval tools plus one opt-in synthesis tool) and three resource surfaces over a `KnowledgeProvider`.
+- `@drupal-dev-mcp/agent` contains optional OpenAI-backed answer and iterative-research workflows as a library, CLI, and the engine behind the server's `ask_a_drupal_expert` tool.
 
-The server itself does not synthesize advice, run indexing, execute commands, fetch arbitrary URLs, or mutate the workspace.
+The retrieval tools do not synthesize advice; `ask_a_drupal_expert` is the single explicit exception, gated on its own API key. The server never runs indexing, executes commands, fetches arbitrary URLs, or mutates the workspace.
 
 ## Quick start
 
@@ -33,14 +33,15 @@ npm run index:rebuild -- --with-embeddings
 
 ## MCP surface
 
-The stdio server exposes exactly six read-only, non-destructive, idempotent, closed-world tools:
+The stdio server exposes six read-only, non-destructive, idempotent, closed-world retrieval tools plus one opt-in synthesis tool:
 
-- `search_drupal` — searches evidence using version, mode, project, source type, entity kind, limit, and snippet-budget filters. Ordering is deterministic within an index build; semantic hits carry chunk-level citation URIs.
+- `search_drupal` — searches evidence using version, mode, project, source type, entity kind, limit, snippet-budget, and relevance-floor (`min_score`) filters. Short keyword/identifier queries score best; semantic hits carry chunk-level citation URIs. Ordering is deterministic within an index build. `source_types: ["guidance"]` narrows to the curated change-placement corpus (where a change should live).
 - `get_drupal_entity` — resolves an opaque `ent_…` ID or exact identifier and returns disambiguation, metadata, deprecations, evidence, and relationships.
 - `get_drupal_entities` — resolves up to 25 opaque `ent_…` IDs in one call; unknown IDs are reported per item instead of failing the batch.
 - `explore_drupal_relationships` — traverses evidence-backed graph edges with predicate, direction, depth, confidence, and node limits.
 - `get_drupal_document` — returns the exact indexed text of a document or a single chunk, for verifying citations against source without re-searching.
 - `get_index_status` — reports the active verified build: readiness, build date, versions, counts, and verification.
+- `ask_a_drupal_expert` *(opt-in synthesis)* — evidence-grounded answers to questions that need conclusions rather than retrieval ("where do style changes live?", "when is a custom theme warranted?", "how should I migrate this site?"). Runs in two modes: `depth: "ask"` (one evidence round) and `depth: "research"` (iterative multi-query rounds). Every claim is cited with `drupal://` URIs; questions it cannot ground return `insufficient_evidence` instead of guesses. Requires `OPENAI_API_KEY` in the MCP client's env for this server — without it the tool returns `status: "unavailable"` and all other tools keep working. This tool exists as the worked example of turning indexed sources into grounded decisions; the six retrieval tools remain pure-evidence.
 
 Every successful result includes a stable resource URI, version compatibility, provenance, authority, and freshness. Graph traversal defaults to confidence `>= 0.7`.
 
@@ -74,11 +75,12 @@ Example MCP client entry after `npm run build`:
 ## Maintainer commands
 
 ```bash
-npm run index:fetch       # update pinned Drupal 10.6.x and 11.4.x snapshots
+npm run index:fetch       # refresh all git-based sources (core snapshots, contrib code, examples, skills, symfony docs); -- --core-only for core snapshots alone
 npm run index:build       # build and atomically activate a verified index
 npm run index:verify      # verify active SQLite integrity and references
 npm run index:rebuild     # clean full-index build; no old-index migration
 npm run index:status      # report active run, counts, versions, and warnings
+npm run index:freshness   # compare data/sources against the active build; exit 1 when sources need re-processing
 npm run index:benchmark   # run the 20-question top-five evidence gate
 npm run typecheck
 npm test
@@ -88,20 +90,57 @@ Builds live under `data/index/builds/{run-id}`. A build becomes active only afte
 
 ## Optional agent
 
-The agent package receives evidence only through `KnowledgeProvider` and explicitly reports insufficient evidence. Tool calls, admitted evidence, iterations, budgets, and stop reasons are observable.
+The agent package receives evidence only through `KnowledgeProvider` and explicitly reports insufficient evidence. Synthesis prompts enforce strict grounding (evidence-only claims, chunk-level `drupal://` citations, source-authority weighting, version and deprecation awareness); the research loop tracks already-executed queries and generates short keyword-style follow-ups. Tool calls, admitted evidence, iterations, budgets, and stop reasons are observable.
 
 ```bash
-npm run agent:ask -- --version 11.4 "How does dependency injection work?"
-npm run agent:research -- --version 11.4 --max-iterations 4 "Compare event subscribers and hooks"
+npm run agent:ask -- --drupal-version 11.4 "How does dependency injection work?"
+npm run agent:research -- --drupal-version 11.4 --max-iterations 4 "Compare event subscribers and hooks"
 ```
 
 Set `OPENAI_API_KEY` and optionally `OPENAI_AGENT_MODEL` in `.env`. Agent citations retain both stable `drupal://` resource URIs and canonical source URLs.
+
+## LLM providers and model sizing
+
+The agent (and therefore `ask_a_drupal_expert`) speaks the OpenAI Chat Completions API, so it also works against any OpenAI-compatible local endpoint:
+
+```bash
+# .env — Ollama example
+OPENAI_BASE_URL=http://localhost:11434/v1
+OPENAI_API_KEY=ollama            # placeholder; the endpoint ignores it
+OPENAI_AGENT_MODEL=qwen3:32b     # any locally pulled model tag
+```
+
+The same two variables belong in your MCP client config (`env` block for this server) when using the expert tool, not just `.env`. Without a custom `OPENAI_BASE_URL`, a real OpenAI key is required.
+
+### Hard budgets in code
+
+These are fixed by the implementation (`packages/agent/src/openai-provider.ts`, `packages/agent/src/agent.ts`) and define what a model must cope with:
+
+| Budget | Value | Where |
+|---|---|---|
+| Output cap per synthesis call | 2,000 tokens (override with `AGENT_MAX_OUTPUT_TOKENS`) | answer + research report |
+| Research query-planner output | 400 tokens, strict JSON required | per planning round |
+| Evidence bundle, `depth: "ask"` | ≤ 8 hits × ≤ 800-char snippets ≈ **2–4k input tokens** total prompt | one search round |
+| Evidence bundle, `depth: "research"` | up to 24 admitted items ≈ **8–12k input tokens** final report prompt (budget adjustable 5–100) | accumulated rounds |
+
+### What that means for local models
+
+- **Context window**: 8k is enough to run `ask`; aim for ≥16k–32k for `research` so evidence plus a full report fit without truncation. Raise `AGENT_MAX_OUTPUT_TOKENS` only if your hardware gives the model headroom for it.
+- **Capability floor**: every synthesis call must emit grounded, URI-cited prose, and research mode additionally requires reliable strict-JSON emission from the planner. That instruction-following burden is why sub-7B models tend to produce mushy or uncited answers even when they "fit".
+  - Practical minimum: instruction-tuned ~8B class (e.g. `llama3.1:8b-instruct-q4_K_M`) — acceptable for `ask`.
+  - Recommended: 30B+ class (e.g. `qwen3:32b`) for `research` reports worth keeping.
+- **Graceful degradation is built in**: if a small model emits invalid planner JSON, the research loop simply stops after admitting what it found rather than crashing; an empty evidence set yields an explicit `insufficient_evidence` answer.
+- **Verify small-model output**: weaker models still cite plausible-looking URIs that may be wrong. The mechanical check exists for exactly this — pass their `drupal://` citations to `get_drupal_document` and confirm exact text before trusting them (see [docs/integration-agent-loops.md](docs/integration-agent-loops.md)).
+
+Caveat: only *generation* is provider-swappable today. Embeddings (hybrid semantic search and index builds with `--with-embeddings`) always use OpenAI embedding endpoints; fully local setups should expect lexical-only retrieval unless they have an embeddings key set.
 
 ## Architecture and migration
 
 See [docs/architecture-0.2.md](docs/architecture-0.2.md) for schemas, extraction confidence, retrieval stages, activation, and verification details.
 
 The 0.1 tools `ask_drupal_expert`, `search_drupal_docs`, `deep_research_drupal`, `drupal_skill_guide`, and `initialize_drupal_docs` were removed. Skill guides are normal searchable documents/resources; index creation is a maintainer CLI operation; synthesis and research moved to the agent package.
+
+As of 0.2.x, an `ask_a_drupal_expert` tool has been restored as a thin, opt-in MCP wrapper around the agent package, together with a curated change-placement guidance corpus (`data/sources/drupal-placement-guidance/`) and a crawled Drupal theming guide — so the classic "when do I use X and where does Y live" questions get grounded, citable answers instead of API-facts-only retrieval.
 
 ## License
 

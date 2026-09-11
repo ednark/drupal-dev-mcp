@@ -30,3 +30,42 @@ export async function fetchCoreSnapshots(repoRoot: string): Promise<void> {
     }
   }
 }
+
+/**
+ * Idempotent refresh scripts for the remaining git-based sources, relative
+ * to the repo root. Each script tolerates per-module failures internally and
+ * exits non-zero only when the script itself cannot run.
+ */
+export const GIT_SOURCE_SCRIPTS = [
+  'scripts/fetch-contrib-module-code.sh',
+  'scripts/fetch-drupal-examples.sh',
+  'scripts/fetch-drupal-skills.sh',
+  'scripts/fetch-symfony-docs.sh',
+] as const;
+
+export interface FetchSummary {
+  succeeded: string[];
+  failed: string[];
+}
+
+/**
+ * One-command refresh of every git-based source: core snapshots plus
+ * contrib code, examples, skills, and symfony docs. Web-fetched sources
+ * (guides, API docs, change records, …) keep their per-family scripts and
+ * are intentionally out of scope here.
+ */
+export async function fetchGitSources(repoRoot: string): Promise<FetchSummary> {
+  await fetchCoreSnapshots(repoRoot);
+  const succeeded = ['drupal-core'];
+  const failed: string[] = [];
+  for (const script of GIT_SOURCE_SCRIPTS) {
+    try {
+      await run('bash', [script], repoRoot);
+      succeeded.push(script);
+    } catch {
+      failed.push(script);
+    }
+  }
+  if (failed.length) throw new Error(`Git source refresh failed for: ${failed.join(', ')}`);
+  return { succeeded, failed };
+}

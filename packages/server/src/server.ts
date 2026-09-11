@@ -1,5 +1,6 @@
 import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
+import { DrupalAgent, OpenAiLlmProvider } from '@drupal-dev-mcp/agent';
 import type { KnowledgeProvider, NodeType, RelationPredicate } from '@drupal-dev-mcp/knowledge';
 
 const DrupalVersionSchema = z.enum(['10.6', '11.4', 'all']);
@@ -34,6 +35,7 @@ const EntityOutputSchema = z.object({
   candidates: z.array(z.record(z.string(), z.unknown())).optional(),
   incoming: z.array(z.record(z.string(), z.unknown())).optional(),
   outgoing: z.array(z.record(z.string(), z.unknown())).optional(),
+  evidence: z.array(z.record(z.string(), z.unknown())).optional(),
 });
 const EntitiesOutputSchema = z.object({
   results: z.array(z.object({
@@ -61,6 +63,7 @@ const IndexStatusOutputSchema = z.object({
   counts: z.record(z.string(), z.number()),
   embeddingModel: z.string().optional(),
   buildPath: z.string().optional(),
+  fixtureLimit: z.number().optional(),
   verification: z.object({ passed: z.boolean(), errors: z.array(z.string()), warnings: z.array(z.string()) }).optional(),
 });
 const RelationshipOutputSchema = z.object({
@@ -69,6 +72,18 @@ const RelationshipOutputSchema = z.object({
   edges: z.array(z.record(z.string(), z.unknown())),
   truncated: z.boolean(),
 });
+const ExpertOutputSchema = z.object({
+  status: z.enum(['answered', 'insufficient_evidence', 'unavailable', 'error']),
+  question: z.string().optional(),
+  drupalVersion: z.string().optional(),
+  answer: z.string().optional(),
+  stopReason: z.string().optional(),
+  iterations: z.number().optional(),
+  insufficientEvidence: z.boolean().optional(),
+  citations: z.array(z.object({ resourceUri: z.string(), canonicalUrl: z.string().optional(), title: z.string() })).optional(),
+  evidence: z.array(z.record(z.string(), z.unknown())).optional(),
+  reason: z.string().optional(),
+}).passthrough();
 
 const READ_ONLY_ANNOTATIONS = {
   readOnlyHint: true,
@@ -94,7 +109,7 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
 
   server.registerTool('search_drupal', {
     title: 'Search Drupal evidence',
-    description: 'Search the closed, versioned Drupal knowledge index. Returns evidence and provenance, never generated advice. Ordering is deterministic within a single index build. Semantic hits carry chunk-level citation URIs (chunkResourceUri). Use include_snippets, snippet_max_chars, and limit to bound response size.',
+    description: 'Search the closed, versioned Drupal knowledge index (core code for 10.6/11.4, api.drupal.org topics, change records, official guides, user guide, coding standards, PSRs, 73 contrib modules, PHP/Twig/Symfony/Drush docs, and design-pattern/methodology sources). Returns evidence with provenance, never generated advice. Query style: use short keyword or identifier queries ("hook_entity_presave", "EntityTypeManagerInterface", "cache tags render array") — they score better than natural-language sentences; run several narrow queries rather than one broad one. Use projects/source_types/entity_kinds filters to narrow (e.g. source_types ["core_code"] for normative APIs, ["change_record"] for why an API changed between versions). Results below min_score are dropped as noise; set 0 to widen. Semantic hits carry chunk-level citation URIs (chunkResourceUri) — cite those when available. Prefer get_drupal_document to verify any claim you rely on.',
     inputSchema: z.object({
       query: z.string().min(1),
       drupal_version: DrupalVersionSchema.default('11.4'),
@@ -105,6 +120,7 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
       limit: z.number().int().min(1).max(25).default(8),
       include_snippets: z.boolean().default(true),
       snippet_max_chars: z.number().int().min(40).max(2000).optional(),
+      min_score: z.number().min(0).max(1).default(0.2),
     }),
     outputSchema: SearchOutputSchema,
     annotations: READ_ONLY_ANNOTATIONS,
@@ -119,6 +135,7 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
       limit: input.limit,
       includeSnippets: input.include_snippets,
       snippetMaxChars: input.snippet_max_chars,
+      minScore: input.min_score,
     });
     return toolResult(response as unknown as Record<string, unknown>, response.results.map(result => result.chunkResourceUri ?? result.resourceUri));
   });
@@ -202,7 +219,7 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
 
   server.registerTool('explore_drupal_relationships', {
     title: 'Explore Drupal relationships',
-    description: 'Traverse deterministic, evidence-backed Drupal relationships. Low-confidence edges are excluded by default.',
+    description: 'Traverse deterministic, evidence-backed Drupal relationships (extends, implements, injects, implements_hook, subscribes_to, decorates, changed_by, ...). Use for API genealogy: what implements a hook, what a service injects, what deprecated an API, which change record altered it. Start from an entity_id resolved via get_drupal_entity. Low-confidence edges are excluded by default; raise max_depth to 2-3 for focused subgraphs, and keep max_nodes modest to bound response size.',
     inputSchema: z.object({
       entity_id: z.string().startsWith('ent_'),
       predicates: z.array(RelationPredicateSchema).optional(),
@@ -229,6 +246,41 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
       ...response.nodes.map(node => node.resourceUri),
       ...response.edges.flatMap(edge => edge.evidenceDocumentId ? [`drupal://document/${edge.evidenceDocumentId}`] : []),
     ]);
+  });
+
+  server.registerTool('ask_a_drupal_expert', {
+    title: 'Ask a Drupal expert',
+    description: 'Synthesized answers to Drupal questions with mandatory citations to the knowledge index — the worked example of turning indexed evidence into a grounded conclusion. Unlike the retrieval tools (search_drupal etc.), this tool ASKS AN LLM TO REASON over gathered evidence and may state conventions, trade-offs, and recommendations ("where should this change live", "when is a custom theme warranted", "how do I migrate a site"). Placement/decision questions additionally pull the curated placement-guidance corpus. Modes: "ask" (single evidence round: Objective one-liner plus concise answer plus Version notes, fast) or "research" (iterative multi-query rounds yielding a design-doc-shaped report: Objective, Goals/non-goals, Findings with reversibility marks, Alternatives, Open issues with next steps, Version notes, Recommended steps, optional evidence-backed Mermaid). Requires OPENAI_API_KEY in the server environment; without it the tool reports status "unavailable" and every other tool keeps working. Answers can report insufficient_evidence instead of guessing; verify API details against cited drupal:// resources.',
+    inputSchema: z.object({
+      question: z.string().min(1).describe('A question needing synthesis, not just retrieval. Natural language is fine here — the tool converts it into index-friendly searches.'),
+      depth: z.enum(['ask', 'research']).default('ask'),
+      drupal_version: DrupalVersionSchema.default('11.4'),
+    }),
+    outputSchema: ExpertOutputSchema,
+    annotations: {
+      ...READ_ONLY_ANNOTATIONS,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
+  }, async input => {
+    if (!process.env.OPENAI_API_KEY) {
+      return toolResult({
+        status: 'unavailable',
+        reason: 'ask_a_drupal_expert requires OPENAI_API_KEY in the MCP server environment. All retrieval tools remain available without it.',
+      }, []);
+    }
+    try {
+      const agent = new DrupalAgent({ knowledge: provider, llm: new OpenAiLlmProvider() });
+      const response = input.depth === 'research'
+        ? await agent.research(input.question, { drupalVersion: input.drupal_version })
+        : await agent.ask(input.question, { drupalVersion: input.drupal_version });
+      return toolResult(response as unknown as Record<string, unknown>, response.citations.map(citation => citation.resourceUri));
+    } catch (error) {
+      return toolResult({
+        status: 'error',
+        reason: error instanceof Error ? error.message : String(error),
+      }, []);
+    }
   });
 
   server.registerResource('drupal-index-status', 'drupal://index/status', {

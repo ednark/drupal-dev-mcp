@@ -92,10 +92,18 @@ test('batch entity resolution, snippet budgeting, and stable ordering', async ()
       if (result.snippet !== undefined) assert.ok(result.snippet.length <= 60, `snippet exceeds budget: ${result.snippet}`);
     }
 
-    const first = await provider.search({ query: 'ExampleManager example', drupalVersion: 'all', mode: 'lexical', limit: 25 });
-    const second = await provider.search({ query: 'ExampleManager example', drupalVersion: 'all', mode: 'lexical', limit: 25 });
+    // The fixture corpus is degenerate for bm25 (every document matches every token),
+    // so ordering assertions run with the score floor disabled; the floor itself is
+    // tested relative to observed scores rather than absolute values.
+    const first = await provider.search({ query: 'ExampleManager example', drupalVersion: 'all', mode: 'lexical', limit: 25, minScore: 0 });
+    const second = await provider.search({ query: 'ExampleManager example', drupalVersion: 'all', mode: 'lexical', limit: 25, minScore: 0 });
     assert.ok(first.results.length > 1);
     assert.deepEqual(second.results.map(result => result.id), first.results.map(result => result.id));
+
+    const midScore = first.results[Math.floor(first.results.length / 2)].score;
+    const strict = await provider.search({ query: 'ExampleManager example', drupalVersion: 'all', mode: 'lexical', limit: 25, minScore: midScore });
+    assert.ok(strict.results.length > 0 && strict.results.length < first.results.length, 'score floor keeps some but not all results');
+    assert.ok(strict.results.every(result => result.score >= midScore));
   } finally { provider.close(); }
 });
 
@@ -106,7 +114,7 @@ test('semantic hits carry chunk-level citation URIs that resolve to exact chunk 
   assert.ok(build.counts.vectors > 0);
   const provider = await SqliteKnowledgeProvider.open(indexRoot, { queryEmbedder: async () => [3, 5] });
   try {
-    const search = await provider.search({ query: 'ExampleManager', drupalVersion: '11.4', mode: 'semantic', limit: 5 });
+      const search = await provider.search({ query: 'ExampleManager', drupalVersion: '11.4', mode: 'semantic', limit: 5, minScore: 0 });
     assert.equal(search.degradedMode, undefined);
     const chunkHit = search.results.find(result => result.chunkResourceUri);
     assert.ok(chunkHit, 'expected a semantic hit carrying a chunk-level URI');

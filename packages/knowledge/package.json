@@ -18,6 +18,7 @@
     "index:verify": "tsx src/cli.ts verify",
     "index:rebuild": "tsx src/cli.ts rebuild",
     "index:status": "tsx src/cli.ts status",
+    "index:freshness": "tsx src/cli.ts freshness",
     "index:benchmark": "tsx src/cli.ts benchmark"
   },
   "dependencies": {

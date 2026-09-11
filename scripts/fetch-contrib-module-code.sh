@@ -61,6 +61,35 @@ MODULES=(
   focal_point
   ai
   drupal_ai
+  # Tier 1 — near-universal in modern builds
+  search_api
+  search_api_db
+  facets
+  migrate_plus
+  migrate_tools
+  migrate_source_csv
+  inline_entity_form
+  entity_browser
+  entity_embed
+  address
+  smart_date
+  gin
+  honeypot
+  diff
+  select2
+  # Tier 2 — common, project-dependent
+  commerce
+  simple_oauth
+  openid_connect
+  views_data_export
+  csv_serialization
+  ultimate_cron
+  rabbit_hole
+  coffee
+  masquerade
+  layout_builder_styles
+  layout_builder_restrictions
+  layout_library
 )
 
 SUCCEEDED=0

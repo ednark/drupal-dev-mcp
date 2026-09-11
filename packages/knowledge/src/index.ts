@@ -6,6 +6,7 @@ export { SqliteKnowledgeProvider, type ProviderOptions } from './query/provider.
 export { resolveActiveBuild, getDefaultIndexRoot } from './index/manifest.js';
 export { buildIndex } from './index/builder.js';
 export { verifyBuild, verifyActiveIndex } from './index/verify.js';
+export { checkFreshness, SOURCE_LOCATIONS, type FreshnessReport, type SourceFreshness, type SourceFreshnessStatus } from './index/freshness.js';
 export { runBenchmark, BENCHMARK_CASES } from './index/benchmark.js';
 export { extractPhpGraph } from './graph/php.js';
 export { extractYamlGraph } from './graph/yaml.js';

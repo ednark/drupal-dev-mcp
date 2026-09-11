@@ -13,9 +13,104 @@ import { getDefaultIndexRoot, resolveActiveBuild, statusFromManifest, type Activ
 
 type Row = Record<string, any>;
 
+const DEFAULT_MIN_SCORE = 0.2;
+const MAX_QUERY_TOKENS = 16;
+
+function tokenize(query: string): string[] {
+  return (query.match(/[\p{L}\p{N}_\\:.]+/gu) ?? []).slice(0, MAX_QUERY_TOKENS);
+}
+
 function ftsQuery(query: string): string {
-  const tokens = query.match(/[\p{L}\p{N}_\\:.]+/gu) ?? [];
-  return tokens.map(token => `"${token.replace(/"/g, '""')}"`).join(' OR ');
+  return tokenize(query).map(token => `"${token.replace(/"/g, '""')}"`).join(' OR ');
+}
+
+function ftsTokenMatch(token: string): string {
+  return `"${token.replace(/"/g, '""')}"`;
+}
+
+/** Maps SQLite FTS5 bm25 output (negative, more negative = better) to (0, 1]. */
+function bm25Score(bm25: number): number {
+  return bm25 < 0 ? -bm25 / (1 - bm25) : 0;
+}
+
+/**
+ * Score calibration (see docs/score-calibration.md).
+ *
+ * Empirical cosine-distance anchors for text-embedding-3-small on this corpus,
+ * measured by sampling benchmark-style queries against the vector table:
+ * on-topic hits cluster at 0.64–0.95, while the best hit for a completely
+ * unrelated query lands at ~1.03–1.05. Anchors are chosen so that unrelated
+ * junk scores ~0 and strong on-topic hits ~1.
+ */
+const SEMANTIC_DISTANCE_EXCELLENT = 0.8;
+const SEMANTIC_DISTANCE_IRRELEVANT = 1.05;
+
+/** Maps a LanceDB cosine distance to [0, 1] relevance via affine rescaling between the anchors. */
+function distanceScore(distance: number): number {
+  if (distance <= SEMANTIC_DISTANCE_EXCELLENT) return 1;
+  if (distance >= SEMANTIC_DISTANCE_IRRELEVANT) return 0;
+  return (SEMANTIC_DISTANCE_IRRELEVANT - distance) / (SEMANTIC_DISTANCE_IRRELEVANT - SEMANTIC_DISTANCE_EXCELLENT);
+}
+
+/**
+ * Lexical evidence is squared so only near-certain term overlap retains a high score.
+ * Without this, short documents that contain most query tokens (e.g. link-listing
+ * pages) saturate bm25 and outrank semantically on-topic results in hybrid mode.
+ * Exact identifier lookups (~0.95 raw) keep ~0.90; partial-overlap pages (~0.75 raw)
+ * drop to ~0.56, below calibrated semantic hits for the same query.
+ */
+function lexicalScore(tokenCoverage: TokenCoverage | undefined, id: string, bm25: number): number {
+  const overlap = coverage(tokenCoverage, id) * bm25Score(bm25);
+  return overlap * overlap;
+}
+
+/**
+ * Aggregates per-chunk similarities into one document score: the best chunk dominates,
+ * with a saturating bonus for additional matching chunks (evidence the whole document
+ * is on-topic). The damp factor is tuned so the bonus is mostly exhausted by ~3 chunks —
+ * longer documents cannot out-score focused ones through sheer chunk count.
+ */
+const SEMANTIC_BONUS_DAMP = 0.25;
+
+function semanticDocumentScore(best: number, accumulated: number): number {
+  return best + SEMANTIC_BONUS_DAMP * Math.log(1 + Math.max(0, accumulated - best));
+}
+
+/** Per-token match sets with IDF weights so scores reflect how much *rare* query text each hit covers. */
+interface TokenCoverage { sets: Array<Set<string>>; weights: number[] }
+
+function tokenCoverageSets(db: Database.Database, table: 'document_fts' | 'entity_fts', tokens: string[]): TokenCoverage | undefined {
+  if (tokens.length < 2) return undefined;
+  const column = table === 'document_fts' ? 'document_id' : 'entity_id';
+  const total = Number((db.prepare(`SELECT count(*) AS count FROM ${table}`).get() as Row).count);
+  const sets = tokens
+    .map(token => new Set((db.prepare(`SELECT ${column} AS id FROM ${table} WHERE ${table} MATCH ?`).all(ftsTokenMatch(token)) as Row[]).map(row => String(row.id))))
+    .filter(set => set.size > 0);
+  if (sets.length < 2) return undefined;
+  const weights = sets.map(set => Math.log(1 + total / set.size));
+  return { sets, weights };
+}
+
+/**
+ * For multi-token queries, decides whether a table's OR-based lexical search is informative.
+ * Fewer than 2 matchable tokens means every hit matched via a single term; that is only
+ * worth returning when the term is rare (identifier-like) rather than corpus-ubiquitous.
+ */
+function informative(tokenCoverage: TokenCoverage | undefined): boolean {
+  if (!tokenCoverage) return false;
+  if (tokenCoverage.sets.length >= 2) return true;
+  return tokenCoverage.weights[0] >= 3;
+}
+
+function coverage(tokenCoverage: TokenCoverage | undefined, id: string): number {
+  if (!tokenCoverage) return 1;
+  let matched = 0;
+  let total = 0;
+  tokenCoverage.sets.forEach((set, index) => {
+    total += tokenCoverage.weights[index];
+    if (set.has(id)) matched += tokenCoverage.weights[index];
+  });
+  return total > 0 ? matched / total : 1;
 }
 
 function entityFromRow(row: Row, builtAt?: string): EntityRecord {
@@ -88,10 +183,12 @@ export class SqliteKnowledgeProvider implements KnowledgeProvider {
     const limit = Math.min(25, Math.max(1, request.limit ?? 8));
     const mode = request.mode ?? 'hybrid';
     const includeSnippets = request.includeSnippets ?? true;
-    const snippetMaxChars = request.snippetMaxChars === undefined ? 500 : Math.min(2000, Math.max(40, Math.floor(request.snippetMaxChars)));
+    const snippetMaxChars = request.snippetMaxChars === undefined ? 800 : Math.min(2000, Math.max(40, Math.floor(request.snippetMaxChars)));
+    const minScore = Math.min(1, Math.max(0, request.minScore ?? DEFAULT_MIN_SCORE));
     const clip = (text: string) => (text.length > snippetMaxChars ? text.slice(0, snippetMaxChars) : text);
     const match = ftsQuery(query);
-    if (!match) return { query, appliedFilters: { drupalVersion: version, mode }, index: await this.getIndexStatus(), results: [] };
+    if (!match) return { query, appliedFilters: { drupalVersion: version, mode, minScore }, index: await this.getIndexStatus(), results: [] };
+    const tokens = tokenize(query);
 
     const filters: string[] = [version === 'all' ? '1=1' : "(drupal_version = ? OR (drupal_version = 'all' AND drupal_compatible(compatibility, ?) = 1))"];
     const params: unknown[] = version === 'all' ? [] : [version, version];
@@ -105,15 +202,17 @@ export class SqliteKnowledgeProvider implements KnowledgeProvider {
     }
     const where = filters.join(' AND ');
     const lexicalResults: SearchResult[] = [];
-    if (mode !== 'semantic') {
+    const multiToken = tokens.length >= 2;
+    const docCoverage = mode !== 'semantic' ? tokenCoverageSets(this.db, 'document_fts', tokens) : undefined;
+    if (mode !== 'semantic' && (!multiToken || informative(docCoverage))) {
       const docs = this.db.prepare(`SELECT d.*, bm25(document_fts) AS rank,
-        snippet(document_fts, 3, '[', ']', ' … ', 30) AS snippet
+        snippet(document_fts, 3, '[', ']', ' … ', 64) AS snippet
         FROM document_fts JOIN documents d ON d.id = document_fts.document_id
         WHERE document_fts MATCH ? AND ${where}
         ORDER BY rank, d.id LIMIT ?`).all(match, ...params, limit * 3) as Row[];
       docs.forEach((row, index) => lexicalResults.push({
         id: row.id, resultType: 'document', title: row.title, snippet: includeSnippets ? clip(row.snippet) : undefined,
-        score: 1 / (60 + index + 1), lexicalRank: index + 1, exactMatch: row.title.toLowerCase() === query.toLowerCase(),
+        score: lexicalScore(docCoverage, row.id, row.rank), lexicalRank: index + 1, exactMatch: row.title.toLowerCase() === query.toLowerCase(),
         sourceType: row.source_type, authority: row.authority, project: row.project || undefined,
         drupalVersion: row.drupal_version, compatibility: version === 'all' ? 'cross_version' : 'compatible', status: row.status, canonicalUrl: row.canonical_url || undefined,
         repositoryPath: row.repository_path || undefined, commit: row.commit_sha || undefined,
@@ -121,28 +220,31 @@ export class SqliteKnowledgeProvider implements KnowledgeProvider {
         provenance: { sourceKey: row.source_key, sourceType: row.source_type, authority: row.authority, canonicalUrl: row.canonical_url || undefined, repositoryPath: row.repository_path || undefined, commit: row.commit_sha || undefined },
         resourceUri: `drupal://document/${row.id}`,
       }));
-      const entityFilters = [version === 'all' ? '1=1' : `(e.drupal_version = ? OR (e.drupal_version = 'all' AND drupal_compatible(
-        (SELECT s.drupal_core_constraint FROM source_snapshots s WHERE s.id=e.source_snapshot_id), ?) = 1))`];
-      const entityParams: unknown[] = version === 'all' ? [] : [version, version];
-      if (request.projects?.length) { entityFilters.push(`e.project IN (${request.projects.map(() => '?').join(',')})`); entityParams.push(...request.projects); }
-      if (request.entityKinds?.length) { entityFilters.push(`e.kind IN (${request.entityKinds.map(() => '?').join(',')})`); entityParams.push(...request.entityKinds); }
-      const entityRows = this.db.prepare(`SELECT e.*, d.source_key, d.source_type, d.authority, d.canonical_url, d.repository_path, d.commit_sha, d.modified_at,
-        bm25(entity_fts) AS rank FROM entity_fts JOIN entities e ON e.id = entity_fts.entity_id
-        LEFT JOIN documents d ON d.id = e.source_document_id
-        WHERE entity_fts MATCH ? AND ${entityFilters.join(' AND ')}
-        ORDER BY CASE WHEN lower(e.canonical_name)=lower(?) OR lower(e.short_name)=lower(?) THEN 0 ELSE 1 END, rank, e.id LIMIT ?`).all(match, ...entityParams, query, query, limit * 3) as Row[];
-      entityRows.forEach((row, index) => lexicalResults.push({
-        id: row.id, resultType: 'entity', title: row.canonical_name,
-        snippet: includeSnippets ? clip(`${row.kind} ${row.canonical_name}${row.status === 'deprecated' ? ' (deprecated)' : ''}`) : undefined,
-        score: 1 / (60 + index + 1), lexicalRank: index + 1,
-        exactMatch: [row.canonical_name, row.short_name].some((name: string) => name.toLowerCase() === query.toLowerCase()),
-        sourceType: row.source_type ?? 'core_code', authority: row.authority ?? 100, project: row.project || undefined,
-        drupalVersion: row.drupal_version, compatibility: version === 'all' ? 'cross_version' : 'compatible', status: row.status, canonicalUrl: row.canonical_url || undefined,
-        repositoryPath: row.file_path || undefined, commit: row.commit_sha || undefined,
-        freshness: row.modified_at || this.manifest.builtAt,
-        provenance: { sourceKey: row.source_key ?? 'unknown', sourceType: row.source_type ?? 'core_code', authority: row.authority ?? 100, canonicalUrl: row.canonical_url || undefined, repositoryPath: row.file_path || undefined, commit: row.commit_sha || undefined },
-        resourceUri: `drupal://entity/${row.id}`,
-      }));
+      const entityCoverage = tokenCoverageSets(this.db, 'entity_fts', tokens);
+      if (!multiToken || informative(entityCoverage)) {
+        const entityFilters = [version === 'all' ? '1=1' : `(e.drupal_version = ? OR (e.drupal_version = 'all' AND drupal_compatible(
+          (SELECT s.drupal_core_constraint FROM source_snapshots s WHERE s.id=e.source_snapshot_id), ?) = 1))`];
+        const entityParams: unknown[] = version === 'all' ? [] : [version, version];
+        if (request.projects?.length) { entityFilters.push(`e.project IN (${request.projects.map(() => '?').join(',')})`); entityParams.push(...request.projects); }
+        if (request.entityKinds?.length) { entityFilters.push(`e.kind IN (${request.entityKinds.map(() => '?').join(',')})`); entityParams.push(...request.entityKinds); }
+        const entityRows = this.db.prepare(`SELECT e.*, d.source_key, d.source_type, d.authority, d.canonical_url, d.repository_path, d.commit_sha, d.modified_at,
+          bm25(entity_fts) AS rank FROM entity_fts JOIN entities e ON e.id = entity_fts.entity_id
+          LEFT JOIN documents d ON d.id = e.source_document_id
+          WHERE entity_fts MATCH ? AND ${entityFilters.join(' AND ')}
+          ORDER BY CASE WHEN lower(e.canonical_name)=lower(?) OR lower(e.short_name)=lower(?) THEN 0 ELSE 1 END, rank, e.id LIMIT ?`).all(match, ...entityParams, query, query, limit * 3) as Row[];
+        entityRows.forEach((row, index) => lexicalResults.push({
+          id: row.id, resultType: 'entity', title: row.canonical_name,
+          snippet: includeSnippets ? clip(`${row.kind} ${row.canonical_name}${row.status === 'deprecated' ? ' (deprecated)' : ''}`) : undefined,
+          score: lexicalScore(entityCoverage, row.id, row.rank), lexicalRank: index + 1,
+          exactMatch: [row.canonical_name, row.short_name].some((name: string) => name.toLowerCase() === query.toLowerCase()),
+          sourceType: row.source_type ?? 'core_code', authority: row.authority ?? 100, project: row.project || undefined,
+          drupalVersion: row.drupal_version, compatibility: version === 'all' ? 'cross_version' : 'compatible', status: row.status, canonicalUrl: row.canonical_url || undefined,
+          repositoryPath: row.file_path || undefined, commit: row.commit_sha || undefined,
+          freshness: row.modified_at || this.manifest.builtAt,
+          provenance: { sourceKey: row.source_key ?? 'unknown', sourceType: row.source_type ?? 'core_code', authority: row.authority ?? 100, canonicalUrl: row.canonical_url || undefined, repositoryPath: row.file_path || undefined, commit: row.commit_sha || undefined },
+          resourceUri: `drupal://entity/${row.id}`,
+        }));
+      }
     }
 
     let semanticRows: Array<{ chunk_id: string; _distance: number }> = [];
@@ -165,29 +267,49 @@ export class SqliteKnowledgeProvider implements KnowledgeProvider {
       const boost = result.exactMatch ? 0.05 : 0;
       merged.set(result.id, { ...result, score: result.score + boost + result.authority / 1_000_000 });
     }
-    semanticRows.forEach((row, index) => {
+    const bestChunkByDoc = new Map<string, { best: number; accumulated: number; chunkId: string; rank: number; text: string; document: Row }>();
+    for (const [index, row] of semanticRows.entries()) {
       const document = this.db.prepare(`SELECT d.*, c.text FROM chunks c JOIN documents d ON d.id=c.document_id WHERE c.id=?`).get(row.chunk_id) as Row | undefined;
-      if (!document) return;
-      if (version !== 'all' && !isCompatible(document.compatibility, version)) return;
-      const existing = merged.get(document.id);
-      const semanticScore = 1 / (60 + index + 1);
-      if (existing) merged.set(document.id, { ...existing, semanticRank: index + 1, score: existing.score + semanticScore });
-      else merged.set(document.id, {
+      if (!document) continue;
+      if (version !== 'all' && !isCompatible(document.compatibility, version)) continue;
+      const semanticScore = distanceScore(row._distance);
+      const best = bestChunkByDoc.get(document.id);
+      if (!best) bestChunkByDoc.set(document.id, { best: semanticScore, accumulated: semanticScore, chunkId: row.chunk_id, rank: index + 1, text: document.text, document });
+      else {
+        best.accumulated += semanticScore;
+        if (semanticScore > best.best) { best.chunkId = row.chunk_id; best.rank = index + 1; best.best = semanticScore; best.text = document.text; }
+      }
+    }
+    for (const [documentId, chunk] of bestChunkByDoc) {
+      const document = chunk.document;
+      const score = semanticDocumentScore(chunk.best, chunk.accumulated);
+      const existing = merged.get(documentId);
+      if (existing) {
+        merged.set(documentId, {
+          ...existing, semanticRank: chunk.rank, score: existing.score + score,
+          chunkId: chunk.chunkId, chunkResourceUri: `drupal://document/${documentId}#chunk/${chunk.chunkId}`,
+        });
+        continue;
+      }
+      merged.set(documentId, {
         id: document.id, resultType: 'document', title: document.title,
-        snippet: includeSnippets ? clip(document.text) : undefined, score: semanticScore,
-        semanticRank: index + 1, exactMatch: false, sourceType: document.source_type, authority: document.authority,
+        snippet: includeSnippets ? clip(chunk.text) : undefined, score,
+        semanticRank: chunk.rank, exactMatch: false, sourceType: document.source_type, authority: document.authority,
         project: document.project || undefined, drupalVersion: document.drupal_version, compatibility: version === 'all' ? 'cross_version' : 'compatible', status: document.status,
         canonicalUrl: document.canonical_url || undefined, repositoryPath: document.repository_path || undefined,
         commit: document.commit_sha || undefined, freshness: document.modified_at || this.manifest.builtAt,
-        chunkId: row.chunk_id, chunkResourceUri: `drupal://document/${document.id}#chunk/${row.chunk_id}`,
+        chunkId: chunk.chunkId, chunkResourceUri: `drupal://document/${document.id}#chunk/${chunk.chunkId}`,
         provenance: { sourceKey: document.source_key, sourceType: document.source_type, authority: document.authority, canonicalUrl: document.canonical_url || undefined, repositoryPath: document.repository_path || undefined, commit: document.commit_sha || undefined },
         resourceUri: `drupal://document/${document.id}`,
       });
-    });
-    const results = [...merged.values()].sort((a, b) => b.score - a.score || b.authority - a.authority || a.title.localeCompare(b.title)).slice(0, limit);
+    }
+    const results = [...merged.values()]
+      .filter(result => result.score >= minScore)
+      .sort((a, b) => b.score - a.score || b.authority - a.authority || a.title.localeCompare(b.title))
+      .slice(0, limit);
     return {
       query,
-      appliedFilters: { drupalVersion: version, mode, projects: request.projects, sourceTypes: request.sourceTypes, entityKinds: request.entityKinds },
+      appliedFilters: { drupalVersion: version, mode, minScore, projects: request.projects, sourceTypes: request.sourceTypes, entityKinds: request.entityKinds },
       index: await this.getIndexStatus(),
       degradedMode,
       results,

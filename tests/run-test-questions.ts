@@ -40,6 +40,16 @@ const questions: TestQuestion[] = [
     mustMention: ['hook_form_alter', 'FormStateInterface'],
   },
   {
+    id: 'QP1',
+    question: 'I am migrating a site to Drupal. When should I use a custom theme, and where should style changes live?',
+    mustMention: ['custom theme', 'libraries.yml'],
+  },
+  {
+    id: 'QP2',
+    question: 'When migrating a legacy site, where does each kind of change land: content, configuration, or custom modules?',
+    mustMention: ['migrate', 'config'],
+  },
+  {
     id: 'OOS',
     question: 'How do I configure Nginx for optimal Drupal performance?',
     mustMention: [], // Out of scope — should refuse or indicate limitations
