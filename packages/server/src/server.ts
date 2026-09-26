@@ -274,7 +274,15 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
       const response = input.depth === 'research'
         ? await agent.research(input.question, { drupalVersion: input.drupal_version })
         : await agent.ask(input.question, { drupalVersion: input.drupal_version });
-      return toolResult(response as unknown as Record<string, unknown>, response.citations.map(citation => citation.resourceUri));
+      // AgentAnswer carries stopReason, not status; map it onto the tool's
+      // output contract so every successful run validates.
+      const status = response.stopReason === 'insufficient_evidence'
+        ? 'insufficient_evidence' as const
+        : 'answered' as const;
+      return toolResult(
+        { ...response, status } as unknown as Record<string, unknown>,
+        response.citations.map(citation => citation.resourceUri),
+      );
     } catch (error) {
       return toolResult({
         status: 'error',
