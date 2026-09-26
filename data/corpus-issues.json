@@ -1,0 +1,48 @@
+{
+  "version": "0.1.0",
+  "note": "Corpus-issues ledger: measured gaps in what the indexed corpus can answer, distinct from Drupal behavior failure modes (see the drupal-agent-planes failure-mode catalog). Every entry records the question, the verified ground truth, the observed retrieval/synthesis behavior, and a remedy. Entries move confirmed -> fixed only when a re-measurement shows the question answering correctly.",
+  "issues": [
+    {
+      "id": "php-floor-drupal-11-contrib-proximity",
+      "title": "Contrib composer.json competes with core docs for the Drupal 11 PHP-floor question",
+      "question": "What is the minimum PHP version Drupal 11 requires?",
+      "groundTruth": "Drupal 11 requires PHP 8.3 minimum. Sources: https://www.drupal.org/about/core/blog/drupal-110-will-require-php-83-and-mysql-80 and https://www.drupal.org/project/drupal/issues/3330874. Verified 2026-09-26.",
+      "observed": "At 11.4 targeting, lexical retrieval for the question surfaces a contrib module's composer.json (captcha, require.php >=8.2) alongside the correct core composer.json docs (which state 8.3). Small synthesis models (llama3.1:8b, gemma-4-E4B) cited the >=8.2 contrib doc and answered '8.2' with resolvable citations; one frontier pass repeated it. At 10.6 targeting the >=8.2 evidence is CORRECT for that version — the model then presented it as the Drupal 11 answer (version transposition, caught by claim-support's version-assertion rule).",
+      "classification": "misleading-evidence-proximity",
+      "classificationNote": "data is correct; ranking/context is not",
+      "locatedDocIds": ["doc_X1J78dy3IOW5Q3jgZuXNH3L1"],
+      "verifiedCorrectDocIds": ["doc_JJrT2OULGQFKyFJAEK10rBAt", "doc_9vyKdlgIlBQ_8H_F0fZyQr6I", "doc_y2ewOZtwUNlUzD2Jx7sZ865z"],
+      "detection": "check_claim_support version-assertion rule flags 'never mentions Drupal 11'; expert-eval phpfloor across models and conditions",
+      "remedy": "Rank core-project (project: drupal) documents above contrib for core-requirement questions, or boost official_guide/sourceType over contrib code in retrieval scoring; alternatively the search tool could expose a project filter agents can set.",
+      "status": "open",
+      "firstObserved": "2026-09-26"
+    },
+    {
+      "id": "concept-bridge-recent-era-systems",
+      "title": "Lexical retrieval cannot reach systems the model cannot name (SDC, recipes)",
+      "question": "'reusable front-end component with template, CSS and JS colocated in one directory' (answer: Single Directory Components); 'ship default configuration and content so another site can apply it as one unit' (answer: recipes)",
+      "groundTruth": "Drupal 10.3+ ships SDC (stable) and core recipes; official docs exist in the indexed corpus (verified: 'Using Single-Directory Components' doc, RecipeRunner.php, recipe:apply).",
+      "observed": "Neither llama3.1:8b nor gemma-4-E4B can produce the system name from their own weights (bare 0/4 on these questions), so neither LLM-derived nor deterministic keyword queries contain the bridge term; lexical retrieval misses. Curated human keyword queries ('single directory components SDC component theme', 'recipe install configuration content apply') retrieve the right docs instantly.",
+      "classification": "concept-bridge gap",
+      "classificationNote": "corpus is complete; the question-to-term bridge is missing",
+      "locatedDocIds": [],
+      "detection": "expert-eval tier-2 across models and conditions, 2026-09-26",
+      "remedy": "Add curated concept-bridge guidance documents (like the placement-guidance corpus) mapping plain-language descriptions to system names, or enable semantic/embedding retrieval for these question shapes.",
+      "status": "open",
+      "firstObserved": "2026-09-26"
+    },
+    {
+      "id": "version-targeting-agent-responsibility",
+      "title": "Correct-for-10.6 evidence presented as the Drupal 11 answer (agent-loop lesson)",
+      "question": "Minimum PHP for Drupal 11, asked with drupal_version=10.6 (eval design error in the first expert-eval round)",
+      "groundTruth": "Same as php-floor-drupal-11-contrib-proximity.",
+      "observed": "The corpus answered the 10.6 question correctly (>=8.2 for that version); the synthesis model then asserted it as the Drupal 11 answer. Not a corpus error — a version-targeting error by the caller, made possible because the output carried no version-context guard.",
+      "classification": "agent-loop lesson",
+      "locatedDocIds": [],
+      "detection": "check_claim_support version-assertion rule",
+      "remedy": "Agents should pass the version the QUESTION asks about, not the version they are working in; claim-support's version-assertion rule mechanically flags the resulting mismatch.",
+      "status": "mitigated-by-checker",
+      "firstObserved": "2026-09-26"
+    }
+  ]
+}
