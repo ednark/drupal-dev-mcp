@@ -1,4 +1,5 @@
 import type { KnowledgeProvider, SearchResult } from '@drupal-dev-mcp/knowledge';
+import type { GroundingStats } from './grounding.js';
 
 export interface LlmRequest {
   system: string;
@@ -34,4 +35,6 @@ export interface AgentAnswer {
   iterations: number;
   stopReason: AgentStopReason;
   insufficientEvidence: boolean;
+  /** Mechanical grounding-density measurement of the answer prose. */
+  grounding: GroundingStats;
 }

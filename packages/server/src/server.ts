@@ -72,6 +72,13 @@ const RelationshipOutputSchema = z.object({
   edges: z.array(z.record(z.string(), z.unknown())),
   truncated: z.boolean(),
 });
+const GroundingStatsSchema = z.object({
+  sentences: z.number(),
+  citedSentences: z.number(),
+  citations: z.number(),
+  groundingDensity: z.number().nullable(),
+});
+
 const ExpertOutputSchema = z.object({
   status: z.enum(['answered', 'insufficient_evidence', 'unavailable', 'error']),
   question: z.string().optional(),
@@ -80,6 +87,7 @@ const ExpertOutputSchema = z.object({
   stopReason: z.string().optional(),
   iterations: z.number().optional(),
   insufficientEvidence: z.boolean().optional(),
+  grounding: GroundingStatsSchema.optional(),
   citations: z.array(z.object({ resourceUri: z.string(), canonicalUrl: z.string().optional(), title: z.string() })).optional(),
   evidence: z.array(z.record(z.string(), z.unknown())).optional(),
   reason: z.string().optional(),
@@ -250,7 +258,7 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
 
   server.registerTool('ask_a_drupal_expert', {
     title: 'Ask a Drupal expert',
-    description: 'Synthesized answers to Drupal questions with mandatory citations to the knowledge index — the worked example of turning indexed evidence into a grounded conclusion. Unlike the retrieval tools (search_drupal etc.), this tool ASKS AN LLM TO REASON over gathered evidence and may state conventions, trade-offs, and recommendations ("where should this change live", "when is a custom theme warranted", "how do I migrate a site"). Placement/decision questions additionally pull the curated placement-guidance corpus. Modes: "ask" (single evidence round: Objective one-liner plus concise answer plus Version notes, fast) or "research" (iterative multi-query rounds yielding a design-doc-shaped report: Objective, Goals/non-goals, Findings with reversibility marks, Alternatives, Open issues with next steps, Version notes, Recommended steps, optional evidence-backed Mermaid). Requires OPENAI_API_KEY in the server environment; without it the tool reports status "unavailable" and every other tool keeps working. Answers can report insufficient_evidence instead of guessing; verify API details against cited drupal:// resources.',
+    description: 'Synthesized answers to Drupal questions with mandatory citations to the knowledge index — the worked example of turning indexed evidence into a grounded conclusion. Unlike the retrieval tools (search_drupal etc.), this tool ASKS AN LLM TO REASON over gathered evidence and may state conventions, trade-offs, and recommendations ("where should this change live", "when is a custom theme warranted", "how do I migrate a site"). Placement/decision questions additionally pull the curated placement-guidance corpus. Modes: "ask" (single evidence round: Objective one-liner plus concise answer plus Version notes, fast) or "research" (iterative multi-query rounds yielding a design-doc-shaped report: Objective, Goals/non-goals, Findings with reversibility marks, Alternatives, Open issues with next steps, Version notes, Recommended steps, optional evidence-backed Mermaid). Requires OPENAI_API_KEY in the server environment; without it the tool reports status "unavailable" and every other tool keeps working. Answers can report insufficient_evidence instead of guessing; verify API details against cited drupal:// resources. Every answer carries a mechanical grounding measurement (grounding.sentences / citedSentences / groundingDensity) — low density means most of the prose is uncited; low density is a warning, high density is not proof of support (use claim-support checking separately).',
     inputSchema: z.object({
       question: z.string().min(1).describe('A question needing synthesis, not just retrieval. Natural language is fine here — the tool converts it into index-friendly searches.'),
       depth: z.enum(['ask', 'research']).default('ask'),

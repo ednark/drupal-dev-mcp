@@ -1,5 +1,6 @@
 import type { SearchResult } from '@drupal-dev-mcp/knowledge';
 import type { AgentAnswer, AgentOptions, AgentStopReason } from './types.js';
+import { computeGroundingStats } from './grounding.js';
 
 function evidencePrompt(question: string, evidence: SearchResult[]): string {
   return JSON.stringify({
@@ -242,6 +243,7 @@ Optionally include a mermaid flowchart and/or Glossary per the presentation rule
       citations: evidence.map(item => ({ resourceUri: item.resourceUri, canonicalUrl: item.canonicalUrl, title: item.title })),
       iterations, stopReason,
       insufficientEvidence: stopReason === 'insufficient_evidence',
+      grounding: computeGroundingStats(answer),
     };
   }
 }
