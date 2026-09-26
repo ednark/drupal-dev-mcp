@@ -10,6 +10,12 @@ export interface LlmRequest {
 
 export interface LlmProvider {
   generate(request: LlmRequest): Promise<string>;
+  /**
+   * Optional: generate a short index-friendly search query from a natural
+   * language question. Used by the agent to keyword-rewrite its first
+   * evidence round; when absent, the agent searches the raw question.
+   */
+  generateQuery?(question: string): Promise<string>;
 }
 
 export type AgentEvent =

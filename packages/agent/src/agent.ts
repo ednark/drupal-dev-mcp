@@ -1,6 +1,7 @@
 import type { SearchResult } from '@drupal-dev-mcp/knowledge';
 import type { AgentAnswer, AgentOptions, AgentStopReason } from './types.js';
 import { computeGroundingStats } from './grounding.js';
+import { deriveQuery } from './query.js';
 
 function evidencePrompt(question: string, evidence: SearchResult[]): string {
   return JSON.stringify({
@@ -88,10 +89,25 @@ export class DrupalAgent {
 
   async ask(question: string, settings: { drupalVersion?: string; limit?: number; format?: 'json' | 'markdown' } = {}): Promise<AgentAnswer> {
     const drupalVersion = settings.drupalVersion ?? '11.4';
-    const input = { query: question, drupalVersion, mode: 'hybrid' as const, limit: settings.limit ?? 8 };
+    // Keyword-rewrite the first evidence round: the corpus scores short
+    // technical queries above raw natural-language questions. Falls back to
+    // the raw question when the provider cannot derive one.
+    const query = await deriveQuery(question, this.options.llm);
+    const input = { query, drupalVersion, mode: 'hybrid' as const, limit: settings.limit ?? 8 };
     this.options.onEvent?.({ type: 'tool_call', tool: 'search', input, iteration: 1 });
     const found = await this.options.knowledge.search(input);
     found.results.forEach(item => this.options.onEvent?.({ type: 'evidence_admitted', resourceUri: item.resourceUri, score: item.score, iteration: 1 }));
+    // A derived query can over-narrow; when the first round comes back EMPTY,
+    // retry with the raw question and merge so evidence never gets worse.
+    if (found.results.length === 0 && query !== question) {
+      const retryInput = { query: question, drupalVersion, mode: 'hybrid' as const, limit: settings.limit ?? 8 };
+      this.options.onEvent?.({ type: 'tool_call', tool: 'search', input: retryInput, iteration: 1 });
+      const retry = await this.options.knowledge.search(retryInput);
+      for (const item of retry.results.filter(r => !found.results.some(e => e.resourceUri === r.resourceUri))) {
+        found.results.push(item);
+        this.options.onEvent?.({ type: 'evidence_admitted', resourceUri: item.resourceUri, score: item.score, iteration: 1 });
+      }
+    }
     // Placement questions pull the curated decision corpus in a dedicated
     // round so convention documents are always represented in evidence.
     if (isPlacementQuestion(question)) {
@@ -129,7 +145,8 @@ Keep it tight: start with an "Objective:" one-liner, then answer the question di
     const evidenceBudget = Math.min(100, Math.max(5, settings.evidenceBudget ?? 24));
     const admitted = new Map<string, SearchResult>();
     const triedQueries = new Set<string>();
-    let queries = [question];
+    let queries = [await deriveQuery(question, this.options.llm)];
+    if (queries[0] !== question) queries.push(question);
     let iterations = 0;
     let reason: AgentStopReason = 'max_iterations';
     if (isPlacementQuestion(question)) {

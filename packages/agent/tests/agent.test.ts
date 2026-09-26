@@ -59,3 +59,53 @@ test('research observes iteration and evidence budgets', async () => {
   assert.equal(answer.stopReason, 'max_iterations');
   assert.ok(events.some(event => event.type === 'iteration_complete' && event.iteration === 2));
 });
+
+test('ask searches with the derived query when the provider can derive one', async () => {
+  const seenQueries: string[] = [];
+  const prov: KnowledgeProvider = {
+    async search(input: { query: string }) {
+      seenQueries.push(input.query);
+      return { query: input.query, appliedFilters: {}, index: await this.getIndexStatus(), results: [evidence()] };
+    },
+    async getEntity() { return { status: 'not_found' }; },
+    async getEntities() { return { results: [] }; },
+    async exploreRelationships() { throw new Error('not used'); },
+    async readResource() { return null; },
+    async getIndexStatus() { return { ready: true, schemaVersion: 1, defaultDrupalVersion: '11.4', availableDrupalVersions: ['11.4'], counts: {} }; },
+  };
+  const llm: LlmProvider = {
+    async generate() { return 'answer [drupal://document/doc_fixture]'; },
+    async generateQuery() { return 'messenger service addStatus'; },
+  };
+  const agent = new DrupalAgent({ knowledge: prov, llm });
+  await agent.ask('How do I show a status message?');
+  assert.deepEqual(seenQueries, ['messenger service addStatus']);
+});
+
+test('ask retries the raw question when the derived query comes back thin', async () => {
+  const seenQueries: string[] = [];
+  const prov: KnowledgeProvider = {
+    async search(input: { query: string }) {
+      seenQueries.push(input.query);
+      // Only the raw-question retry finds anything.
+      return {
+        query: input.query,
+        appliedFilters: {},
+        index: await this.getIndexStatus(),
+        results: input.query === 'How do I show a status message?' ? [evidence()] : [],
+      };
+    },    async getEntity() { return { status: 'not_found' }; },
+    async getEntities() { return { results: [] }; },
+    async exploreRelationships() { throw new Error('not used'); },
+    async readResource() { return null; },
+    async getIndexStatus() { return { ready: true, schemaVersion: 1, defaultDrupalVersion: '11.4', availableDrupalVersions: ['11.4'], counts: {} }; },
+  };
+  const llm: LlmProvider = {
+    async generate() { return 'answer [drupal://document/doc_fixture]'; },
+    async generateQuery() { return 'over-narrow derived query'; },
+  };
+  const agent = new DrupalAgent({ knowledge: prov, llm });
+  const answer = await agent.ask('How do I show a status message?');
+  assert.deepEqual(seenQueries, ['over-narrow derived query', 'How do I show a status message?']);
+  assert.equal(answer.stopReason, 'completed');
+});

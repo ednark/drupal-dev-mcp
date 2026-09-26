@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import type { LlmProvider, LlmRequest } from './types.js';
+import { QUERY_SYSTEM, keywordFallback } from './query.js';
 
 /**
  * Output token cap per generation when the caller does not specify one.
@@ -35,5 +36,18 @@ export class OpenAiLlmProvider implements LlmProvider {
       response_format: request.responseFormat === 'json' ? { type: 'json_object' } : { type: 'text' },
     });
     return response.choices[0]?.message.content?.trim() ?? '';
+  }
+
+  async generateQuery(question: string): Promise<string> {
+    const response = await this.client.chat.completions.create({
+      model: this.model,
+      messages: [
+        { role: 'system', content: QUERY_SYSTEM },
+        { role: 'user', content: question },
+      ],
+      max_tokens: 64,
+      temperature: 0,
+    });
+    return response.choices[0]?.message.content?.trim() ?? keywordFallback(question);
   }
 }
