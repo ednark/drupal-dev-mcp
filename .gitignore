@@ -2,21 +2,10 @@
 node_modules/
 
 # ─── Build output ────────────────────────────────────────────────────────────
+# packages/* emit into packages/*/dist (covered by the bare pattern).
 dist/
 build/
 *.tsbuildinfo
-
-# ─── Compiled TypeScript output ──────────────────────────────────────────────
-# These are emitted by tsc from the src/, etl/, scripts/, and tests/ trees.
-# Root-level *.js files (e.g. jest.config.js, eslint.config.js) are NOT excluded.
-src/**/*.js
-src/**/*.d.ts
-etl/**/*.js
-etl/**/*.d.ts
-scripts/**/*.js
-scripts/**/*.d.ts
-tests/**/*.js
-tests/**/*.d.ts
 
 # ─── Environment variables ───────────────────────────────────────────────────
 # Copy .env.example → .env and fill in your real values; never commit .env

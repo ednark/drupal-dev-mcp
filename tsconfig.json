@@ -3,8 +3,6 @@
     "target": "ES2022",
     "module": "Node16",
     "moduleResolution": "Node16",
-    "outDir": "./dist",
-    "rootDir": "./",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -13,14 +11,5 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true
-  },
-  "ts-node": {
-    "esm": true,
-    "experimentalResolver": true,
-    "compilerOptions": {
-      "allowImportingTsExtensions": true
-    }
-  },
-  "include": ["src/**/*", "etl/**/*", "tests/**/*"],
-  "exclude": ["node_modules", "dist", "data", "src/fetcher", "tests"]
+  }
 }

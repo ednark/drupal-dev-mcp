@@ -33,7 +33,7 @@ npm run index:rebuild -- --with-embeddings
 
 ## MCP surface
 
-The stdio server exposes six read-only, non-destructive, idempotent, closed-world retrieval tools plus one opt-in synthesis tool:
+The normative wire contract for these tools — schemas, result envelope, `_meta` keys, resource URIs, capability advertisement, and status semantics — is [docs/tools-spec.md](docs/tools-spec.md). The six read-only, non-destructive, idempotent, closed-world retrieval tools plus one opt-in synthesis tool:
 
 - `search_drupal` — searches evidence using version, mode, project, source type, entity kind, limit, snippet-budget, and relevance-floor (`min_score`) filters. Short keyword/identifier queries score best; semantic hits carry chunk-level citation URIs. Ordering is deterministic within an index build. `source_types: ["guidance"]` narrows to the curated change-placement corpus (where a change should live).
 - `get_drupal_entity` — resolves an opaque `ent_…` ID or exact identifier and returns disambiguation, metadata, deprecations, evidence, and relationships.
@@ -82,7 +82,7 @@ npm run index:rebuild     # clean full-index build; no old-index migration
 npm run index:status      # report active run, counts, versions, and warnings
 npm run index:freshness   # compare data/sources against the active build; exit 1 when sources need re-processing
 npm run index:benchmark   # run the 20-question top-five evidence gate
-npm run typecheck
+npm run check             # typecheck + test in one gate
 npm test
 ```
 
@@ -148,6 +148,12 @@ MIT. See [LICENSE](LICENSE).
 
 <details>
 <summary>Archived 0.1 README (migration reference)</summary>
+
+> The 0.1 source trees (`src/`, `etl/`, `tests/`, root `dist/`, and the
+> `tsconfig.typecheck` / `tsconfig.fetcher` configs) were removed in the 0.2
+> cleanup; this section is retained purely as a migration reference and its
+> file paths no longer exist. The 0.1 evaluation question sets live in
+> [docs/eval/](eval/).
 
 # drupal-dev-mcp (0.1)
 

@@ -102,9 +102,16 @@ const READ_ONLY_ANNOTATIONS = {
 
 function toolResult(payload: Record<string, unknown>, resourceUris: string[]) {
   const links = [...new Set(resourceUris)].map(uri => ({ type: 'resource_link' as const, uri, name: uri }));
+  // Mirror the few host-actionable envelope signals into result-level _meta
+  // (namespaced) so MCP hosts can react without parsing structuredContent.
+  // The payload remains the authoritative, complete contract.
+  const meta: Record<string, unknown> = {};
+  if ('status' in payload) meta['drupal-dev-mcp/status'] = payload.status;
+  if ('degradedMode' in payload) meta['drupal-dev-mcp/degraded-mode'] = payload.degradedMode;
   return {
     content: [{ type: 'text' as const, text: JSON.stringify(payload) }, ...links],
     structuredContent: payload,
+    ...(Object.keys(meta).length > 0 ? { _meta: meta } : {}),
   };
 }
 
@@ -114,6 +121,22 @@ function resourceResponse(uri: string, mimeType: string, text: string) {
 
 export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
   const server = new McpServer({ name: 'drupal-dev-mcp', version: '0.2.0' });
+
+  // Static capability advertisement, evaluated once at server construction:
+  // OPENAI_API_KEY presence is fixed for the process lifetime, so this never
+  // goes stale. Dynamic facts (index readiness, build freshness) stay out of
+  // capabilities — query get_index_status / drupal://index/status for those.
+  // Clients that understand capabilities may prune ask_a_drupal_expert from
+  // their tool surface or warn up front; every client still gets the
+  // runtime `status: "unavailable"` fallback below.
+  server.server.registerCapabilities({
+    experimental: {
+      'drupal-dev-mcp/synthesis': {
+        tool: 'ask_a_drupal_expert',
+        available: Boolean(process.env.OPENAI_API_KEY),
+      },
+    },
+  });
 
   server.registerTool('search_drupal', {
     title: 'Search Drupal evidence',

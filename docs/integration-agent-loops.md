@@ -4,6 +4,8 @@ This guide is for consumers that run their own durable agent runtime (a coordina
 
 The split is deliberate: **the server is evidence retrieval only; your loop owns reasoning, decisions, budgets, and approvals.** The server never synthesizes advice, executes commands, fetches URLs at query time, or mutates the workspace. If you need those, add them on the agent side where your gates already live.
 
+The normative wire contract — schemas, result envelope, `_meta` keys, resource URIs, capability advertisement, status semantics — is [tools-spec.md](tools-spec.md). This guide covers usage; the spec wins on contract questions.
+
 ## Canonical client configuration
 
 ```json
@@ -30,7 +32,7 @@ Every tool declares complete MCP annotations:
 { "readOnlyHint": true, "destructiveHint": false, "idempotentHint": true, "openWorldHint": false }
 ```
 
-Recommended resolution order for policy engines: **config override > server annotation hints > conservative default**. With these annotations, all six retrieval tools resolve to the lowest-friction tier (no human approval, safe to retry) with no per-tool config. `ask_a_drupal_expert` is read-only in effect but declares `idempotentHint: false` (LLM output varies per call) and `openWorldHint: true` (it calls an external LLM provider), so policy engines can gate it distinctly; it also hard-fails to `status: "unavailable"` without an API key, which is the simplest permission boundary of all. There are no write or exec tools by design; the trust boundary is a feature. Do not expect — or request — side-effecting tools from this server.
+Recommended resolution order for policy engines: **config override > server annotation hints > conservative default**. With these annotations, all six retrieval tools resolve to the lowest-friction tier (no human approval, safe to retry) with no per-tool config. `ask_a_drupal_expert` is read-only in effect but declares `idempotentHint: false` (LLM output varies per call) and `openWorldHint: true` (it calls an external LLM provider), so policy engines can gate it distinctly; it also hard-fails to `status: "unavailable"` without an API key, which is the simplest permission boundary of all. Capability-aware loops get an earlier signal: the server advertises `experimental["drupal-dev-mcp/synthesis"] = { tool, available }` at `initialize`, so you can prune or warn before the first call — the runtime `unavailable` fallback remains authoritative either way. There are no write or exec tools by design; the trust boundary is a feature. Do not expect — or request — side-effecting tools from this server.
 
 ## Tools and recommended routing
 
@@ -76,7 +78,7 @@ Triage rule: hard-to-reverse (custom module vs theme vs config vs `settings.php`
 
 - `limit` (max 25), `include_snippets: false`, and `snippet_max_chars` (40–2000) bound search payloads.
 - `get_drupal_entities` omits relations unless `include_relations: true`.
-- The JSON text fallback is compact (no pretty-printing); prefer `structuredContent` when your loader supports typed results — every tool declares an output schema.
+- The JSON text fallback is compact (no pretty-printing); prefer `structuredContent` when your loader supports typed results — every tool declares an output schema. Host-actionable signals (`status`, `degradedMode`) are additionally mirrored under result `_meta` keys `drupal-dev-mcp/status` and `drupal-dev-mcp/degraded-mode`; see the envelope table in [tools-spec.md](tools-spec.md).
 - Retrieved facts persist in a growing prompt for the rest of a run; budget at the tool call, not after it.
 
 ## Citations and grounding
