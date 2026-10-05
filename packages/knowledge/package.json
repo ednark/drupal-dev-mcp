@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@lancedb/lancedb": "^0.14.0",
-    "better-sqlite3": "^9.4.0",
+    "better-sqlite3": "^13.0.3",
     "dotenv": "^16.4.7",
     "openai": "^4.77.0",
     "php-parser": "^3.7.0",

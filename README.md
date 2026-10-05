@@ -12,7 +12,7 @@ The retrieval tools do not synthesize advice; `ask_a_drupal_expert` is the singl
 
 ## Quick start
 
-Requirements: Node.js 20+, npm 10+, Git, and enough local disk for two Drupal core checkouts and the generated index.
+Requirements: Node.js 22+ (26 recommended — `.nvmrc` pins it), npm 10+, Git, and enough local disk for two Drupal core checkouts and the generated index. `better-sqlite3` is a native module: after a Node major upgrade, run `npm rebuild better-sqlite3` if it fails to load (the test suite's `pretest` doctor check will tell you).
 
 ```bash
 npm install
