@@ -1,0 +1,726 @@
+{
+  "generatedAt": "2026-10-05T15:29:09.223Z",
+  "count": 72,
+  "questions": [
+    {
+      "id": "dse-c-001",
+      "lane": "dse_classic",
+      "era": "classic",
+      "phase": "site-building",
+      "question": "What are the recommended directory permissions?",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/373/what-are-the-recommended-directory-permissions",
+      "communityScore": 153,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-c-002",
+      "lane": "dse_classic",
+      "era": "classic",
+      "phase": "module-code",
+      "question": "What is the basic concept behind hooks?",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/26290/what-is-the-basic-concept-behind-hooks",
+      "communityScore": 125,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-c-003",
+      "lane": "dse_classic",
+      "era": "classic",
+      "phase": "site-building",
+      "question": "Contextual filters taxonomy name",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/9332/contextual-filters-taxonomy-name",
+      "communityScore": 111,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-c-004",
+      "lane": "dse_classic",
+      "era": "classic",
+      "phase": "module-code",
+      "question": "How should I implement hook_menu()?",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/62473/how-should-i-implement-hook-menu",
+      "communityScore": 108,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-c-005",
+      "lane": "dse_classic",
+      "era": "classic",
+      "phase": "module-code",
+      "question": "How can I change a user's password from the command line using Drush?",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/2/how-can-i-change-a-users-password-from-the-command-line-using-drush",
+      "communityScore": 102,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-c-006",
+      "lane": "dse_classic",
+      "era": "classic",
+      "phase": "theming",
+      "question": "What are the downsides of using PHP Filter code in blocks, nodes, views-args, etc?",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/2509/what-are-the-downsides-of-using-php-filter-code-in-blocks-nodes-views-args-et",
+      "communityScore": 98,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-c-007",
+      "lane": "dse_classic",
+      "era": "classic",
+      "phase": "caching-perf",
+      "question": "Do non-enabled modules affect performance?",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/22/do-non-enabled-modules-affect-performance",
+      "communityScore": 93,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-c-008",
+      "lane": "dse_classic",
+      "era": "classic",
+      "phase": "module-code",
+      "question": "How to take a site offline using Drush?",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/16/how-to-take-a-site-offline-using-drush",
+      "communityScore": 92,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-c-009",
+      "lane": "dse_classic",
+      "era": "classic",
+      "phase": "module-code",
+      "question": "When is it appropriate to create an entity instead of a new content type?",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/22586/when-is-it-appropriate-to-create-an-entity-instead-of-a-new-content-type",
+      "communityScore": 89,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-c-010",
+      "lane": "dse_classic",
+      "era": "classic",
+      "phase": "site-building",
+      "question": "How do I get the current path alias or path?",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/106103/how-do-i-get-the-current-path-alias-or-path",
+      "communityScore": 89,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-c-011",
+      "lane": "dse_classic",
+      "era": "classic",
+      "phase": "theming",
+      "question": "Any way to add CSS for a single page/node?",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/126/any-way-to-add-css-for-a-single-page-node",
+      "communityScore": 81,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-c-012",
+      "lane": "dse_classic",
+      "era": "classic",
+      "phase": "config-deploy",
+      "question": "What does \"The provided host name is not valid for this server\" mean?",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/145286/what-does-the-provided-host-name-is-not-valid-for-this-server-mean",
+      "communityScore": 81,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-c-013",
+      "lane": "dse_classic",
+      "era": "classic",
+      "phase": "config-deploy",
+      "question": "Suggestions for settings.php - Local dev, Development server, Live server",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/9/suggestions-for-settings-php-local-dev-development-server-live-server",
+      "communityScore": 80,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-c-014",
+      "lane": "dse_classic",
+      "era": "classic",
+      "phase": "module-code",
+      "question": "How do I access a field value for an entity (e.g. node) object?",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/144947/how-do-i-access-a-field-value-for-an-entity-e-g-node-object",
+      "communityScore": 80,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-c-015",
+      "lane": "dse_classic",
+      "era": "classic",
+      "phase": "module-code",
+      "question": "How do I load a field collection from a node?",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/11062/how-do-i-load-a-field-collection-from-a-node",
+      "communityScore": 78,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-c-016",
+      "lane": "dse_classic",
+      "era": "classic",
+      "phase": "module-code",
+      "question": "How can I obscure what I am using to run my site?",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/237/how-can-i-obscure-what-i-am-using-to-run-my-site",
+      "communityScore": 75,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-c-017",
+      "lane": "dse_classic",
+      "era": "classic",
+      "phase": "config-deploy",
+      "question": "How can I import the configuration on a different site?",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/150481/how-can-i-import-the-configuration-on-a-different-site",
+      "communityScore": 74,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-c-018",
+      "lane": "dse_classic",
+      "era": "classic",
+      "phase": "caching-perf",
+      "question": "Given that db_select is much slower than db_query, why would I want to use it?",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/1200/given-that-db-select-is-much-slower-than-db-query-why-would-i-want-to-use-it",
+      "communityScore": 71,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-c-019",
+      "lane": "dse_classic",
+      "era": "classic",
+      "phase": "general",
+      "question": "How do I get the current node ID?",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/145823/how-do-i-get-the-current-node-id",
+      "communityScore": 69,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-c-020",
+      "lane": "dse_classic",
+      "era": "classic",
+      "phase": "module-code",
+      "question": "Print the query which is built using db_select()",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/51333/print-the-query-which-is-built-using-db-select",
+      "communityScore": 65,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-c-021",
+      "lane": "dse_classic",
+      "era": "classic",
+      "phase": "general",
+      "question": "How to get the base URL of a site",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/202810/how-to-get-the-base-url-of-a-site",
+      "communityScore": 64,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-c-022",
+      "lane": "dse_classic",
+      "era": "classic",
+      "phase": "general",
+      "question": "Rebuild images from image style",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/12864/rebuild-images-from-image-style",
+      "communityScore": 62,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-c-023",
+      "lane": "dse_classic",
+      "era": "classic",
+      "phase": "theming",
+      "question": "How to get the valid URL of a Link field from within a Twig template?",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/199262/how-to-get-the-valid-url-of-a-link-field-from-within-a-twig-template",
+      "communityScore": 62,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-c-024",
+      "lane": "dse_classic",
+      "era": "classic",
+      "phase": "theming",
+      "question": "Better understanding of Drupal behaviors",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/11756/better-understanding-of-drupal-behaviors",
+      "communityScore": 59,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-c-025",
+      "lane": "dse_classic",
+      "era": "classic",
+      "phase": "theming",
+      "question": "How do I create custom regions in a theme?",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/129/how-do-i-create-custom-regions-in-a-theme",
+      "communityScore": 58,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-c-026",
+      "lane": "dse_classic",
+      "era": "classic",
+      "phase": "migrate-upgrade",
+      "question": "How to upgrade only core with drush?",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/133796/how-to-upgrade-only-core-with-drush",
+      "communityScore": 58,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-c-027",
+      "lane": "dse_classic",
+      "era": "classic",
+      "phase": "module-code",
+      "question": "How to programmatically create Fields?",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/8284/how-to-programmatically-create-fields",
+      "communityScore": 57,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-c-028",
+      "lane": "dse_classic",
+      "era": "classic",
+      "phase": "module-code",
+      "question": "What are Ctools plugin (content type, access, etc), and how does one create them?",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/33336/what-are-ctools-plugin-content-type-access-etc-and-how-does-one-create-them",
+      "communityScore": 57,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-c-029",
+      "lane": "dse_classic",
+      "era": "classic",
+      "phase": "module-code",
+      "question": "Getting the image URL from a field_image on a node",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/137319/getting-the-image-url-from-a-field-image-on-a-node",
+      "communityScore": 56,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-c-030",
+      "lane": "dse_classic",
+      "era": "classic",
+      "phase": "forms",
+      "question": "Is it possible to replace more than one form element (wrappers) triggered by only one #ajax trigger element?",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/8529/is-it-possible-to-replace-more-than-one-form-element-wrappers-triggered-by-onl",
+      "communityScore": 55,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-m-001",
+      "lane": "dse_modern",
+      "era": "modern",
+      "phase": "forms",
+      "question": "schedule webform close date based on parent node field",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/323437/schedule-webform-close-date-based-on-parent-node-field",
+      "communityScore": 0,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-m-002",
+      "lane": "dse_modern",
+      "era": "modern",
+      "phase": "theming",
+      "question": "How can I run the same JavaScript code on both themes (admin theme and website theme)?",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/323428/how-can-i-run-the-same-javascript-code-on-both-themes-admin-theme-and-website-t",
+      "communityScore": 0,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-m-003",
+      "lane": "dse_modern",
+      "era": "modern",
+      "phase": "module-code",
+      "question": "How can I fix this fatal PHP Uncaught TypeError?",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/323427/how-can-i-fix-this-fatal-php-uncaught-typeerror",
+      "communityScore": 0,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-m-004",
+      "lane": "dse_modern",
+      "era": "modern",
+      "phase": "module-code",
+      "question": "How can I fix these \"Cannot autowire service\" errors?",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/323426/how-can-i-fix-these-cannot-autowire-service-errors",
+      "communityScore": 0,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-m-005",
+      "lane": "dse_modern",
+      "era": "modern",
+      "phase": "module-code",
+      "question": "Supporting multiple payment gateways with their own checkout flow plugins",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/323422/supporting-multiple-payment-gateways-with-their-own-checkout-flow-plugins",
+      "communityScore": 0,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-m-006",
+      "lane": "dse_modern",
+      "era": "modern",
+      "phase": "migrate-upgrade",
+      "question": "Trying to upgrade from 10.6 to 11.3 using composer but it always upgrades to 11.4 which cuases issues",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/323400/trying-to-upgrade-from-10-6-to-11-3-using-composer-but-it-always-upgrades-to-11",
+      "communityScore": 0,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-m-007",
+      "lane": "dse_modern",
+      "era": "modern",
+      "phase": "theming",
+      "question": "Where is the twig that controls list items?",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/323390/where-is-the-twig-that-controls-list-items",
+      "communityScore": -1,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-m-008",
+      "lane": "dse_modern",
+      "era": "modern",
+      "phase": "general",
+      "question": "How to disable or efficiently override Drupal core's styling on off-canvas Ajax dialogs?",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/323388/how-to-disable-or-efficiently-override-drupal-cores-styling-on-off-canvas-ajax",
+      "communityScore": 1,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-m-009",
+      "lane": "dse_modern",
+      "era": "modern",
+      "phase": "general",
+      "question": "Refund after cancellation not procesed",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/323380/refund-after-cancellation-not-procesed",
+      "communityScore": 0,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-m-010",
+      "lane": "dse_modern",
+      "era": "modern",
+      "phase": "theming",
+      "question": "How to set a custom path in a custom route when the controller needs to return rendered content",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/323374/how-to-set-a-custom-path-in-a-custom-route-when-the-controller-needs-to-return-r",
+      "communityScore": 0,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-m-011",
+      "lane": "dse_modern",
+      "era": "modern",
+      "phase": "forms",
+      "question": "webform email handler does not allow certain roles in to field",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/323373/webform-email-handler-does-not-allow-certain-roles-in-to-field",
+      "communityScore": 0,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-m-012",
+      "lane": "dse_modern",
+      "era": "modern",
+      "phase": "general",
+      "question": "Why is Commerce Stripe \"Stripe Connect\" labeled as \"preferred\" method of authorization?",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/323371/why-is-commerce-stripe-stripe-connect-labeled-as-preferred-method-of-authori",
+      "communityScore": 1,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-m-013",
+      "lane": "dse_modern",
+      "era": "modern",
+      "phase": "theming",
+      "question": "What file is included with include('bootstrap:menu_main')?",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/323355/what-file-is-included-with-includebootstrapmenu-main",
+      "communityScore": 0,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-m-014",
+      "lane": "dse_modern",
+      "era": "modern",
+      "phase": "caching-perf",
+      "question": "Permanent Cache Bin and Memcache",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/323337/permanent-cache-bin-and-memcache",
+      "communityScore": 1,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-m-015",
+      "lane": "dse_modern",
+      "era": "modern",
+      "phase": "forms",
+      "question": "webform access based on role negation",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/323320/webform-access-based-on-role-negation",
+      "communityScore": 0,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-m-016",
+      "lane": "dse_modern",
+      "era": "modern",
+      "phase": "module-code",
+      "question": "view mode and storage entity",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/323318/view-mode-and-storage-entity",
+      "communityScore": 0,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-m-017",
+      "lane": "dse_modern",
+      "era": "modern",
+      "phase": "forms",
+      "question": "extract one number field from a view with a relation for use in a webform",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/323317/extract-one-number-field-from-a-view-with-a-relation-for-use-in-a-webform",
+      "communityScore": 0,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-m-018",
+      "lane": "dse_modern",
+      "era": "modern",
+      "phase": "module-code",
+      "question": "taxonomy or storage entity to join two tables",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/323303/taxonomy-or-storage-entity-to-join-two-tables",
+      "communityScore": 0,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-m-019",
+      "lane": "dse_modern",
+      "era": "modern",
+      "phase": "forms",
+      "question": "Customize webform progress tracker steps",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/323286/customize-webform-progress-tracker-steps",
+      "communityScore": 1,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-m-020",
+      "lane": "dse_modern",
+      "era": "modern",
+      "phase": "migrate-upgrade",
+      "question": "Why am I getting Forbidden after the upgrade?",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/323281/why-am-i-getting-forbidden-after-the-upgrade",
+      "communityScore": 0,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-m-021",
+      "lane": "dse_modern",
+      "era": "modern",
+      "phase": "general",
+      "question": "Create inline link to display PDF",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/323265/create-inline-link-to-display-pdf",
+      "communityScore": 1,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-m-022",
+      "lane": "dse_modern",
+      "era": "modern",
+      "phase": "forms",
+      "question": "date_ical geo format",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/323252/date-ical-geo-format",
+      "communityScore": 1,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-m-023",
+      "lane": "dse_modern",
+      "era": "modern",
+      "phase": "module-code",
+      "question": "Certain batch functions do not work with Cloudflare and return 502 Bad Gateway",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/323251/certain-batch-functions-do-not-work-with-cloudflare-and-return-502-bad-gateway",
+      "communityScore": 0,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-m-024",
+      "lane": "dse_modern",
+      "era": "modern",
+      "phase": "general",
+      "question": "Custom exception subscriber does not handle PHP errors",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/323244/custom-exception-subscriber-does-not-handle-php-errors",
+      "communityScore": 0,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "dse-m-025",
+      "lane": "dse_modern",
+      "era": "modern",
+      "phase": "site-building",
+      "question": "Show alternate emails for certain roles",
+      "sourceUrl": "https://drupal.stackexchange.com/questions/322241/show-alternate-emails-for-certain-roles",
+      "communityScore": -1,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "php-c-001",
+      "lane": "php_general",
+      "era": "classic",
+      "phase": "general",
+      "question": "Reference Guide: What does this symbol mean in PHP? (PHP Syntax)",
+      "sourceUrl": "https://stackoverflow.com/questions/3737139/reference-guide-what-does-this-symbol-mean-in-php-php-syntax",
+      "communityScore": 5141,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "php-c-002",
+      "lane": "php_general",
+      "era": "classic",
+      "phase": "general",
+      "question": "Deleting an element from an array in PHP",
+      "sourceUrl": "https://stackoverflow.com/questions/369602/deleting-an-element-from-an-array-in-php",
+      "communityScore": 3112,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "php-c-003",
+      "lane": "php_general",
+      "era": "classic",
+      "phase": "module-code",
+      "question": "How do I get a YouTube video thumbnail from the YouTube API?",
+      "sourceUrl": "https://stackoverflow.com/questions/2068344/how-do-i-get-a-youtube-video-thumbnail-from-the-youtube-api",
+      "communityScore": 2857,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "php-c-004",
+      "lane": "php_general",
+      "era": "classic",
+      "phase": "general",
+      "question": "How can I prevent SQL injection in PHP?",
+      "sourceUrl": "https://stackoverflow.com/questions/60174/how-can-i-prevent-sql-injection-in-php",
+      "communityScore": 2769,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "php-c-005",
+      "lane": "php_general",
+      "era": "classic",
+      "phase": "general",
+      "question": "Why shouldn't I use mysql_* functions in PHP?",
+      "sourceUrl": "https://stackoverflow.com/questions/12859942/why-shouldnt-i-use-mysql-functions-in-php",
+      "communityScore": 2739,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "php-c-006",
+      "lane": "php_general",
+      "era": "classic",
+      "phase": "general",
+      "question": "How do I check if a string contains a specific word?",
+      "sourceUrl": "https://stackoverflow.com/questions/4366730/how-do-i-check-if-a-string-contains-a-specific-word",
+      "communityScore": 2650,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "php-c-007",
+      "lane": "php_general",
+      "era": "classic",
+      "phase": "general",
+      "question": "How do you parse and process HTML/XML in PHP?",
+      "sourceUrl": "https://stackoverflow.com/questions/3577641/how-do-you-parse-and-process-html-xml-in-php",
+      "communityScore": 2327,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "php-c-008",
+      "lane": "php_general",
+      "era": "classic",
+      "phase": "general",
+      "question": "How does PHP 'foreach' actually work?",
+      "sourceUrl": "https://stackoverflow.com/questions/10057671/how-does-php-foreach-actually-work",
+      "communityScore": 2288,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "php-c-009",
+      "lane": "php_general",
+      "era": "classic",
+      "phase": "general",
+      "question": "When should I use 'self' over '$this'?",
+      "sourceUrl": "https://stackoverflow.com/questions/151969/when-should-i-use-self-over-this",
+      "communityScore": 2242,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "php-c-010",
+      "lane": "php_general",
+      "era": "classic",
+      "phase": "general",
+      "question": "How do I get PHP errors to display?",
+      "sourceUrl": "https://stackoverflow.com/questions/1053424/how-do-i-get-php-errors-to-display",
+      "communityScore": 2056,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "php-c-011",
+      "lane": "php_general",
+      "era": "classic",
+      "phase": "theming",
+      "question": "How Can I add HTML And CSS Into PDF",
+      "sourceUrl": "https://stackoverflow.com/questions/391005/how-can-i-add-html-and-css-into-pdf",
+      "communityScore": 1724,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "php-c-012",
+      "lane": "php_general",
+      "era": "classic",
+      "phase": "general",
+      "question": "str_starts_with and str_ends_with functions in PHP",
+      "sourceUrl": "https://stackoverflow.com/questions/834303/str-starts-with-and-str-ends-with-functions-in-php",
+      "communityScore": 1704,
+      "hasAcceptedAnswer": true
+    },
+    {
+      "id": "course-001",
+      "lane": "course_scenario",
+      "era": "modern",
+      "phase": "general",
+      "question": "This study guide used in tandem with the 'Drupal 8 Certification Crash Course':",
+      "sourceUrl": "https://github.com/WidgetsBurritos/d8-studyguide",
+      "communityScore": 348,
+      "hasAcceptedAnswer": false
+    },
+    {
+      "id": "course-002",
+      "lane": "course_scenario",
+      "era": "modern",
+      "phase": "general",
+      "question": "Developer Certification Study Guide is an updated version of https://github.com/WidgetsBurritos/d8-studyguide.",
+      "sourceUrl": "https://github.com/WebFirstInc/drupalstudyguide",
+      "communityScore": 7,
+      "hasAcceptedAnswer": false
+    },
+    {
+      "id": "course-003",
+      "lane": "course_scenario",
+      "era": "modern",
+      "phase": "general",
+      "question": "Why Drupal is a popular choice for building websites? ##",
+      "sourceUrl": "https://github.com/kuldeepmehra27/drupal-learning-path",
+      "communityScore": 1,
+      "hasAcceptedAnswer": false
+    },
+    {
+      "id": "course-004",
+      "lane": "course_scenario",
+      "era": "modern",
+      "phase": "general",
+      "question": "There are several reasons why Drupal is a popular choice for building websites:",
+      "sourceUrl": "https://github.com/kuldeepmehra27/drupal-learning-path",
+      "communityScore": 1,
+      "hasAcceptedAnswer": false
+    },
+    {
+      "id": "course-005",
+      "lane": "course_scenario",
+      "era": "modern",
+      "phase": "general",
+      "question": "If you're new to Drupal, here are some steps you can follow to start learning about this powerful content management system:",
+      "sourceUrl": "https://github.com/kuldeepmehra27/drupal-learning-path",
+      "communityScore": 1,
+      "hasAcceptedAnswer": false
+    }
+  ]
+}
