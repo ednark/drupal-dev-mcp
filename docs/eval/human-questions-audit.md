@@ -1,7 +1,8 @@
 # Human-questions audit — how the index answers real community phrasings
 
-First audit: 2026-10-05. Method: all 72 questions in
-[`human-questions.json`](human-questions.json) run through `search_drupal`
+First audit: 2026-10-05 (82 questions: DSE, SO-PHP, course scenarios, r/drupal).
+Method: every question in
+[`human-questions.json`](human-questions.json) runs through `search_drupal`
 (hybrid, limit 5) exactly as an MCP client would; results classified by score
 heuristic and manually compared against the community's accepted answers
 (from the untracked raw harvest). Thresholds: covered ≥ 1.2, weak ≥ 0.8,
@@ -15,8 +16,9 @@ likely-gap ≥ 0.5, gap < 0.5. Re-run with `npm run index:audit-questions`.
 | dse_modern (most recent answered) | 14/25 (56%) | Hardest cohort: current-version, contrib-specific, hosting questions |
 | php_general (SO PHP all-time top) | 9/12 (75%) | Problem types; php-manual + security skills carry most |
 | course_scenario (study-guide objectives) | 4/5 (80%) | Small but high — curricula phrase like the guidance corpus |
+| reddit (r/drupal question-like posts) | 5/10 (50%) | Discussion subreddit: misses are meta/career questions, not doc gaps |
 
-Overall: 49/72 (68%) covered or weak; 23 flagged for review.
+Overall: 54/82 (66%) covered or weak; 28 flagged for review.
 
 ## Side-by-side: community answer vs our retrieval
 
@@ -38,6 +40,7 @@ Overall: 49/72 (68%) covered or weak; 23 flagged for review.
 4. **Contrib-specific policy questions are the main true corpus gap** (Commerce Stripe). Consider extending the contrib-module-code corpus toward payment/e-commerce modules if that domain matters.
 5. **Deployment/config coverage is now strong** (config-deploy 100%) — the phase-8 remediation held.
 6. **The guidance/skill corpora punch above their size**: they win on security, config, and general phrasing where canonical API docs can't match.
+7. **Reddit's question style splits cleanly**: technical posts retrieve well ("cannot update core-recommend because of a Symfony security advisory" → Symfony `security.rst` 1.15; "What is Drupal.displace()?" → 1.10), while community-metacommentary ("Is Drupal having a renaissance?", career dilemmas) is unanswerable by a docs index **by design** — count such posts as N/A, not gaps.
 
 ## Recommended actions
 

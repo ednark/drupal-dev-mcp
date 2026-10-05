@@ -1,6 +1,6 @@
 # Human-phrased Drupal evaluation questions
 
-Curated from real community sources on 2026-10-05. 72 questions.
+Curated from real community sources on 2026-10-05. 82 questions.
 This file mirrors [`human-questions.json`](human-questions.json), which `npm run index:audit-questions` consumes.
 Questions are evaluation data only (short titles + links; community answers stay in the untracked raw harvest).
 
@@ -10,11 +10,12 @@ Questions are evaluation data only (short titles + links; community answers stay
 | dse_modern | 25 | Drupal Stack Exchange most recent answered questions (current-version phrasing) |
 | php_general | 12 | Stack Overflow PHP all-time top (problem types, successor to the phpbuilder.net-era forums) |
 | course_scenario | 5 | Course/curriculum objectives (GitHub: Acquia study guide, training repos) |
+| reddit | 10 | r/drupal question-like posts (harvested via the logged-in browser; old.reddit listings) |
 
 | Phase | Count |
 |---|---|
-| general | 23 |
-| module-code | 19 |
+| general | 32 |
+| module-code | 20 |
 | theming | 10 |
 | forms | 7 |
 | site-building | 4 |
@@ -98,3 +99,13 @@ Questions are evaluation data only (short titles + links; community answers stay
 | course-003 | general | Why Drupal is a popular choice for building websites? ## | [link](https://github.com/kuldeepmehra27/drupal-learning-path) |
 | course-004 | general | There are several reasons why Drupal is a popular choice for building websites: | [link](https://github.com/kuldeepmehra27/drupal-learning-path) |
 | course-005 | general | If you're new to Drupal, here are some steps you can follow to start learning about this powerful content management sys | [link](https://github.com/kuldeepmehra27/drupal-learning-path) |
+| reddit-001 | general | Did Drupal accidentally spend 20 years preparing for AI agents? | [link](https://www.reddit.com/r/drupal/comments/1w3lut0/did_drupal_accidentally_spend_20_years_preparing/) |
+| reddit-002 | general | Where Drupal Still Wins in 2026? | [link](https://kokocinski.me/blog/where-drupal-still-wins-2026) |
+| reddit-003 | general | anyone else noticing WordPress clients asking about Drupal more lately? | [link](https://www.reddit.com/r/drupal/comments/1wafr55/anyone_else_noticing_wordpress_clients_asking/) |
+| reddit-004 | general | Is Drupal having a renaissance? | [link](https://www.reddit.com/r/drupal/comments/1wsc3xy/is_drupal_having_a_renaissance/) |
+| reddit-005 | general | What is Drupal.displace() and why should I care? | [link](https://drupalize.me/blog/what-drupaldisplace-and-why-should-i-care) |
+| reddit-006 | general | Anyone else still running Drupal 7 in production in 2026? | [link](https://www.reddit.com/r/drupal/comments/1v7ts78/anyone_else_still_running_drupal_7_in_production/) |
+| reddit-007 | general | Anyone else inheriting D7 sites where nobody knows what half the modules even do anymore? | [link](https://www.reddit.com/r/drupal/comments/1vxsncl/anyone_else_inheriting_d7_sites_where_nobody/) |
+| reddit-008 | general | Should I stick with Drupal? A junior’s dilemma between a niche career and market trends. | [link](https://www.reddit.com/r/drupal/comments/1s691af/should_i_stick_with_drupal_a_juniors_dilemma/) |
+| reddit-009 | general | You cannot update core-recommend today because of a security advisory from Symfony | [link](https://www.reddit.com/r/drupal/comments/1tpcb05/you_cannot_update_corerecommend_today_because_of/) |
+| reddit-010 | module-code | Drupal + MariaDB forever, or what are you running? Yearly database survey | [link](https://www.reddit.com/r/drupal/comments/1wnzm5q/drupal_mariadb_forever_or_what_are_you_running/) |

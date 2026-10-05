@@ -34,7 +34,7 @@ interface SeQuestion {
 
 interface CuratedQuestion {
   id: string;
-  lane: 'dse_classic' | 'dse_modern' | 'php_general' | 'course_scenario';
+  lane: 'dse_classic' | 'dse_modern' | 'php_general' | 'course_scenario' | 'reddit';
   era: 'classic' | 'modern';
   phase: string;
   question: string;
@@ -116,6 +116,26 @@ function coursePrompts(): CuratedQuestion[] {
   return prompts;
 }
 
+/** r/drupal posts harvested via the logged-in browser (old.reddit HTML listings). */
+function redditPosts(): CuratedQuestion[] {
+  const raw = JSON.parse(fs.readFileSync(path.join(RAW_DIR, 'reddit-harvest.json'), 'utf8')) as {
+    posts: Array<{ title: string; url: string; selftext: string; score: string }>;
+  };
+  const qlike = raw.posts
+    .filter(p => /\?|how (do|can)|what (is|are)|why (is|do|does)|best way|recommend/i.test(p.title))
+    .slice(0, 10);
+  return qlike.map((p, index) => ({
+    id: `reddit-${String(index + 1).padStart(3, '0')}`,
+    lane: 'reddit' as const,
+    era: 'modern' as const,
+    phase: phaseFor(p.title),
+    question: p.title,
+    sourceUrl: p.url,
+    communityScore: Number(p.score) || 0,
+    hasAcceptedAnswer: false,
+  }));
+}
+
 async function main(): Promise<void> {
   const load = (name: string) => JSON.parse(fs.readFileSync(path.join(RAW_DIR, `${name}.json`), 'utf8')) as { questions: SeQuestion[] };
   const dseClassic = load('dse-classics');
@@ -128,6 +148,7 @@ async function main(): Promise<void> {
     // PHP-general lane: timeless problem types, not Drupal specifics.
     ...toCurated(take(phpClassic.questions.filter(q => q.tags.includes('php')), 12, { sortBy: 'score' }), 'php_general', 'php-c'),
     ...coursePrompts().slice(0, 8),
+    ...redditPosts(),
   ];
 
   fs.mkdirSync(path.dirname(OUT_JSON), { recursive: true });
@@ -152,6 +173,7 @@ async function main(): Promise<void> {
     `| dse_modern | ${byLane.get('dse_modern') ?? 0} | Drupal Stack Exchange most recent answered questions (current-version phrasing) |`,
     `| php_general | ${byLane.get('php_general') ?? 0} | Stack Overflow PHP all-time top (problem types, successor to the phpbuilder.net-era forums) |`,
     `| course_scenario | ${byLane.get('course_scenario') ?? 0} | Course/curriculum objectives (GitHub: Acquia study guide, training repos) |`,
+    `| reddit | ${byLane.get('reddit') ?? 0} | r/drupal question-like posts (harvested via the logged-in browser; old.reddit listings) |`,
     '',
     '| Phase | Count |',
     '|---|---|',

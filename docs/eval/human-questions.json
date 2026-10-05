@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-10-05T15:29:09.223Z",
-  "count": 72,
+  "generatedAt": "2026-10-05T15:43:27.184Z",
+  "count": 82,
   "questions": [
     {
       "id": "dse-c-001",
@@ -720,6 +720,106 @@
       "question": "If you're new to Drupal, here are some steps you can follow to start learning about this powerful content management system:",
       "sourceUrl": "https://github.com/kuldeepmehra27/drupal-learning-path",
       "communityScore": 1,
+      "hasAcceptedAnswer": false
+    },
+    {
+      "id": "reddit-001",
+      "lane": "reddit",
+      "era": "modern",
+      "phase": "general",
+      "question": "Did Drupal accidentally spend 20 years preparing for AI agents?",
+      "sourceUrl": "https://www.reddit.com/r/drupal/comments/1w3lut0/did_drupal_accidentally_spend_20_years_preparing/",
+      "communityScore": 58,
+      "hasAcceptedAnswer": false
+    },
+    {
+      "id": "reddit-002",
+      "lane": "reddit",
+      "era": "modern",
+      "phase": "general",
+      "question": "Where Drupal Still Wins in 2026?",
+      "sourceUrl": "https://kokocinski.me/blog/where-drupal-still-wins-2026",
+      "communityScore": 47,
+      "hasAcceptedAnswer": false
+    },
+    {
+      "id": "reddit-003",
+      "lane": "reddit",
+      "era": "modern",
+      "phase": "general",
+      "question": "anyone else noticing WordPress clients asking about Drupal more lately?",
+      "sourceUrl": "https://www.reddit.com/r/drupal/comments/1wafr55/anyone_else_noticing_wordpress_clients_asking/",
+      "communityScore": 43,
+      "hasAcceptedAnswer": false
+    },
+    {
+      "id": "reddit-004",
+      "lane": "reddit",
+      "era": "modern",
+      "phase": "general",
+      "question": "Is Drupal having a renaissance?",
+      "sourceUrl": "https://www.reddit.com/r/drupal/comments/1wsc3xy/is_drupal_having_a_renaissance/",
+      "communityScore": 43,
+      "hasAcceptedAnswer": false
+    },
+    {
+      "id": "reddit-005",
+      "lane": "reddit",
+      "era": "modern",
+      "phase": "general",
+      "question": "What is Drupal.displace() and why should I care?",
+      "sourceUrl": "https://drupalize.me/blog/what-drupaldisplace-and-why-should-i-care",
+      "communityScore": 35,
+      "hasAcceptedAnswer": false
+    },
+    {
+      "id": "reddit-006",
+      "lane": "reddit",
+      "era": "modern",
+      "phase": "general",
+      "question": "Anyone else still running Drupal 7 in production in 2026?",
+      "sourceUrl": "https://www.reddit.com/r/drupal/comments/1v7ts78/anyone_else_still_running_drupal_7_in_production/",
+      "communityScore": 31,
+      "hasAcceptedAnswer": false
+    },
+    {
+      "id": "reddit-007",
+      "lane": "reddit",
+      "era": "modern",
+      "phase": "general",
+      "question": "Anyone else inheriting D7 sites where nobody knows what half the modules even do anymore?",
+      "sourceUrl": "https://www.reddit.com/r/drupal/comments/1vxsncl/anyone_else_inheriting_d7_sites_where_nobody/",
+      "communityScore": 27,
+      "hasAcceptedAnswer": false
+    },
+    {
+      "id": "reddit-008",
+      "lane": "reddit",
+      "era": "modern",
+      "phase": "general",
+      "question": "Should I stick with Drupal? A junior’s dilemma between a niche career and market trends.",
+      "sourceUrl": "https://www.reddit.com/r/drupal/comments/1s691af/should_i_stick_with_drupal_a_juniors_dilemma/",
+      "communityScore": 26,
+      "hasAcceptedAnswer": false
+    },
+    {
+      "id": "reddit-009",
+      "lane": "reddit",
+      "era": "modern",
+      "phase": "general",
+      "question": "You cannot update core-recommend today because of a security advisory from Symfony",
+      "sourceUrl": "https://www.reddit.com/r/drupal/comments/1tpcb05/you_cannot_update_corerecommend_today_because_of/",
+      "communityScore": 25,
+      "hasAcceptedAnswer": false
+    },
+    {
+      "id": "reddit-010",
+      "lane": "reddit",
+      "era": "modern",
+      "phase": "module-code",
+      "question": "Drupal + MariaDB forever, or what are you running? Yearly database survey",
+      "sourceUrl": "https://www.reddit.com/r/drupal/comments/1wnzm5q/drupal_mariadb_forever_or_what_are_you_running/",
+      "communityScore": 15,
       "hasAcceptedAnswer": false
     }
   ]
