@@ -19,6 +19,7 @@
     "index:fetch-questions": "tsx scripts/fetch-community-questions.ts",
     "index:curate-questions": "tsx scripts/curate-community-questions.ts",
     "index:audit-questions": "tsx scripts/audit-community-questions.ts",
+    "index:audit-skills": "tsx scripts/audit-skills.ts",
     "index:build": "npm run index:build --workspace @drupal-dev-mcp/knowledge --",
     "index:verify": "npm run index:verify --workspace @drupal-dev-mcp/knowledge --",
     "index:rebuild": "npm run index:rebuild --workspace @drupal-dev-mcp/knowledge --",
