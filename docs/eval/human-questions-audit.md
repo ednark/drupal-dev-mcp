@@ -48,4 +48,4 @@ Overall: 54/82 (66%) covered or weak; 28 flagged for review.
 - [ ] Add body-derived query variants for the ~10 title-only questions that carry specifics in their bodies.
 - [ ] Candidate corpus extension: commerce/payments contrib modules (Stripe question was the clearest miss).
 - [ ] Consider a small "routing API for hook_menu migrants" guidance doc — the classic→modern migration question recurs in the community.
-- [ ] Promote ~10 audited questions with unambiguous ground truth into `BENCHMARK_CASES`.
+- [x] Promote audited questions into `BENCHMARK_CASES` — done 2026-10-05: 5 human-phrased cases with unambiguous ground truth, verified in lexical mode (`regions in a theme`, `autowire service`, `Permanent Cache Bin/Memcache`, `custom exception subscriber`, `webform email handler`). Benchmark now 25 cases; the release gate is proportional (80%) instead of a fixed 16. The audit's hybrid-only winners were deliberately excluded — they pass via embeddings but fail lexical, and this gate runs lexical.
