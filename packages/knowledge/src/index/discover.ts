@@ -86,7 +86,7 @@ export function isJunkContent(content: string): boolean {
   return false;
 }
 
-async function documentsFromDirectory(options: {
+export async function documentsFromDirectory(options: {
   directory: string;
   sourceKey: string;
   drupalVersion: string;

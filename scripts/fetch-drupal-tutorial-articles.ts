@@ -92,7 +92,7 @@ async function main(): Promise<void> {
     try {
       const content = await fetchWithJina(url);
 
-      const fileContent = `# Drupal docs snapshot\nSource: ${url}\n\n${content}`;
+      const fileContent = `Drupal docs snapshot\nSource: ${url}\n\n${content}`;
       fs.writeFileSync(filePath, fileContent, 'utf-8');
       console.log(`  ✓ saved as ${filename}`);
       successCount++;
