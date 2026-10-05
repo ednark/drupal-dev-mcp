@@ -22,6 +22,10 @@ data/lancedb/**
 
 # Downloaded/scraped source documents (populated by fetch scripts)
 data/sources/**
+# Exception: the curated placement-guidance corpus is hand-authored, not
+# fetched — it must survive data/sources rebuilds, so it is version-controlled.
+!data/sources/drupal-placement-guidance/
+!data/sources/drupal-placement-guidance/**
 !data/sources/.gitkeep
 
 # Runtime cache files
