@@ -6,7 +6,7 @@ envelope, resource URIs, capability advertisement, and status semantics.
 
 - The implementation lives in [`packages/server/src/server.ts`](../packages/server/src/server.ts); any change to the surface must update this document in the same change.
 - Usage guidance, routing recipes, and token budgeting for agent-loop authors live in [integration-agent-loops.md](integration-agent-loops.md). When the two disagree, this document wins on contract questions.
-- The long-form tool descriptions registered on the wire are the model-facing summary; they intentionally carry operational guidance (query style, when to verify citations) that does not belong here.
+- Tool descriptions on the wire are kept compact (discovery-critical facts only: what the tool returns, query style for `search_drupal`, expert gating and verify-your-citations). The full operational guidance — routing, grounding workflow, token budgeting, design-doc recipe — lives in the companion skill [`skills/querying-drupal-knowledge/`](../skills/querying-drupal-knowledge/SKILL.md) and in [integration-agent-loops.md](integration-agent-loops.md).
 
 Transport is local stdio. The server opens the active verified index build
 read-only. There are no write, exec, or network-fetch tools; the retrieval

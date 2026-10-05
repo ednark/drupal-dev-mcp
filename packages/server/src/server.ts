@@ -140,7 +140,7 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
 
   server.registerTool('search_drupal', {
     title: 'Search Drupal evidence',
-    description: 'Search the closed, versioned Drupal knowledge index (core code for 10.6/11.4, api.drupal.org topics, change records, official guides, user guide, coding standards, PSRs, 73 contrib modules, PHP/Twig/Symfony/Drush docs, and design-pattern/methodology sources). Returns evidence with provenance, never generated advice. Query style: use short keyword or identifier queries ("hook_entity_presave", "EntityTypeManagerInterface", "cache tags render array") — they score better than natural-language sentences; run several narrow queries rather than one broad one. Use projects/source_types/entity_kinds filters to narrow (e.g. source_types ["core_code"] for normative APIs, ["change_record"] for why an API changed between versions). Results below min_score are dropped as noise; set 0 to widen. Semantic hits carry chunk-level citation URIs (chunkResourceUri) — cite those when available. Prefer get_drupal_document to verify any claim you rely on.',
+    description: 'Search the closed, versioned Drupal knowledge index (core code 10.6/11.4, api.drupal.org, change records, official guides, coding standards, 73 contrib modules, PHP/Twig/Symfony/Drush docs). Returns evidence with provenance, never advice. Use short keyword or identifier queries (e.g. "hook_entity_presave", "EntityTypeManagerInterface") — they score better than sentences; run several narrow queries rather than one broad one. source_types ["guidance"] narrows to curated change-placement guidance.',
     inputSchema: z.object({
       query: z.string().min(1),
       drupal_version: DrupalVersionSchema.default('11.4'),
@@ -173,7 +173,7 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
 
   server.registerTool('get_drupal_entity', {
     title: 'Get Drupal entity',
-    description: 'Resolve one indexed Drupal entity by opaque ID or exact identifier with explicit disambiguation. Candidate ordering is deterministic within a single index build.',
+    description: 'Resolve one indexed Drupal entity by opaque ID (ent_…) or exact identifier, with explicit disambiguation, relations, and evidence. Candidate ordering is deterministic within an index build.',
     inputSchema: z.object({
       entity_id: z.string().startsWith('ent_').optional(),
       identifier: z.string().min(1).optional(),
@@ -201,7 +201,7 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
 
   server.registerTool('get_drupal_entities', {
     title: 'Get Drupal entities in batch',
-    description: 'Resolve up to 25 indexed Drupal entities by opaque ID in one call. Unknown IDs are reported per item as not_found instead of failing the batch. Relations are omitted unless requested.',
+    description: 'Resolve up to 25 indexed Drupal entities by opaque ID (ent_…) in one call. Unknown IDs are reported per item as not_found instead of failing the batch.',
     inputSchema: z.object({
       entity_ids: z.array(z.string().startsWith('ent_')).min(1).max(25),
       drupal_version: DrupalVersionSchema.default('11.4'),
@@ -223,7 +223,7 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
 
   server.registerTool('get_drupal_document', {
     title: 'Get Drupal source document',
-    description: 'Return the exact indexed text of one source document, or of a single chunk when chunk_id is given. Use this to verify a citation against source content without re-searching.',
+    description: 'Return the exact indexed text of one source document, or a single chunk (chunk_id). Use to verify a citation against source content — the mechanical citation check.',
     inputSchema: z.object({
       document_id: z.string().startsWith('doc_'),
       chunk_id: z.string().startsWith('chk_').optional(),
@@ -239,7 +239,7 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
 
   server.registerTool('get_index_status', {
     title: 'Get Drupal knowledge index status',
-    description: 'Report the active verified index build: readiness, build date, versions, counts, and verification. Use this to decide whether to trust evidence freshness.',
+    description: 'Report the active verified index build: readiness, build date, versions, counts, verification. Use to judge evidence freshness before trusting results.',
     inputSchema: z.object({}),
     outputSchema: IndexStatusOutputSchema,
     annotations: READ_ONLY_ANNOTATIONS,
@@ -250,7 +250,7 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
 
   server.registerTool('explore_drupal_relationships', {
     title: 'Explore Drupal relationships',
-    description: 'Traverse deterministic, evidence-backed Drupal relationships (extends, implements, injects, implements_hook, subscribes_to, decorates, changed_by, ...). Use for API genealogy: what implements a hook, what a service injects, what deprecated an API, which change record altered it. Start from an entity_id resolved via get_drupal_entity. Low-confidence edges are excluded by default; raise max_depth to 2-3 for focused subgraphs, and keep max_nodes modest to bound response size.',
+    description: 'Traverse deterministic, evidence-backed Drupal relationships (extends, implements, injects, implements_hook, subscribes_to, decorates, changed_by, deprecated_by, …) for API genealogy. Start from an ent_… ID resolved via get_drupal_entity. Edges below min_confidence (default 0.7) are excluded.',
     inputSchema: z.object({
       entity_id: z.string().startsWith('ent_'),
       predicates: z.array(RelationPredicateSchema).optional(),
@@ -281,7 +281,7 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
 
   server.registerTool('ask_a_drupal_expert', {
     title: 'Ask a Drupal expert',
-    description: 'Synthesized answers to Drupal questions with mandatory citations to the knowledge index — the worked example of turning indexed evidence into a grounded conclusion. Unlike the retrieval tools (search_drupal etc.), this tool ASKS AN LLM TO REASON over gathered evidence and may state conventions, trade-offs, and recommendations ("where should this change live", "when is a custom theme warranted", "how do I migrate a site"). Placement/decision questions additionally pull the curated placement-guidance corpus. Modes: "ask" (single evidence round: Objective one-liner plus concise answer plus Version notes, fast) or "research" (iterative multi-query rounds yielding a design-doc-shaped report: Objective, Goals/non-goals, Findings with reversibility marks, Alternatives, Open issues with next steps, Version notes, Recommended steps, optional evidence-backed Mermaid). Requires OPENAI_API_KEY in the server environment; without it the tool reports status "unavailable" and every other tool keeps working. Answers can report insufficient_evidence instead of guessing; verify API details against cited drupal:// resources. Every answer carries a mechanical grounding measurement (grounding.sentences / citedSentences / groundingDensity) — low density means most of the prose is uncited; low density is a warning, high density is not proof of support (use claim-support checking separately).',
+    description: 'Evidence-grounded synthesized answers to Drupal questions needing conclusions rather than retrieval ("where should this change live", "when is a custom theme warranted"). Opt-in: requires OPENAI_API_KEY in the server environment; without it returns status "unavailable" and all other tools keep working. Modes: "ask" (one evidence round, concise answer) or "research" (iterative multi-query rounds, design-doc-shaped report). Every answer cites drupal:// resources and carries grounding-density stats; unanswerable questions return insufficient_evidence instead of guesses. Verify cited URIs with get_drupal_document before relying on prose — citation URIs can be subtly wrong.',
     inputSchema: z.object({
       question: z.string().min(1).describe('A question needing synthesis, not just retrieval. Natural language is fine here — the tool converts it into index-friendly searches.'),
       depth: z.enum(['ask', 'research']).default('ask'),

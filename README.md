@@ -33,7 +33,7 @@ npm run index:rebuild -- --with-embeddings
 
 ## MCP surface
 
-The normative wire contract for these tools — schemas, result envelope, `_meta` keys, resource URIs, capability advertisement, and status semantics — is [docs/tools-spec.md](docs/tools-spec.md). The six read-only, non-destructive, idempotent, closed-world retrieval tools plus one opt-in synthesis tool:
+The normative wire contract for these tools — schemas, result envelope, `_meta` keys, resource URIs, capability advertisement, and status semantics — is [docs/tools-spec.md](docs/tools-spec.md). A companion agent skill packages the usage guidance (routing, grounding workflow, token budgeting) for skill-aware clients: [`skills/querying-drupal-knowledge/`](skills/querying-drupal-knowledge/SKILL.md). The six read-only, non-destructive, idempotent, closed-world retrieval tools plus one opt-in synthesis tool:
 
 - `search_drupal` — searches evidence using version, mode, project, source type, entity kind, limit, snippet-budget, and relevance-floor (`min_score`) filters. Short keyword/identifier queries score best; semantic hits carry chunk-level citation URIs. Ordering is deterministic within an index build. `source_types: ["guidance"]` narrows to the curated change-placement corpus (where a change should live).
 - `get_drupal_entity` — resolves an opaque `ent_…` ID or exact identifier and returns disambiguation, metadata, deprecations, evidence, and relationships.
