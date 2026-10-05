@@ -129,6 +129,14 @@ function projectFor(relative: string, project: SourceLocation['project'], subdir
  * Fingerprints one source directory with discovery-identical selection:
  * extension gate, size gate, utf8 read, minimum-length and junk gates, then
  * per-source content dedupe. Returns entries keyed by discovery locator.
+ *
+ * `seenContent` carries the dedupe set across calls: discovery applies its
+ * content dedupe source-wide (one pass over every project directory), so a
+ * caller fingerprinting a multi-directory source must share one set —
+ * otherwise a file byte-identical to one in an earlier directory (e.g. the
+ * GPL LICENSE.txt shipped in every contrib module) survives here but was
+ * deduped away in the index, and freshness reports a permanent false
+ * "changed" for that project.
  */
 export async function fingerprintDirectory(options: {
   directory: string;
@@ -137,9 +145,10 @@ export async function fingerprintDirectory(options: {
   includeCode: boolean;
   project: SourceLocation['project'];
   subdir?: string;
+  seenContent?: Set<string>;
 }): Promise<Map<string, string>> {
   const entries = new Map<string, string>();
-  const seenContent = new Set<string>();
+  const seenContent = options.seenContent ?? new Set<string>();
   for (const file of await walkFiles(options.directory)) {
     if (!eligibleExtension(file, options.includeCode)) continue;
     let info;
@@ -186,9 +195,13 @@ export async function fingerprintSource(repoRoot: string, location: SourceLocati
   if (typeof location.project !== 'string' && location.project.mode === 'subdir') {
     let subdirs: string[] = [];
     try { subdirs = (await readdir(directory, { withFileTypes: true })).filter(entry => entry.isDirectory()).map(entry => entry.name); } catch { return null; }
+    // Discovery dedupes identical content source-wide in one pass (first
+    // traversal wins), so every subdir must share one dedupe set — otherwise
+    // files deduped in the index survive here and the digest diverges.
+    const seenContent = new Set<string>();
     for (const subdir of subdirs) {
       const sub = path.join(directory, subdir);
-      for (const [locator, hash] of await fingerprintDirectory({ directory: sub, sourceKey: location.sourceKey, drupalVersion: location.drupalVersion, includeCode: location.includeCode, project: location.project, subdir })) {
+      for (const [locator, hash] of await fingerprintDirectory({ directory: sub, sourceKey: location.sourceKey, drupalVersion: location.drupalVersion, includeCode: location.includeCode, project: location.project, subdir, seenContent })) {
         if (!combined.has(locator)) combined.set(locator, hash);
       }
       if (location.git === 'subdir') {

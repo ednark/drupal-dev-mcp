@@ -65,6 +65,33 @@ test('fingerprintDirectory is stable, detects edits, and ignores junk', async ()
   assert.equal((await fingerprintDirectory(options)).size, 2);
 });
 
+test('content dedupe is shared across a source subdirectories, mirroring discovery', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'drupal-mcp-fresh-dedup-'));
+  // Byte-identical across modules, like the GPL LICENSE.txt shipped in every
+  // contrib checkout: discovery dedupes it source-wide (first traversal wins).
+  const license = 'GPL-2.0-or-later. '.repeat(60);
+  for (const mod of ['ai', 'date']) {
+    await mkdir(path.join(root, mod), { recursive: true });
+    await writeFile(path.join(root, mod, 'LICENSE.txt'), license);
+    await writeFile(path.join(root, mod, 'README.md'), `# ${mod}\n\n` + 'Module specific documentation. '.repeat(20) + '\n');
+  }
+  const base = { sourceKey: 'contrib_code', drupalVersion: 'all', includeCode: true, project: { mode: 'subdir' } as const };
+
+  // Independent per-directory sets (the old, broken behavior): both copies survive.
+  const aiIndependent = await fingerprintDirectory({ ...base, directory: path.join(root, 'ai'), subdir: 'ai' });
+  const dateIndependent = await fingerprintDirectory({ ...base, directory: path.join(root, 'date'), subdir: 'date' });
+  assert.ok(aiIndependent.has('ai:LICENSE.txt'));
+  assert.ok(dateIndependent.has('date:LICENSE.txt'));
+
+  // One shared set (the fix): 'ai' claims the hash, so 'date' must drop its copy.
+  const shared = new Set<string>();
+  const aiShared = await fingerprintDirectory({ ...base, directory: path.join(root, 'ai'), subdir: 'ai', seenContent: shared });
+  const dateShared = await fingerprintDirectory({ ...base, directory: path.join(root, 'date'), subdir: 'date', seenContent: shared });
+  assert.ok(aiShared.has('ai:LICENSE.txt'));
+  assert.ok(!dateShared.has('date:LICENSE.txt'));
+  assert.ok(dateShared.has('date:README.md'));
+});
+
 test('compareSourceState classifies fresh, changed, missing, new, and unfetched', () => {
   assert.equal(compareSourceState(null, null).status, 'unfetched');
   assert.equal(compareSourceState(null, indexed({ digest: 'a' })).status, 'missing');
