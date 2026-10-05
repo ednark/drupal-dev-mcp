@@ -119,7 +119,11 @@ Return the exact indexed text of `document_id` (`doc_…`), or of one
 `chunk_id` (`chk_…`) within it. Verification primitive: check a claim against
 source without re-searching.
 
-Output: `status` (`found | not_found`), `uri`, `mimeType`, `text`.
+Output: `status` (`found | not_found`), `uri`, `mimeType`, `text`, and
+`textLength` (character count of `text`). Large documents can exceed 10k
+tokens whole; `search_drupal` hits carry chunk-level `chunkResourceUri`
+values — for long documents, verify at chunk granularity instead of
+fetching the full text.
 
 ### `get_index_status`
 

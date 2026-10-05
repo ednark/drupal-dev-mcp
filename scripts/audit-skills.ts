@@ -26,7 +26,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 
-const VAGUE = /\b(helper|utils|tools|documents|data|files)\b/i;
+// Only flags titles whose *distinguishing* content is a generic word. Compound
+// terms like "Data Integrity Failures Standards" (OWASP A08's actual name) are
+// legitimate titles, so the match must not be a word inside a multi-word term.
+const VAGUE = /^(?:the\s+)?(?:helper|utils|tools|documents|data|files)(?:\s+(?:and|or|of|for|the)\s+\w+)*$/i;
 const TIME_SENSITIVE = /\b(?:before|after|until|since)\s+(?:January|February|March|April|May|June|July|August|September|October|November|December\s+)?20\d{2}\b/i;
 
 interface SkillFinding {
@@ -54,7 +57,7 @@ function auditDocument(id: string, title: string, project: string, repositoryPat
 
   if (lines > 500) findings.push(`body-length: ${lines} lines exceeds the 500-line guidance — consider splitting reference files`);
 
-  if (VAGUE.test(title)) findings.push(`vague-naming: title "${title}" routes poorly — name the specific capability`);
+  if (VAGUE.test(title.trim())) findings.push(`vague-naming: title "${title}" routes poorly — name the specific capability`);
 
   if (TIME_SENSITIVE.test(content)) {
     findings.push('time-sensitive: contains "before/after <year>" phrasing — check for rot');

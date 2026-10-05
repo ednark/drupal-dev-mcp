@@ -52,6 +52,7 @@ const DocumentOutputSchema = z.object({
   uri: z.string().optional(),
   mimeType: z.string().optional(),
   text: z.string().optional(),
+  textLength: z.number().int().optional(),
 });
 const IndexStatusOutputSchema = z.object({
   ready: z.boolean(),
@@ -234,7 +235,7 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
     const uri = input.chunk_id ? `drupal://document/${input.document_id}#chunk/${input.chunk_id}` : `drupal://document/${input.document_id}`;
     const resource = await provider.readResource(uri);
     if (!resource) return toolResult({ status: 'not_found' }, []);
-    return toolResult({ status: 'found', uri: resource.uri, mimeType: resource.mimeType, text: resource.text }, [resource.uri]);
+    return toolResult({ status: 'found', uri: resource.uri, mimeType: resource.mimeType, text: resource.text, textLength: resource.text.length }, [resource.uri]);
   });
 
   server.registerTool('get_index_status', {

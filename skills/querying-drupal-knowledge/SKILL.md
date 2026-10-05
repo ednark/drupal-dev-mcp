@@ -46,6 +46,11 @@ Do not present a claim whose citation fails step 4. Prefer chunk-level
 `chunkResourceUri` when present. Semantic hits are chunk-level; lexical hits
 are document-level.
 
+Long documents: some indexed sources exceed 10k tokens whole (the result's
+`textLength` field tells you). For those, verify at chunk granularity —
+fetch the chunk's URI (`drupal://document/{id}#chunk/{chunkId}`) rather than
+the full document.
+
 ## Expert tool caveats
 
 - Without a key it returns `status: "unavailable"`; all retrieval tools keep working. The server also advertises `drupal-dev-mcp/synthesis` capability at initialize when synthesis is available.

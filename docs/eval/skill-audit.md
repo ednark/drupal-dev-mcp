@@ -11,9 +11,9 @@ document pollutes retrieval. Re-run with `npm run index:audit-skills`
 | Check | Flagged | Severity |
 |---|---|---|
 | frontmatter-description (SKILL.md) | **0** | ✅ every SKILL.md carries a specific description |
-| reference-toc (refs >100 lines, no contents header) | **59/59** | medium — hurts partial reads (agents `head` long files and miss scope) |
-| body-length (>500 lines) | 2 | low — `Drupal Patches` (1229L), `Troubleshooting - Skill Activation` (515L) |
-| vague-naming | 1 | low — "…Data Integrity Failures Standards" routes poorly |
+| reference-toc (refs >100 lines, no contents header) | **59/59** | **upstream-owned, ~zero impact on this index** — we chunk at ingest and serve chunk-level text; the TOC matters only to agents reading the files whole in the skill repo itself |
+| body-length (>500 lines) | 2 | consumer-boundary impact: `get_drupal_document` on the 1229L patch-workflow guide returns ~8.4k tokens. Mitigated 2026-10-05: `get_drupal_document` now returns `textLength` so agents switch to chunk-level fetches (skill + tools-spec teach the pattern) |
+| vague-naming | 0 | ✅ retracted — initial flag was a checker false positive ("Data" inside "Data Integrity Failures Standards", the legitimate OWASP A08 title); checker now only flags titles whose *distinguishing* content is a generic word |
 | time-sensitive | 0 | ✅ no "before/after year" rot detected |
 
 ## Interpretation
@@ -24,6 +24,8 @@ document pollutes retrieval. Re-run with `npm run index:audit-skills`
 
 ## Recommended actions
 
-- [ ] Optional upstream contribution: add contents headers to the 59 long reference files in the drupal-skills repo (mechanical, could be scripted).
+- [x] Retract the vague-naming finding (checker false positive) — fixed 2026-10-05.
+- [x] Oversized-document consumer impact — mitigated 2026-10-05 via `textLength` on `get_drupal_document` plus chunk-level-fetch guidance in the companion skill and tools-spec. Ingest-time section splitting was considered and rejected for now: it would drag freshness-fingerprint mirroring along with it (the same class of bug fixed in the dedupe incident) and is disproportionate for two documents.
+- [ ] Optional upstream contribution: add contents headers to the long reference files in the drupal-skills repo (mechanical, scriptable — benefits the skill repo's own users; ~zero effect on this index).
 - [ ] Re-run this audit after each `index:fetch` of the skills family to catch regressions early.
 - [ ] Extend checks if corpus sources change (e.g. if we ingest more skill-style repos, the same rubric applies — the script reads `source_type = 'skill'`).
