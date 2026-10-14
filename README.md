@@ -1,8 +1,15 @@
-# drupal-dev-mcp 0.2
+# drupal-dev-mcp
 
-Read-only Drupal development knowledge for MCP clients, with reasoning kept outside the server.
+**Version-aware Drupal knowledge for AI coding agents — with citations you can verify.**
 
-Version 0.2 is a clean-break redesign with three private npm workspaces:
+An [MCP](https://modelcontextprotocol.io/) server that answers Drupal questions from a local, version-scoped index of core API docs, change records, contrib source, Symfony/PHP docs, and curated guidance. Every result carries a `drupal://` citation, and `get_drupal_document` returns the exact indexed text behind a claim so it can be *checked* rather than trusted.
+
+- **Read-only by design.** The six retrieval tools never synthesize advice. The single synthesis tool (`ask_a_drupal_expert`) is opt-in, needs its own API key, and returns `insufficient_evidence` instead of guessing.
+- **Version-aware.** Query Drupal 10.6, 11.4, or the 12.0.x pre-release — or ask for an explicit cross-version search.
+- **Runs locally.** SQLite FTS5 plus a semantic graph. Embeddings are optional; without them search still works and reports `degraded_mode: "lexical_only"`.
+- **No server, no Docker.** One local index, stdio transport, MIT licensed.
+
+Version 0.2 is a clean-break redesign with three npm workspaces (none published to npm):
 
 - `@drupal-dev-mcp/knowledge` builds and queries a versioned SQLite, FTS5, semantic-graph, and optional LanceDB index.
 - `@drupal-dev-mcp/server` exposes seven deterministic MCP tools (six retrieval tools plus one opt-in synthesis tool) and three resource surfaces over a `KnowledgeProvider`.
