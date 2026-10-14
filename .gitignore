@@ -1,3 +1,8 @@
+# ─── Internal planning notes ────────────────────────────────────────────────
+# Private working notes; kept on disk locally, never published.
+plans/
+docs/write-an-effective-design-doc-distilled.md
+
 # ─── Dependencies ────────────────────────────────────────────────────────────
 node_modules/
 
