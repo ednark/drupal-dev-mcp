@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { DrupalAgent, OpenAiLlmProvider } from '@drupal-dev-mcp/agent';
 import type { KnowledgeProvider, NodeType, RelationPredicate } from '@drupal-dev-mcp/knowledge';
 
-const DrupalVersionSchema = z.enum(['10.6', '11.4', 'all']);
+const DrupalVersionSchema = z.enum(['10.6', '11.4', '12.0', 'all']);
 const NodeTypeSchema = z.enum([
   'document', 'module', 'class', 'interface', 'trait', 'enum', 'method', 'function',
   'hook', 'service', 'plugin', 'route', 'event', 'config',
@@ -141,7 +141,7 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
 
   server.registerTool('search_drupal', {
     title: 'Search Drupal evidence',
-    description: 'Search the closed, versioned Drupal knowledge index (core code 10.6/11.4, api.drupal.org, change records, official guides, coding standards, 73 contrib modules, PHP/Twig/Symfony/Drush docs). Returns evidence with provenance, never advice. Use short keyword or identifier queries (e.g. "hook_entity_presave", "EntityTypeManagerInterface") — they score better than sentences; run several narrow queries rather than one broad one. source_types ["guidance"] narrows to curated change-placement guidance.',
+    description: 'Search the closed, versioned Drupal knowledge index (core code 10.6/11.4/12.0, api.drupal.org, change records, official guides, coding standards, 73 contrib modules, PHP/Twig/Symfony/Drush docs). Returns evidence with provenance, never advice. Use short keyword or identifier queries (e.g. "hook_entity_presave", "EntityTypeManagerInterface") — they score better than sentences; run several narrow queries rather than one broad one. source_types ["guidance"] narrows to curated change-placement guidance.',
     inputSchema: z.object({
       query: z.string().min(1),
       drupal_version: DrupalVersionSchema.default('11.4'),

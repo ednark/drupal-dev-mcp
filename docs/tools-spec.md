@@ -64,7 +64,7 @@ you read only one, read the payload.
 
 ## Common parameter semantics
 
-- `drupal_version`: `"10.6" | "11.4" | "all"`, default `"11.4"`. The active set of versions is reported by `get_index_status` (`availableDrupalVersions`) — do not hardcode beyond the enum.
+- `drupal_version`: `"10.6" | "11.4" | "12.0" | "all"`, default `"11.4"`. The active set of versions is reported by `get_index_status` (`availableDrupalVersions`) — do not hardcode beyond the enum.
 - Opaque IDs are prefix-tagged: entities `ent_…`, documents `doc_…`, chunks `chk_…`. Input schemas enforce the prefixes.
 - Limits and floors are bounded by `zod` on the wire; out-of-range values fail validation before reaching the provider.
 

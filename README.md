@@ -23,7 +23,7 @@ npm run index:verify
 npm run mcp:start
 ```
 
-The active build defaults to Drupal 11.4. Every query can target Drupal 10.6 or request an explicit cross-version search.
+The active build defaults to Drupal 11.4. Every query can target Drupal 10.6, the pre-release Drupal 12.0 (12.0.x branch), or request an explicit cross-version search.
 
 Embeddings are optional. Without them, search remains fully operational through SQLite FTS5 and returns `degraded_mode: "lexical_only"`. To create the unified LanceDB table, explicitly authorize sending indexed chunk text to the configured embedding provider and run:
 

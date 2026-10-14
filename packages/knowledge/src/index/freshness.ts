@@ -42,6 +42,7 @@ export interface SourceLocation {
 export const SOURCE_LOCATIONS: readonly SourceLocation[] = [
   { sourceKey: 'drupal_core_10', folders: ['drupal-core-10.6'], drupalVersion: '10.6', includeCode: true, project: 'drupal', git: 'root' },
   { sourceKey: 'drupal_core_11', folders: ['drupal-core-11.4', 'drupal-core'], drupalVersion: '11.4', includeCode: true, project: 'drupal', git: 'root' },
+  { sourceKey: 'drupal_core_12', folders: ['drupal-core-12.0'], drupalVersion: '12.0', includeCode: true, project: 'drupal', git: 'root' },
   { sourceKey: 'contrib_code', folders: ['contrib-module-code'], drupalVersion: 'all', includeCode: true, project: { mode: 'subdir' }, git: 'subdir' },
   { sourceKey: 'drupal_examples', folders: ['drupal-examples'], drupalVersion: 'all', includeCode: true, project: 'examples', git: 'root' },
   ...(

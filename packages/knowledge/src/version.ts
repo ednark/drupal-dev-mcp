@@ -1,7 +1,7 @@
 import type { DrupalVersion } from './types.js';
 
 export const DEFAULT_DRUPAL_VERSION = '11.4' as const;
-export const SUPPORTED_DRUPAL_VERSIONS = ['10.6', '11.4'] as const;
+export const SUPPORTED_DRUPAL_VERSIONS = ['10.6', '11.4', '12.0'] as const;
 
 export interface VersionMetadata {
   versionScope: 'drupal_core' | 'contrib_project' | 'php' | 'symfony' | 'agnostic';
@@ -31,8 +31,9 @@ export function normalizeDrupalVersion(raw?: string | null): VersionMetadata {
       stability: value.includes('dev') ? 'development' : 'stable',
     };
   }
-  const match = value.match(/(10|11)(?:\.(\d+))?/);
-  const versionLine = match ? `${match[1]}.${match[2] ?? (match[1] === '10' ? '6' : '4')}` : value;
+  const match = value.match(/(10|11|12)(?:\.(\d+))?/);
+  const defaultMinor: Record<string, string> = { '10': '6', '11': '4', '12': '0' };
+  const versionLine = match ? `${match[1]}.${match[2] ?? defaultMinor[match[1]]}` : value;
   return {
     versionScope: 'drupal_core',
     versionLine,

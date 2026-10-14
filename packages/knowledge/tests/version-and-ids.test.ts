@@ -15,9 +15,14 @@ test('version labels and contrib constraints normalize consistently', () => {
   assert.equal(normalizeDrupalVersion('general').versionScope, 'agnostic');
   assert.equal(normalizeDrupalVersion('11.x').versionLine, '11.4');
   assert.equal(normalizeDrupalVersion('10.6.x').versionLine, '10.6');
+  assert.equal(normalizeDrupalVersion('12.x').versionLine, '12.0');
+  assert.equal(normalizeDrupalVersion('12.0.x').versionLine, '12.0');
   assert.equal(constraintIncludes('^10.3 || ^11', '11.4'), true);
   assert.equal(constraintIncludes('^10.3', '11.4'), false);
   assert.equal(isCompatible('10.6.x', '10.6'), true);
   assert.equal(isCompatible('10.6.x', '11.4'), false);
+  assert.equal(isCompatible('10.6.x', '12.0'), false);
+  assert.equal(isCompatible('11.4.x', '12.0'), false);
+  assert.equal(isCompatible('12.0.x', '12.0'), true);
   assert.equal(isCompatible('all', '11.4'), true);
 });

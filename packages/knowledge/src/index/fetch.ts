@@ -6,6 +6,9 @@ const CORE_REPOSITORY = 'https://git.drupalcode.org/project/drupal.git';
 const CORE_LINES = [
   { version: '10.6', branch: '10.6.x', directory: 'drupal-core-10.6' },
   { version: '11.4', branch: '11.4.x', directory: 'drupal-core-11.4' },
+  // Drupal 12.0 is pre-release (12.0.0 ships the week of Dec 7, 2026); pin the
+  // stable 12.0.x branch rather than `main`, which rolls to 12.1.x afterwards.
+  { version: '12.0', branch: '12.0.x', directory: 'drupal-core-12.0' },
 ] as const;
 
 function run(command: string, args: string[], cwd: string): Promise<void> {

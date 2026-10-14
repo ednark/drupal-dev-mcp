@@ -6,7 +6,7 @@ description: Retrieves Drupal development evidence (APIs, hooks, services, entit
 # Querying Drupal knowledge via drupal-dev-mcp
 
 The server is a read-only evidence engine over a closed, versioned index
-(Drupal core 10.6 + 11.4 code, api.drupal.org, change records, official
+(Drupal core 10.6 + 11.4 + 12.0 code, api.drupal.org, change records, official
 guides, user guide, coding standards, 73 contrib modules, PHP/Twig/Symfony/
 Drush docs, curated placement guidance). It returns evidence with provenance;
 it never executes code, fetches URLs, or mutates state. Synthesis exists as
@@ -70,5 +70,5 @@ your own): [reference/design-doc-recipe.md](reference/design-doc-recipe.md)
 ## Degradation and versions
 
 - `degradedMode: "lexical_only"` means embeddings are unavailable; search still works via SQLite FTS5. Lexical-only is normal for fully local setups.
-- `drupal_version` accepts `10.6`, `11.4`, or `all` (default `11.4`); `get_index_status` reports the versions actually present.
+- `drupal_version` accepts `10.6`, `11.4`, `12.0`, or `all` (default `11.4`; 12.0 covers the pre-release 12.0.x branch until 12.0.0 ships); `get_index_status` reports the versions actually present.
 - Result ordering is deterministic within an index build; builds are the unit of reproducibility.

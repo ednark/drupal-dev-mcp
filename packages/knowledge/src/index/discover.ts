@@ -140,6 +140,7 @@ export async function discoverDocuments(repoRoot: string, fixtureLimit?: number)
   const coreConfigs = [
     { directory: 'drupal-core-10.6', sourceKey: 'drupal_core_10', version: '10.6' },
     { directory: 'drupal-core-11.4', sourceKey: 'drupal_core_11', version: '11.4' },
+    { directory: 'drupal-core-12.0', sourceKey: 'drupal_core_12', version: '12.0' },
   ];
   for (const core of coreConfigs) {
     const directory = path.join(sources, core.directory);

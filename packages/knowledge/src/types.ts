@@ -1,4 +1,4 @@
-export type DrupalVersion = '10.6' | '11.4' | 'all';
+export type DrupalVersion = '10.6' | '11.4' | '12.0' | 'all';
 export type SearchMode = 'hybrid' | 'lexical' | 'semantic';
 export type NodeType =
   | 'document'

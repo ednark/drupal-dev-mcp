@@ -18,7 +18,7 @@ class ExampleManager implements ExampleManagerInterface {
   public function version(): string { return '${version}'; }
 }
 `;
-  for (const version of ['10.6', '11.4']) {
+  for (const version of ['10.6', '11.4', '12.0']) {
     const core = path.join(sources, `drupal-core-${version}`, 'core', 'lib', 'Drupal', 'Core', 'Example');
     await mkdir(core, { recursive: true });
     await writeFile(path.join(core, 'ExampleManager.php'), php(version));

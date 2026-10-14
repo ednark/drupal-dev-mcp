@@ -6,7 +6,7 @@ import { extractGraph, isGraphEligibleDocument } from '../graph/index.js';
 import { SOURCE_BY_KEY } from '../registry.js';
 import { createSchema, openDatabase, SCHEMA_VERSION } from '../storage/schema.js';
 import type { ExtractedEntity, NormalizedDocument, RelationRecord } from '../types.js';
-import { normalizeDrupalVersion } from '../version.js';
+import { normalizeDrupalVersion, SUPPORTED_DRUPAL_VERSIONS } from '../version.js';
 import { discoverDocuments } from './discover.js';
 import type { ActiveManifest } from './manifest.js';
 import { getDefaultIndexRoot } from './manifest.js';
@@ -148,19 +148,28 @@ export async function buildIndex(options: BuildOptions): Promise<BuildResult> {
   }
   const crossVersionGroups = new Map<string, ExtractedEntity[]>();
   for (const entity of uniqueEntities.values()) {
-    if (!['10.6', '11.4'].includes(entity.drupalVersion)) continue;
+    if (!['10.6', '11.4', '12.0'].includes(entity.drupalVersion)) continue;
     const key = `${entity.project ?? ''}:${entity.kind}:${entity.canonicalName.toLowerCase()}`;
     crossVersionGroups.set(key, [...(crossVersionGroups.get(key) ?? []), entity]);
   }
   for (const pair of crossVersionGroups.values()) {
-    const ten = pair.find(entity => entity.drupalVersion === '10.6');
-    const eleven = pair.find(entity => entity.drupalVersion === '11.4');
-    if (!ten || !eleven) continue;
-    for (const [from, to] of [[ten, eleven], [eleven, ten]] as const) pendingRelations.push({
-      id: relationId(from.id, 'equivalent_to', to.id, from.sourceDocumentId), fromId: from.id,
-      predicate: 'equivalent_to', toId: to.id, confidence: 1, extractor: 'cross-version-identity',
-      evidenceDocumentId: from.sourceDocumentId,
-    });
+    for (let i = 0; i < pair.length; i++) {
+      for (let j = i + 1; j < pair.length; j++) {
+        const from = pair[i];
+        const to = pair[j];
+        if (from.drupalVersion === to.drupalVersion) continue;
+        pendingRelations.push({
+          id: relationId(from.id, 'equivalent_to', to.id, from.sourceDocumentId), fromId: from.id,
+          predicate: 'equivalent_to', toId: to.id, confidence: 1, extractor: 'cross-version-identity',
+          evidenceDocumentId: from.sourceDocumentId,
+        });
+        pendingRelations.push({
+          id: relationId(to.id, 'equivalent_to', from.id, to.sourceDocumentId), fromId: to.id,
+          predicate: 'equivalent_to', toId: from.id, confidence: 1, extractor: 'cross-version-identity',
+          evidenceDocumentId: to.sourceDocumentId,
+        });
+      }
+    }
   }
   const relationTransaction = db.transaction(() => {
     for (const relation of pendingRelations) {
@@ -215,6 +224,8 @@ export async function buildIndex(options: BuildOptions): Promise<BuildResult> {
   if (parseSuccessRate < 0.99) errors.push(`Parse success ${(parseSuccessRate * 100).toFixed(2)}% is below 99%`);
   if (!vectorCount) warnings.push('Vector index not built; hybrid queries will use lexical-only mode');
   if (!documents.some(document => document.drupalVersion === '10.6')) warnings.push('Drupal 10.6 source snapshot is absent');
+  if (!documents.some(document => document.drupalVersion === '11.4')) warnings.push('Drupal 11.4 source snapshot is absent');
+  if (!documents.some(document => document.drupalVersion === '12.0')) warnings.push('Drupal 12.0 source snapshot is absent');
   const verification = { passed: errors.length === 0, errors, warnings };
   const completedAt = new Date().toISOString();
   db.prepare('UPDATE index_runs SET completed_at = ?, status = ?, metadata_json = ? WHERE id = ?').run(completedAt, verification.passed ? 'verified' : 'failed', JSON.stringify({ counts, parseSuccessRate, fixtureLimit: options.fixtureLimit ?? null }), runId);
@@ -227,7 +238,7 @@ export async function buildIndex(options: BuildOptions): Promise<BuildResult> {
     buildPath,
     builtAt: completedAt,
     defaultDrupalVersion: '11.4',
-    availableDrupalVersions: ['10.6', '11.4'],
+    availableDrupalVersions: SUPPORTED_DRUPAL_VERSIONS.filter(version => documents.some(document => document.drupalVersion === version)),
     embeddingModel,
     counts,
     fixtureLimit: options.fixtureLimit,

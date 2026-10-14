@@ -31,6 +31,7 @@ Drupal core is fetched into independent shallow snapshots:
 
 - `data/sources/drupal-core-10.6` from `10.6.x`
 - `data/sources/drupal-core-11.4` from `11.4.x`
+- `data/sources/drupal-core-12.0` from `12.0.x` (pre-release until 12.0.0 ships)
 
 Queries default to 11.4. `all`, `general`, branch labels, and Composer-style contrib constraints normalize through one compatibility model. Core-major mismatches are filtered before ranking. An explicit `all` search marks results as cross-version instead of implying compatibility.
 
@@ -55,7 +56,7 @@ Entity and document IDs are opaque deterministic hashes with `ent_…` and `doc_
 
 No LLM creates graph edges.
 
-The PHP parser extracts declarations, namespace imports, inheritance, interface implementations, trait use, containment, calls, instantiation, Drupal hook implementations, plugin attributes, and deprecation hints. The YAML parser extracts service definitions, aliases, decorators, injection, tags, routes, handlers, permissions/requirements, and config references. Matching Drupal 10.6 and 11.4 entities receive evidence-backed `equivalent_to` edges.
+The PHP parser extracts declarations, namespace imports, inheritance, interface implementations, trait use, containment, calls, instantiation, Drupal hook implementations, plugin attributes, and deprecation hints. The YAML parser extracts service definitions, aliases, decorators, injection, tags, routes, handlers, permissions/requirements, and config references. Matching Drupal 10.6, 11.4, and 12.0 entities receive evidence-backed `equivalent_to` edges (all version pairs).
 
 Confidence policy:
 

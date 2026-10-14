@@ -44,7 +44,7 @@ const provider: KnowledgeProvider = {
     return null;
   },
   async getIndexStatus() {
-    return { ready: true, schemaVersion: 1, defaultDrupalVersion: '11.4', availableDrupalVersions: ['10.6', '11.4'], counts: { entities: 1 } };
+    return { ready: true, schemaVersion: 1, defaultDrupalVersion: '11.4', availableDrupalVersions: ['10.6', '11.4', '12.0'], counts: { entities: 1 } };
   },
 };
 

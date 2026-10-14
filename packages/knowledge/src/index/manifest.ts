@@ -52,7 +52,7 @@ export function statusFromManifest(manifest: ActiveManifest | null): IndexStatus
       ready: false,
       schemaVersion: 1,
       defaultDrupalVersion: '11.4',
-      availableDrupalVersions: ['10.6', '11.4'],
+      availableDrupalVersions: ['10.6', '11.4', '12.0'],
       counts: {},
       verification: { passed: false, errors: ['No active index build'], warnings: [] },
     };
