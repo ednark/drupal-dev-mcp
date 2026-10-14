@@ -19,7 +19,8 @@
     "index:rebuild": "tsx src/cli.ts rebuild",
     "index:status": "tsx src/cli.ts status",
     "index:freshness": "tsx src/cli.ts freshness",
-    "index:benchmark": "tsx src/cli.ts benchmark"
+    "index:benchmark": "tsx src/cli.ts benchmark",
+    "index:version-smoke": "tsx src/cli.ts version-smoke"
   },
   "dependencies": {
     "@lancedb/lancedb": "^0.14.0",

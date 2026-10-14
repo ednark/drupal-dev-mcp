@@ -5,6 +5,7 @@ import { fetchCoreSnapshots, fetchGitSources } from './index/fetch.js';
 import { findRepoRoot, getDefaultIndexRoot, resolveActiveBuild, statusFromManifest } from './index/manifest.js';
 import { verifyActiveIndex } from './index/verify.js';
 import { runBenchmark } from './index/benchmark.js';
+import { runVersionSmoke } from './index/version-smoke.js';
 import { checkFreshness } from './index/freshness.js';
 import { SqliteKnowledgeProvider } from './query/provider.js';
 
@@ -63,7 +64,17 @@ async function main(): Promise<void> {
     } finally { provider.close(); }
     return;
   }
-  throw new Error(`Unknown command: ${command}. Use fetch, build, rebuild, verify, status, freshness, or benchmark.`);
+  if (command === 'version-smoke') {
+    const provider = await SqliteKnowledgeProvider.open(indexRoot);
+    try {
+      const versionArg = args.find(argument => argument.startsWith('--version='))?.split('=')[1];
+      const result = await runVersionSmoke(provider, { versions: versionArg?.split(',') });
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      if (!result.releaseGate) process.exitCode = 1;
+    } finally { provider.close(); }
+    return;
+  }
+  throw new Error(`Unknown command: ${command}. Use fetch, build, rebuild, verify, status, freshness, benchmark, or version-smoke.`);
 }
 
 main().catch(error => {

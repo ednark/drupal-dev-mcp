@@ -82,6 +82,7 @@ npm run index:rebuild     # clean full-index build; no old-index migration
 npm run index:status      # report active run, counts, versions, and warnings
 npm run index:freshness   # compare data/sources against the active build; exit 1 when sources need re-processing
 npm run index:benchmark   # run the 20-question top-five evidence gate
+npm run index:version-smoke  # version-scoped retrieval probes (per-version presence/absence matrix); exit 1 on failure
 npm run check             # typecheck + test in one gate
 npm test
 ```
