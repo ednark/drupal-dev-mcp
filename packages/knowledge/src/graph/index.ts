@@ -1,7 +1,7 @@
 import path from 'node:path';
 import type { GraphExtraction, NormalizedDocument } from '../types.js';
 import { extractPhpGraph } from './php.js';
-import { extractYamlGraph } from './yaml.js';
+import { extractYamlGraph, yamlGraphKind } from './yaml.js';
 
 const PHP_EXTENSIONS = new Set(['.php', '.module', '.install', '.theme']);
 
@@ -10,8 +10,10 @@ export function isGraphEligibleDocument(document: NormalizedDocument): boolean {
   const extension = path.extname(file).toLowerCase();
   if (PHP_EXTENSIONS.has(extension)) return true;
   if (extension !== '.yml') return false;
-  // CI pipeline YAML is indexed as text but is not Drupal semantic configuration.
-  return !/(?:^|\/)\.gitlab-ci\.yml$/i.test(file) && !/(?:^|\/)\.gitlab\//i.test(file);
+  // Only YAML files carrying Drupal machine-readable definitions are parsed
+  // for the graph; CI pipeline YAML and arbitrary repo YAML stay indexed as
+  // searchable text but mint no entities.
+  return yamlGraphKind(file) !== null;
 }
 
 export function extractGraph(document: NormalizedDocument): GraphExtraction {

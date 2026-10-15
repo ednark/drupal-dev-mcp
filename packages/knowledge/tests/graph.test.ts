@@ -62,6 +62,70 @@ test('CI YAML remains searchable text but is excluded from semantic graph parsin
   assert.deepEqual(extractGraph(ci), { entities: [], relations: [], errors: [] });
 });
 
+test('non-definition YAML stays text-only and mints no entities', () => {
+  const stray = document('core/tests/fixtures/random-file.yml', `parameters:\n  job: build\n`);
+  assert.equal(isGraphEligibleDocument(stray), false);
+  assert.deepEqual(extractGraph(stray), { entities: [], relations: [], errors: [] });
+  const infoFile = document('core/modules/example/example.info.yml', `name: Example\ndependencies:\n  - drupal:node\n`);
+  assert.equal(isGraphEligibleDocument(infoFile), false);
+  assert.deepEqual(extractYamlGraph(infoFile), { entities: [], relations: [], errors: [] });
+});
+
+test('SDC component definitions extract one component entity with prop and requires edges', () => {
+  const result = extractYamlGraph(document('core/themes/example/components/pager/pager.component.yml', `$schema: https://git.drupalcode.org/project/drupal/-/raw/HEAD/core/assets/schemas/v1/metadata.schema.json
+name: Pager
+status: stable
+props:
+  type: object
+  required:
+    - heading_id
+  properties:
+    heading_id:
+      type: string
+      title: Pagination heading ID
+    items:
+      type: Drupal\\Core\\Template\\Attribute
+      title: Items
+slots:
+  pages:
+    title: Pages
+requires:
+  drupal/core: '>=10.2'
+`));
+  assert.deepEqual(result.errors, []);
+  const component = result.entities.find(entity => entity.kind === 'component');
+  assert.ok(component && component.shortName === 'pager' && component.canonicalName === 'drupal:component:pager');
+  // Exactly one component per file: `name`/`status`/`props` are fields, not entities.
+  assert.equal(result.entities.length, 1);
+  assert.ok(result.relations.some(relation => relation.predicate === 'defines_property' && relation.unresolvedTarget === 'pager#heading_id:string'));
+  assert.ok(result.relations.some(relation => relation.predicate === 'defines_property' && relation.unresolvedTarget === 'pager#items:Drupal\\Core\\Template\\Attribute'));
+  assert.ok(result.relations.some(relation => relation.predicate === 'references' && relation.unresolvedTarget === 'drupal/core' && relation.confidence === 0.75));
+  // Slots are not props: no defines_property edge for them.
+  assert.ok(!result.relations.some(relation => relation.unresolvedTarget?.includes('#pages')));
+});
+
+test('config schema definitions extract config_schema entities per config prefix with mapping-key edges', () => {
+  const result = extractYamlGraph(document('core/modules/system/config/schema/system.schema.yml', `system.site:
+  type: config_object
+  label: 'Basic site configuration'
+  mapping:
+    name:
+      type: label
+    slogan:
+      type: label
+system.maintenance:
+  type: config_object
+  mapping:
+    message:
+      type: text
+`));
+  assert.deepEqual(result.errors, []);
+  assert.ok(result.entities.some(entity => entity.kind === 'config_schema' && entity.shortName === 'system.site' && entity.canonicalName === 'drupal:config_schema:system.site'));
+  assert.ok(result.entities.some(entity => entity.kind === 'config_schema' && entity.shortName === 'system.maintenance'));
+  assert.ok(result.relations.some(relation => relation.predicate === 'defines_property' && relation.unresolvedTarget === 'system.site#name' && relation.confidence === 0.9));
+  assert.ok(result.relations.some(relation => relation.predicate === 'defines_property' && relation.unresolvedTarget === 'system.maintenance#message'));
+});
+
 test('Drupal YAML extraction records services, injection, tags, routes, and handlers', () => {
   const services = extractYamlGraph(document('core/modules/example/example.services.yml', `services:
   class: Drupal\\example\\ExampleService

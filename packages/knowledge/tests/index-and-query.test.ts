@@ -25,6 +25,12 @@ class ExampleManager implements ExampleManagerInterface {
     const module = path.join(sources, `drupal-core-${version}`, 'core', 'modules', 'example');
     await mkdir(module, { recursive: true });
     await writeFile(path.join(module, 'example.services.yml'), `example.manager:\n  class: Drupal\\Core\\Example\\ExampleManager\n`);
+    const component = path.join(sources, `drupal-core-${version}`, 'core', 'themes', 'example', 'components', 'pager');
+    await mkdir(component, { recursive: true });
+    await writeFile(path.join(component, 'pager.component.yml'), `name: Pager\nprops:\n  type: object\n  properties:\n    items:\n      type: string\n      title: Version ${version}\n`);
+    const schema = path.join(sources, `drupal-core-${version}`, 'core', 'modules', 'example', 'config', 'schema');
+    await mkdir(schema, { recursive: true });
+    await writeFile(path.join(schema, 'example.schema.yml'), `example.settings:\n  type: config_object\n  mapping:\n    limit:\n      type: integer\n`);
   }
   return { repoRoot, indexRoot: path.join(repoRoot, 'data', 'index') };
 }
@@ -51,6 +57,13 @@ test('verified builds activate atomically and support lexical queries without Op
     const exact = await provider.getEntity({ identifier: 'Drupal\\Core\\Example\\ExampleManager', drupalVersion: '11.4' });
     assert.equal(exact.status, 'found');
     assert.equal(exact.entity?.drupalVersion, '11.4');
+    const component = await provider.getEntity({ identifier: 'pager', kind: 'component', drupalVersion: '11.4' });
+    assert.equal(component.status, 'found');
+    assert.equal(component.entity?.canonicalName, 'drupal:component:pager');
+    const schema = await provider.getEntity({ identifier: 'example.settings', kind: 'config_schema', drupalVersion: '11.4' });
+    assert.equal(schema.status, 'found');
+    const componentRelations = await provider.exploreRelationships({ entityId: component.entity!.id });
+    assert.ok(componentRelations.edges.some(edge => edge.predicate === 'defines_property' && edge.unresolvedTarget?.includes('items:string')));
     const graph = await provider.exploreRelationships({ entityId: exact.entity!.id });
     assert.ok(graph.edges.every(edge => edge.confidence >= 0.7));
     assert.ok(graph.edges.some(edge => edge.predicate === 'equivalent_to' && edge.confidence === 1));
@@ -116,13 +129,17 @@ test('semantic hits carry chunk-level citation URIs that resolve to exact chunk 
   try {
       const search = await provider.search({ query: 'ExampleManager', drupalVersion: '11.4', mode: 'semantic', limit: 5, minScore: 0 });
     assert.equal(search.degradedMode, undefined);
-    const chunkHit = search.results.find(result => result.chunkResourceUri);
-    assert.ok(chunkHit, 'expected a semantic hit carrying a chunk-level URI');
-    assert.match(chunkHit!.chunkResourceUri!, /^drupal:\/\/document\/doc_[A-Za-z0-9_-]+#chunk\/chk_[A-Za-z0-9_-]+$/);
-    assert.equal(chunkHit!.chunkId, chunkHit!.chunkResourceUri!.split('#chunk/')[1]);
-    const chunkResource = await provider.readResource(chunkHit!.chunkResourceUri!);
-    assert.ok(chunkResource?.text.includes('ExampleManager'), 'chunk resource returns exact indexed chunk text');
-    const missingChunk = await provider.readResource(`drupal://document/${chunkHit!.id}#chunk/chk_doesnotexist0000000000`);
+    const chunkHits = search.results.filter(result => result.chunkResourceUri);
+    assert.ok(chunkHits.length > 0, 'expected semantic hits carrying chunk-level URIs');
+    for (const chunkHit of chunkHits) {
+      assert.match(chunkHit!.chunkResourceUri!, /^drupal:\/\/document\/doc_[A-Za-z0-9_-]+#chunk\/chk_[A-Za-z0-9_-]+$/);
+      assert.equal(chunkHit!.chunkId, chunkHit!.chunkResourceUri!.split('#chunk/')[1]);
+      const chunkResource = await provider.readResource(chunkHit!.chunkResourceUri!);
+      assert.ok(chunkResource?.text, 'chunk resource resolves');
+    }
+    const relevantTexts = await Promise.all(chunkHits.map(async hit => (await provider.readResource(hit.chunkResourceUri!))?.text ?? ''));
+    assert.ok(relevantTexts.some(text => text.includes('ExampleManager')), 'a chunk hit resolves to exact indexed ExampleManager text');
+    const missingChunk = await provider.readResource(`drupal://document/${chunkHits[0]!.id}#chunk/chk_doesnotexist0000000000`);
     assert.equal(missingChunk, null);
   } finally { provider.close(); }
 });

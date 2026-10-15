@@ -14,11 +14,14 @@ export type NodeType =
   | 'plugin'
   | 'route'
   | 'event'
-  | 'config';
+  | 'config'
+  | 'component'
+  | 'config_schema';
 
 export type RelationPredicate =
   | 'contains'
   | 'defines'
+  | 'defines_property'
   | 'extends'
   | 'implements'
   | 'uses_trait'

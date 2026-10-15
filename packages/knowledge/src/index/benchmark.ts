@@ -32,6 +32,12 @@ export const BENCHMARK_CASES: BenchmarkCase[] = [
   { question: 'Permanent Cache Bin and Memcache', expected: ['cache.md', 'caching.md', 'memcache'] },
   { question: 'Custom exception subscriber does not handle PHP errors', expected: ['exceptionsubscriber'] },
   { question: 'webform email handler does not allow certain roles in to field', expected: ['emailwebformhandler'] },
+  // Contract-retrieval cases: machine-readable definitions (SDC components,
+  // config schema) must surface alongside their prose documentation. Added
+  // with milestone-1 structured YAML contract extraction.
+  { question: 'single directory components theming sdc', expected: ['single directory component', 'drupal-canvas-sdc'] },
+  { question: 'define sdc component yml metadata', expected: ['component.yml', 'drupal-canvas-sdc', 'single directory component'] },
+  { question: 'component yml slots required props documentation', expected: ['component.yml', 'slots'] },
 ] as const;
 
 export async function runBenchmark(provider: KnowledgeProvider, version = '11.4') {

@@ -6,7 +6,7 @@ import type { KnowledgeProvider, NodeType, RelationPredicate } from '@drupal-dev
 const DrupalVersionSchema = z.enum(['10.6', '11.4', '12.0', 'all']);
 const NodeTypeSchema = z.enum([
   'document', 'module', 'class', 'interface', 'trait', 'enum', 'method', 'function',
-  'hook', 'service', 'plugin', 'route', 'event', 'config',
+  'hook', 'service', 'plugin', 'route', 'event', 'config', 'component', 'config_schema',
 ]);
 const RelationPredicateSchema = z.enum([
   'contains', 'defines', 'extends', 'implements', 'uses_trait', 'calls', 'instantiates',

@@ -147,12 +147,14 @@ Output: `startEntity`, `nodes[]`, `edges[]` (each may carry
 `evidenceDocumentId`), `truncated`.
 
 Node kinds: `document, module, class, interface, trait, enum, method,
-function, hook, service, plugin, route, event, config`.
-Predicates: `contains, defines, extends, implements, uses_trait, calls,
-instantiates, references, implements_hook, invokes_hook, implemented_by,
-aliases, decorates, injects, tagged_with, handled_by, subscribes_to,
-dispatches, deprecated_by, documented_by, changed_by, example_of,
-equivalent_to`.
+function, hook, service, plugin, route, event, config, component,
+config_schema`. `component` and `config_schema` are extracted from SDC
+`.component.yml` and `config/schema/*.yml` definitions.
+Predicates: `contains, defines, defines_property, extends, implements,
+uses_trait, calls, instantiates, references, implements_hook,
+invokes_hook, implemented_by, aliases, decorates, injects, tagged_with,
+handled_by, subscribes_to, dispatches, deprecated_by, documented_by,
+changed_by, example_of, equivalent_to`.
 
 ### `ask_a_drupal_expert` *(opt-in synthesis)*
 
