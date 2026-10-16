@@ -31,6 +31,10 @@ data/sources/**
 # fetched — it must survive data/sources rebuilds, so it is version-controlled.
 !data/sources/drupal-placement-guidance/
 !data/sources/drupal-placement-guidance/**
+# Same for the concept-bridge guidance corpus (see corpus-issues ledger:
+# concept-bridge-recent-era-systems remedy).
+!data/sources/drupal-concept-bridge-guidance/
+!data/sources/drupal-concept-bridge-guidance/**
 !data/sources/.gitkeep
 
 # Runtime cache files
