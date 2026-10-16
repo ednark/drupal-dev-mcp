@@ -60,6 +60,7 @@ export const SOURCE_REGISTRY: readonly SourceDefinition[] = [
   { key: 'gof_patterns', displayName: 'Design patterns (GoF catalog)', type: 'methodology', authority: 80, defaultSearch: true, fetcher: 'supplemental-docs', parser: 'markdown', canonicalBaseUrl: 'https://sourcemaking.com/design_patterns', versionPolicy: 'agnostic', lexical: true, vector: true, graph: false },
   { key: 'drupal_theming_guide', displayName: 'Drupal theming guide', type: 'official_guide', authority: 95, defaultSearch: true, fetcher: 'theming-guide', parser: 'markdown', canonicalBaseUrl: 'https://www.drupal.org/docs/develop/theming-drupal', versionPolicy: 'agnostic', lexical: true, vector: true, graph: false },
   { key: 'drupal_placement_guidance', displayName: 'Drupal change placement guidance (curated)', type: 'guidance', authority: 90, defaultSearch: true, fetcher: 'curated-local', parser: 'markdown', canonicalBaseUrl: 'https://www.drupal.org/docs', versionPolicy: 'agnostic', lexical: true, vector: true, graph: false },
+  { key: 'drupal_concept_bridge', displayName: 'Drupal concept-bridge guidance (curated)', type: 'guidance', authority: 90, defaultSearch: true, fetcher: 'curated-local', parser: 'markdown', canonicalBaseUrl: 'https://www.drupal.org/docs', versionPolicy: 'agnostic', lexical: true, vector: true, graph: false },
 ] as const;
 
 export const SOURCE_BY_KEY = new Map(SOURCE_REGISTRY.map(source => [source.key, source]));

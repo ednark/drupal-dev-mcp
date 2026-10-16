@@ -181,6 +181,7 @@ export async function discoverDocuments(repoRoot: string, fixtureLimit?: number)
     ['drupal-coding-standards', 'drupal_coding_standards'], ['php-fig', 'php_fig'],
     ['drupal-theming-guide', 'drupal_theming_guide'],
     ['drupal-placement-guidance', 'drupal_placement_guidance'],
+    ['drupal-concept-bridge-guidance', 'drupal_concept_bridge'],
     ['twelve-factor', 'twelve_factor'], ['fowler', 'fowler'],
     ['ms-cloud-patterns', 'ms_cloud_patterns'], ['eip-patterns', 'eip_patterns'],
     ['gof-patterns', 'gof_patterns'],

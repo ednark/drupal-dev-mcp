@@ -10,12 +10,40 @@
       "observed": "At 11.4 targeting, lexical retrieval for the question surfaces a contrib module's composer.json (captcha, require.php >=8.2) alongside the correct core composer.json docs (which state 8.3). Small synthesis models (llama3.1:8b, gemma-4-E4B) cited the >=8.2 contrib doc and answered '8.2' with resolvable citations; one frontier pass repeated it. At 10.6 targeting the >=8.2 evidence is CORRECT for that version — the model then presented it as the Drupal 11 answer (version transposition, caught by claim-support's version-assertion rule).",
       "classification": "misleading-evidence-proximity",
       "classificationNote": "data is correct; ranking/context is not",
-      "locatedDocIds": ["doc_X1J78dy3IOW5Q3jgZuXNH3L1"],
-      "verifiedCorrectDocIds": ["doc_JJrT2OULGQFKyFJAEK10rBAt", "doc_9vyKdlgIlBQ_8H_F0fZyQr6I", "doc_y2ewOZtwUNlUzD2Jx7sZ865z"],
+      "locatedDocIds": [
+        "doc_X1J78dy3IOW5Q3jgZuXNH3L1",
+        "doc_GOTe9jiGgxdNBe1CS43CPGfw",
+        "doc_qHA182dQ8cuzgRzm2kQGtOxh",
+        "doc_y2ewOZtwUNlUzD2Jx7sZ865z",
+        "doc_B2q_bWtcvN7T1QvL8Ne91XE_",
+        "doc_fUTw5ftnTcBZwMumMcBnqmKW",
+        "doc_k4Pjr9wqvsKihiIMSfGGFqrf",
+        "doc_Alkmg3VzxYWwvNqKibGYWCLT",
+        "doc_42MbSmqU2l2LRCawXOPP9Oj2",
+        "doc_9WhMjVwR1lz7IqjGrBAoiYwI",
+        "doc_-PV9lWiM8Q9NBjE6uySZCs11"
+      ],
+      "verifiedCorrectDocIds": [
+        "doc_JJrT2OULGQFKyFJAEK10rBAt",
+        "doc_9vyKdlgIlBQ_8H_F0fZyQr6I",
+        "doc_y2ewOZtwUNlUzD2Jx7sZ865z"
+      ],
       "detection": "check_claim_support version-assertion rule flags 'never mentions Drupal 11'; expert-eval phpfloor across models and conditions",
       "remedy": "Rank core-project (project: drupal) documents above contrib for core-requirement questions, or boost official_guide/sourceType over contrib code in retrieval scoring; alternatively the search tool could expose a project filter agents can set.",
       "status": "open",
-      "firstObserved": "2026-09-26"
+      "firstObserved": "2026-09-26",
+      "sweepObservations": [
+        {
+          "date": "2026-10-16",
+          "source": "cs-phpfloor",
+          "text": "B1 retrieval 2026-10-16: kq=pass (expected doc rank 1 in top-5 for kq); question=pass (expected doc rank 3 in top-5 for question)"
+        },
+        {
+          "date": "2026-10-16",
+          "source": "cs-phpfloor",
+          "text": "B1 retrieval 2026-10-16: kq=pass (expected doc rank 1 in top-5 for kq); question=pass (expected doc rank 3 in top-5 for question)"
+        }
+      ]
     },
     {
       "id": "concept-bridge-recent-era-systems",
@@ -25,11 +53,56 @@
       "observed": "Neither llama3.1:8b nor gemma-4-E4B can produce the system name from their own weights (bare 0/4 on these questions), so neither LLM-derived nor deterministic keyword queries contain the bridge term; lexical retrieval misses. Curated human keyword queries ('single directory components SDC component theme', 'recipe install configuration content apply') retrieve the right docs instantly.",
       "classification": "concept-bridge gap",
       "classificationNote": "corpus is complete; the question-to-term bridge is missing",
-      "locatedDocIds": [],
+      "locatedDocIds": [
+        "doc_7W4xWRn4Vs_A7G-aYrGgH_Pr",
+        "doc_h3NIgBlAVqADIX_xe1qSBb_I",
+        "doc_wJfWaIeVsxBmde9kpsCgjaq0",
+        "doc_Qpaky9MvcE3LfR0M9fuscc2p",
+        "doc_gobCCDZXUY3wzfGz50erUhGR",
+        "doc_65yFPCgDH_3q-AAJe9fYx3s9",
+        "doc_Z9DfDUN4aYKxvCyupn49pg0a",
+        "doc_bPW8jYW62ehSyZz_pycmTUt3",
+        "doc_9YFQAxh2SL-v6EgAqkg-QmQL",
+        "doc_cC9dvzOMPmVNI6HRkQEAz8Jh",
+        "doc_cC8UMSK3DrOrd1lad_JunoFN",
+        "doc_g3qesdGboDq9SOlMKWvH3VRc",
+        "doc_pF84eE7Nr2px2DC7IV7i4f08",
+        "doc_8WUw9Wz3QIbM5B2pvymvt5BN",
+        "doc_YhqLTYldiz65OlGVLZ7HaDGV",
+        "doc_sQXAz-nEI8XK_-ThOTjRKER2",
+        "doc_IBypXnaCS4TVglbEHh1It2C2",
+        "doc_ozxq0yjd-HKJ4zCTJIMgujjz",
+        "doc_0mFmuGnZrvksSDFT3yytz5dA",
+        "doc_WzsVqURKP4oGlfGQKxz5Pv-h",
+        "doc_Jx5PfTIR7RYd1TTw47kZ2irI",
+        "doc_vgxHibUwHT5HaV1ucf1w_8kq"
+      ],
       "detection": "expert-eval tier-2 across models and conditions, 2026-09-26",
       "remedy": "Add curated concept-bridge guidance documents (like the placement-guidance corpus) mapping plain-language descriptions to system names, or enable semantic/embedding retrieval for these question shapes.",
       "status": "open",
-      "firstObserved": "2026-09-26"
+      "firstObserved": "2026-09-26",
+      "sweepObservations": [
+        {
+          "date": "2026-10-16",
+          "source": "cs-recipes",
+          "text": "B1 retrieval 2026-10-16: kq=pass (expected doc rank 1 in top-5 for kq); question=fail (expected doc absent in top-5 for question)"
+        },
+        {
+          "date": "2026-10-16",
+          "source": "cs-sdc",
+          "text": "B1 retrieval 2026-10-16: kq=pass (expected doc rank 1 in top-5 for kq); question=fail (expected doc absent in top-5 for question)"
+        },
+        {
+          "date": "2026-10-16",
+          "source": "cs-recipes",
+          "text": "B1 retrieval 2026-10-16: kq=pass (expected doc rank 1 in top-5 for kq); question=pass (expected doc rank 1 in top-5 for question)"
+        },
+        {
+          "date": "2026-10-16",
+          "source": "cs-sdc",
+          "text": "B1 retrieval 2026-10-16: kq=pass (expected doc rank 1 in top-5 for kq); question=pass (expected doc rank 1 in top-5 for question)"
+        }
+      ]
     },
     {
       "id": "version-targeting-agent-responsibility",
@@ -43,6 +116,32 @@
       "remedy": "Agents should pass the version the QUESTION asks about, not the version they are working in; claim-support's version-assertion rule mechanically flags the resulting mismatch.",
       "status": "mitigated-by-checker",
       "firstObserved": "2026-09-26"
+    },
+    {
+      "id": "currentuser",
+      "title": "Retrieval gap: currentuser question does not surface expected docs",
+      "question": "In Drupal 10 custom module code, how do I get the currently logged-in user account? Show code.",
+      "groundTruth": "(pending human verification)",
+      "observed": "kq: expected doc absent in top-5 for kq; question: expected doc absent in top-5 for question",
+      "classification": "retrieval-gap",
+      "locatedDocIds": [],
+      "detection": "sweep B1 retrieval check",
+      "remedy": "(pending human triage)",
+      "status": "proposed",
+      "firstObserved": "2026-10-16"
+    },
+    {
+      "id": "message",
+      "title": "Retrieval gap: message question does not surface expected docs",
+      "question": "In Drupal 10 custom module code, how do I show a status message to the user? Show code.",
+      "groundTruth": "(pending human verification)",
+      "observed": "kq: expected doc rank 1 in top-5 for kq; question: expected doc absent in top-5 for question",
+      "classification": "retrieval-gap",
+      "locatedDocIds": [],
+      "detection": "sweep B1 retrieval check",
+      "remedy": "(pending human triage)",
+      "status": "proposed",
+      "firstObserved": "2026-10-16"
     }
   ]
 }
