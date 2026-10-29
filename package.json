@@ -15,6 +15,7 @@
     "agent:research": "npm run research --workspace @drupal-dev-mcp/agent --",
     "index:fetch": "npm run index:fetch --workspace @drupal-dev-mcp/knowledge --",
     "index:fetch-advisories": "tsx scripts/fetch-security-advisories.ts",
+    "index:fetch-change-records": "tsx scripts/fetch-change-records.ts",
     "index:curate-chrome": "tsx scripts/curate-chrome.ts",
     "index:fetch-tutorials": "tsx scripts/fetch-drupal-tutorial-articles.ts",
     "index:fetch-certification": "tsx scripts/fetch-certification-study-guides-jina.ts",

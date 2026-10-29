@@ -170,8 +170,9 @@ Output `status` enum:
 
 | Status | Meaning |
 |---|---|
-| `answered` | Grounded answer/report with `citations[]` (`resourceUri`, `canonicalUrl?`, `title`) and mechanical `grounding` stats (`sentences`, `citedSentences`, `groundingDensity`). Low density is a warning; high density is not proof of support. |
+| `answered` | Grounded answer/report with `citations[]` (`resourceUri`, `canonicalUrl?`, `title`) and mechanical `grounding` stats (`sentences`, `citedSentences`, `groundingDensity`), and `usage` token totals (`promptTokens`, `completionTokens`, `totalTokens`, `calls`) when the provider reports usage. Low density is a warning; high density is not proof of support. |
 | `insufficient_evidence` | The evidence could not ground an answer; never a guess. |
+| *(stopReason only)* `no_new_evidence` | A research round admitted no new evidence — loop detection stopped the run honestly (reported as status `answered` when evidence exists). |
 | `unavailable` | No `OPENAI_API_KEY` in the server environment. All other tools keep working. |
 | `error` | Provider/runtime failure; `reason` carries the message. |
 

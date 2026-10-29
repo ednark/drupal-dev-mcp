@@ -56,7 +56,9 @@ test('research observes iteration and evidence budgets', async () => {
   const agent = new DrupalAgent({ knowledge: provider([evidence()]), llm, onEvent: event => events.push(event) });
   const answer = await agent.research('Architecture?', { maxIterations: 2, evidenceBudget: 5 });
   assert.equal(answer.iterations, 2);
-  assert.equal(answer.stopReason, 'max_iterations');
+  // Round 2 re-searches and admits no new evidence → the stall detector
+  // stops the loop honestly instead of running to max_iterations.
+  assert.equal(answer.stopReason, 'no_new_evidence');
   assert.ok(events.some(event => event.type === 'iteration_complete' && event.iteration === 2));
 });
 

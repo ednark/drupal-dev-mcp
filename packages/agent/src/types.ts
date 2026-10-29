@@ -6,10 +6,29 @@ export interface LlmRequest {
   prompt: string;
   responseFormat: 'text' | 'json';
   maxOutputTokens?: number;
+  /**
+   * Marks a low-stakes planning call (query derivation, research-loop
+   * planning). Providers may route these to a cheaper model
+   * (OPENAI_AGENT_PLAN_MODEL) — per-phase model routing.
+   */
+  plan?: boolean;
+}
+
+export interface LlmUsage {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  /** Number of LLM calls that produced this usage. */
+  calls: number;
 }
 
 export interface LlmProvider {
   generate(request: LlmRequest): Promise<string>;
+  /**
+   * Optional: token usage of the most recent generate() call, for cost
+   * observability. Null when the provider cannot report usage.
+   */
+  lastUsage?(): LlmUsage | null;
   /**
    * Optional: generate a short index-friendly search query from a natural
    * language question. Used by the agent to keyword-rewrite its first
@@ -24,7 +43,14 @@ export type AgentEvent =
   | { type: 'iteration_complete'; iteration: number; admitted: number }
   | { type: 'stop'; reason: AgentStopReason; iterations: number };
 
-export type AgentStopReason = 'completed' | 'insufficient_evidence' | 'max_iterations' | 'evidence_budget';
+export type AgentStopReason =
+  | 'completed'
+  | 'insufficient_evidence'
+  | 'max_iterations'
+  | 'evidence_budget'
+  | /** A full research round admitted no new evidence: further iterations
+      * would burn tokens rephrasing the same queries (loop detection). */
+    'no_new_evidence';
 
 export interface AgentOptions {
   knowledge: KnowledgeProvider;
@@ -43,4 +69,6 @@ export interface AgentAnswer {
   insufficientEvidence: boolean;
   /** Mechanical grounding-density measurement of the answer prose. */
   grounding: GroundingStats;
+  /** Token usage of the LLM calls behind this answer (cost observability). */
+  usage: LlmUsage | null;
 }

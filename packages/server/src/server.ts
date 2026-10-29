@@ -89,6 +89,13 @@ const ExpertOutputSchema = z.object({
   iterations: z.number().optional(),
   insufficientEvidence: z.boolean().optional(),
   grounding: GroundingStatsSchema.optional(),
+  /** Token usage of the LLM calls behind this answer (cost observability). */
+  usage: z.object({
+    promptTokens: z.number(),
+    completionTokens: z.number(),
+    totalTokens: z.number(),
+    calls: z.number(),
+  }).optional(),
   citations: z.array(z.object({ resourceUri: z.string(), canonicalUrl: z.string().optional(), title: z.string() })).optional(),
   evidence: z.array(z.record(z.string(), z.unknown())).optional(),
   reason: z.string().optional(),

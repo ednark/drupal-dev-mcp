@@ -84,6 +84,7 @@ Example MCP client entry after `npm run build`:
 ```bash
 npm run index:fetch       # refresh all git-based sources (core snapshots, contrib code, examples, skills, symfony docs); -- --core-only for core snapshots alone
 npm run index:fetch-advisories  # fetch Drupal core security advisories (cron-friendly; --pages=N for backfill, --check-only to diff)
+npm run index:fetch-change-records  # fetch NEW change records + full text (cron-friendly; --backfill-full-text upgrades existing files)
 npm run index:build       # build and atomically activate a verified index
 npm run index:verify      # verify active SQLite integrity and references
 npm run index:rebuild     # clean full-index build; no old-index migration
