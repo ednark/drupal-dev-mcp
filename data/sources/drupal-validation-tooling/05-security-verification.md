@@ -33,4 +33,5 @@ For findings with no indexed advisory, say so (`insufficient_evidence`) — neve
 
 - The advisory fetcher is cron-driven on the maintainer side (`npm run index:fetch-advisories`; hourly default cadence, more around scheduled core release windows). See `docs/plans/active/security-advisory-sidecar.md` for the deferred sub-rebuild design.
 - Contrib advisories are deliberately out of scope in this index (volume, per-project relevance). For contrib exposure, `composer audit` / `drush pm:security` are authoritative and on-demand.
+- **PHP runtime advisories are also out of scope**: this corpus is Drupal-core advisories only. PHP runtime vulnerabilities land upstream (php.net releases); their Drupal relevance is the runtime floor/support matrix (see placement guidance `16-php-runtime-floors.md`). An empty SA result must never be read as "the PHP runtime is safe".
 - An advisory corpus is evidence, not a scanner: it cannot tell you what *this* site has installed. Never skip the site-state tools because the corpus "looks current".

@@ -84,6 +84,15 @@ MODULES=(
   # coder — PHPCS Drupal/DrupalPractice sniffs; primary source for the
   # validation-tooling guidance (what phpcs catches on Drupal code).
   coder
+  # Version-gated agent-ecosystem modules (research intake 2026-10-29, B1):
+  # gates verified from each .info.yml core_version_requirement — Canvas is
+  # 11.3+ (must never surface for 10.6 queries), AI is ^10.5 || ^11.2,
+  # MCP Server is beta (^10 || ^11) with no stable release.
+  canvas
+  mcp_server
+  # NOTE: "drupal/tool_api" from the research intake does NOT exist on
+  # drupal.org (404) — fabricated/mis-attributed project name; do not add
+  # until verified. The "Tool API" may ship inside the AI module ecosystem.
   # Tier 2 — common, project-dependent
   commerce
   simple_oauth
