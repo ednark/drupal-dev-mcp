@@ -165,7 +165,7 @@ async function main(): Promise<void> {
   fs.writeFileSync(outPath, JSON.stringify(report, null, 2) + '\n');
   process.stdout.write(`\nresults written: ${outPath}`);
   process.stdout.write(`citation resolution: ${resolvedTotal}/${citationTotal}`);
-  print('Human review next: lookup/concept-trap correctness and refusal quality are judged from the committed answers (no LLM-as-judge).');
+  process.stdout.write('Human review next: lookup/concept-trap correctness and refusal quality are judged from the committed answers (no LLM-as-judge).\n');
 }
 
 void main();

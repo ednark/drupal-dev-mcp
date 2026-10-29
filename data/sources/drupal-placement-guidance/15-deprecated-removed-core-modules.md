@@ -10,6 +10,7 @@ Source: https://www.drupal.org/docs/core-modules-and-themes/deprecated-and-obsol
 |---|---|---|---|---|
 | **Contact** | present | present, `lifecycle: deprecated` (info.yml) | **removed** | On 11.4: usable but deprecated — plan migration. On 12.0: install the contrib Contact module or replace the functionality; do not build against core contact. |
 | **Forum** | present | **removed** | **removed** | On 10.6: legacy. On 11.4/12.0: install the contrib Forum module or restructure with core primitives (taxonomy + nodes + views). |
+| **Telephone** | present | present | **removed** | On 12.0: no core telephone field type — model phone numbers as string fields, or install the contrib telephone module. Verified: absent from the 12.0 snapshot, `pm:enable telephone` fails. |
 
 Verify against the target snapshot before asserting (`core/modules/<name>` presence, `lifecycle:` in the module's `.info.yml`) — the removal timeline advances per minor.
 

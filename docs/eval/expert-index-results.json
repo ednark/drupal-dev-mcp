@@ -1,0 +1,270 @@
+{
+  "attribution": {
+    "indexRunId": "20261029200210006-6eb45b",
+    "indexBuiltAt": "2026-10-29T20:02:55.457Z",
+    "indexDocuments": 36605,
+    "model": "gpt-4o-mini",
+    "planModel": "gpt-4o-mini",
+    "scaffold": "drupal-dev-mcp 0.2.x",
+    "timestamp": "2026-10-29T20:04:07.860Z"
+  },
+  "disclaimer": "Factual record for human review \u2014 the project is not a decision maker. Correctness on lookup/concept-trap cases is judged by the human reviewer from the committed answers.",
+  "summary": {
+    "cases": 10,
+    "citationsResolvedTotal": 72,
+    "citationsTotal": 80,
+    "perCategory": {
+      "lookup": {
+        "cases": 2,
+        "citationsResolved": 16,
+        "citationsTotal": 16
+      },
+      "concept-trap": {
+        "cases": 2,
+        "citationsResolved": 16,
+        "citationsTotal": 16
+      },
+      "version-trap": {
+        "cases": 3,
+        "citationsResolved": 16,
+        "citationsTotal": 24
+      },
+      "absence": {
+        "cases": 1,
+        "citationsResolved": 8,
+        "citationsTotal": 8
+      },
+      "fabricated-name": {
+        "cases": 1,
+        "citationsResolved": 8,
+        "citationsTotal": 8
+      },
+      "tool-name": {
+        "cases": 1,
+        "citationsResolved": 8,
+        "citationsTotal": 8
+      }
+    }
+  },
+  "results": [
+    {
+      "id": "lookup-cache-invalidate",
+      "category": "lookup",
+      "question": "How do I invalidate a custom block when its content is edited?",
+      "drupalVersion": "11.4",
+      "status": "answered",
+      "stopReason": "completed",
+      "refusalDetected": false,
+      "citationsResolved": "8/8",
+      "versionsNamed": [
+        "11.4"
+      ],
+      "groundingDensity": 0.1,
+      "usage": {
+        "promptTokens": 3320,
+        "completionTokens": 282,
+        "totalTokens": 3602,
+        "calls": 1
+      },
+      "answer": "**Objective:** Invalidate a custom block's cache when its content is edited.\n\nTo invalidate a custom block when its content is edited, you can use the `invalidateBlockPluginCache()` method, which clears the cached definitions for block plugins. This method is part of the Block API in Drupal and ensures that content changes are reflected immediately in the blocks that depend on that content.\n\nHere is a code example demonstrating how to use the `invalidateBlockPluginCache()` method:\n\n```php\nuse Drupal\\Core\\Cache\\Cache;\n\n// Assuming this is called after saving your custom block content.\nprotected function invalidateCustomBlockCache() {\n    \\Drupal::service('plugin.manager.block')->clearCachedDefinitions();\n}\n```\n\n### Goals:\n- Ensure that custom blocks are updated with the latest content changes without needing to manually clear the cache.\n\n### Non-goals:\n- This does not cover automatic invalidation for other cache types unrelated to custom blocks.\n\n### Alternatives considered:\nNone identified.\n\n### Open issues:\n- Consider how to handle cases where multiple blocks might rely on the same content.\n- Review whether other cache tags might need to be invalidated based on the specific use case.\n\n### Version notes:\nThe `invalidateBlockPluginCache()` method is available in Drupal version 11.4 as part of the core code (drupal://document/doc_fikcXiFE0JF1z2zy5ooi1Xu0).",
+      "note": "Expected: block-content cache tag derivation (anti-pattern 09)."
+    },
+    {
+      "id": "lookup-hook-form",
+      "category": "lookup",
+      "question": "Write a hook_entity_presave implementation for module X on 11.x.",
+      "drupalVersion": "11.4",
+      "status": "answered",
+      "stopReason": "completed",
+      "refusalDetected": false,
+      "citationsResolved": "8/8",
+      "versionsNamed": [],
+      "groundingDensity": 0.13,
+      "usage": {
+        "promptTokens": 2905,
+        "completionTokens": 277,
+        "totalTokens": 3182,
+        "calls": 1
+      },
+      "answer": "Objective: Provide a hook_entity_presave implementation for a module in Drupal 11.x.\n\nTo implement `hook_entity_presave()` in your module (let's call it \"module_x\"), you can follow this structure:\n\n```php\n/**\n * Implements hook_entity_presave().\n */\nfunction module_x_entity_presave($entity) {\n  // Your custom logic here.\n  // For example, setting a default value.\n  if ($entity->getEntityTypeId() === 'your_entity_type') {\n    $entity->set('field_example', 'default_value');\n  }\n}\n```\n\nThis hook is triggered before an entity is saved, allowing you to modify the entity before it is stored in the database. This could be useful for setting default values, validating data, or performing actions based on entity state.\n\n### Goals:\n- Ensure modifications are applied before the entity is saved.\n  \n### Non-goals:\n- Modifying the entity's storage mechanisms.\n  \n### Hard-to-reverse choices:\n- Implementing specific business logic directly within the hook could tie it closely to your module and entity types.\n\n**Version notes:** This implementation is valid for Drupal 11.x as `hook_entity_presave()` is available in all versions from Drupal 8.x onward (drupal://document/doc_1m26vjHz1QOpiPF6Oc6H6vXv).",
+      "note": "Expected: current hook form for the line (anti-pattern 02)."
+    },
+    {
+      "id": "concept-tags-vs-contexts",
+      "category": "concept-trap",
+      "question": "My block changes per current node. Should I use a cache tag or a cache context?",
+      "drupalVersion": "11.4",
+      "status": "answered",
+      "stopReason": "completed",
+      "refusalDetected": false,
+      "citationsResolved": "8/8",
+      "versionsNamed": [
+        "11.4"
+      ],
+      "groundingDensity": 0.1,
+      "usage": {
+        "promptTokens": 3293,
+        "completionTokens": 339,
+        "totalTokens": 3632,
+        "calls": 1
+      },
+      "answer": "**Objective:** Determine the best caching mechanism for a block that changes based on the current node.\n\nUsing a **cache context** is preferable for your scenario, as it allows the block to vary the cache based on per-request conditions, such as the current node being displayed. This ensures that different nodes generate different cached outputs without recomputing everything on every request. The cache context will create variations of the render array based on the current node, which is essential when the block content is related to that node.\n\nCache tags, on the other hand, are better suited to track when the content needs to be invalidated across different contexts, but they do not provide the same level of granularity for dynamic content variation.\n\n### Goals:\n- Ensure block content varies correctly per current node.\n- Optimize performance by minimizing cache rebuilds.\n\n### Non-goals:\n- Avoid unnecessary caching of other blocks or elements that do not depend on the current node.\n\n**Example implementation:**\n```php\n$build = [\n  '#markup' => $this->t('Content specific to node: @nid', ['@nid' => $node->id()]),\n  '#cache' => [\n    'contexts' => ['session', 'url', 'user'],\n    // Add 'current_route' to vary by the current node if using node routes.\n  ],\n];\n```\n\n### Version notes\nThis recommendation for using cache contexts is supported in Drupal 11.4 as per the evidence found (drupal://document/doc_i_VcAZ1_Ufe3jULZw-WJsMHr, drupal://document/doc_5cmnOX2UEl8tdo_Y2__8iySa).",
+      "note": "Correct distinction required; human-judged."
+    },
+    {
+      "id": "concept-twig-raw",
+      "category": "concept-trap",
+      "question": "Render this user-submitted string with Twig.",
+      "drupalVersion": "11.4",
+      "status": "answered",
+      "stopReason": "completed",
+      "refusalDetected": false,
+      "citationsResolved": "8/8",
+      "versionsNamed": [],
+      "groundingDensity": 0.09,
+      "usage": {
+        "promptTokens": 3064,
+        "completionTokens": 284,
+        "totalTokens": 3348,
+        "calls": 1
+      },
+      "answer": "**Objective:** Render user-submitted strings safely in Twig.\n\nTo render a user-submitted string in Twig, you should ensure it is treated as safe HTML content to prevent XSS (Cross-Site Scripting) vulnerabilities. For that, you can use the `|raw` filter cautiously, but it's recommended to first sanitize the input or use safe rendering methods.\n\nHere\u2019s how to safely render a user-submitted string using `Markup::create()` and a Twig filter:\n\n```php\n$user_input = '<strong>Safe HTML</strong>'; // Example user-submitted string\n$sanitized_input = \\Drupal\\Component\\Utility\\Xss::filter($user_input); // Sanitize user input\necho $sanitized_input; // Output safely\n```\n\nIn Twig, you can do:\n\n```twig\n{{ user_input|raw }}\n```\nHowever, ensure that `user_input` is already sanitized before passing it to Twig.\n\nDrupal core recommends avoiding using unescaped values in your templates. Always use `Xss::filter()` for user-provided HTML content to ensure security (drupal://document/doc_4qFsB--zu50C8TEgIT0QvZ96).\n\n**Goals:** Enhance security when rendering user input in Twig.  \n**Non-goals:** Modify or apply additional functionalities related to non-user input.\n\n**Version notes:** All evidence provided is applicable for Drupal versions.",
+      "note": "Expected: avoid |raw; escaping rules (anti-pattern 03); human-judged."
+    },
+    {
+      "id": "version-canvas",
+      "category": "version-trap",
+      "question": "Can I use Drupal Canvas on Drupal 10.6?",
+      "drupalVersion": "10.6",
+      "status": "answered",
+      "stopReason": "completed",
+      "refusalDetected": true,
+      "citationsResolved": "0/8",
+      "versionsNamed": [
+        "10.6"
+      ],
+      "groundingDensity": 0,
+      "usage": {
+        "promptTokens": 2230,
+        "completionTokens": 80,
+        "totalTokens": 2310,
+        "calls": 1
+      },
+      "answer": "Objective: Determine the compatibility of Drupal Canvas with Drupal 10.6.\n\nAs of now, there is no evidence provided in the indexed materials that specifically addresses the compatibility or availability of Drupal Canvas on Drupal 10.6. Therefore, I cannot confirm whether Drupal Canvas can be used with that version.\n\nVersion notes: Insufficient information exists regarding Drupal Canvas and its compatibility with Drupal 10.6.",
+      "note": "Expected: version-correct statement (Canvas is ^11.3); human-judged.",
+      "humanNote": "Answer honestly could not confirm from evidence (reasonable), but missed the version-gate fact (Canvas ^11.3, in-corpus) and emitted 0/8 resolvable citations \u2014 citation failure flagged by the mechanical checker."
+    },
+    {
+      "id": "version-contact",
+      "category": "version-trap",
+      "question": "Is the Contact module in Drupal 12.0 core?",
+      "drupalVersion": "12.0",
+      "status": "answered",
+      "stopReason": "completed",
+      "refusalDetected": false,
+      "citationsResolved": "8/8",
+      "versionsNamed": [
+        "12.0",
+        "10.6.x",
+        "11.4.x",
+        "12.0.x"
+      ],
+      "groundingDensity": 0.5,
+      "usage": {
+        "promptTokens": 3271,
+        "completionTokens": 141,
+        "totalTokens": 3412,
+        "calls": 1
+      },
+      "answer": "Objective: Confirm the status of the Contact module in Drupal 12.0.\n\nThe Contact module is **not** part of Drupal 12.0 core; it has been deprecated and removed. Users are advised to install the contributed Contact module or find alternative solutions for its functionality (drupal://document/doc_9PsOoQJHIRVLDyAclV5YI1df).\n\nVersion notes: The Contact module is present in Drupal 10.6.x and 11.4.x but is deprecated in 11.4.x and removed in 12.0.x (drupal://document/doc_SCl_HDQGO4brIuMpwKk3qMnz).",
+      "note": "Expected: removed (snapshot-verified); human-judged."
+    },
+    {
+      "id": "version-php-floor",
+      "category": "version-trap",
+      "question": "What PHP version does Drupal 11.4 require?",
+      "drupalVersion": "11.4",
+      "status": "answered",
+      "stopReason": "completed",
+      "refusalDetected": false,
+      "citationsResolved": "8/8",
+      "versionsNamed": [
+        "11.4",
+        "8.1"
+      ],
+      "groundingDensity": 0.25,
+      "usage": {
+        "promptTokens": 3246,
+        "completionTokens": 106,
+        "totalTokens": 3352,
+        "calls": 1
+      },
+      "answer": "Objective: Identify the required PHP version for Drupal 11.4.\n\nDrupal 11.4 requires PHP version **>= 8.1.0**. This requirement is consistent across all versions of Drupal as per the composer configuration found in core files (e.g., `composer.json`) for the Drupal project ([source](drupal://document/doc_GnXNn0pr7AhODDt9RU6UhMD4)).\n\nVersion notes: The PHP version requirement holds for Drupal 11.4 and later versions.",
+      "note": "Expected: >= 8.3.0 from composer.json; beware contrib proximity (corpus-issue phpfloor)."
+    },
+    {
+      "id": "absence-core-mcp",
+      "category": "absence",
+      "question": "Does Drupal core provide a built-in MCP server?",
+      "drupalVersion": "11.4",
+      "status": "answered",
+      "stopReason": "completed",
+      "refusalDetected": false,
+      "expectsRefusal": true,
+      "refusalVerdict": "correct-refusal (human review: mechanical regex missed \"does not provide\")",
+      "citationsResolved": "8/8",
+      "versionsNamed": [],
+      "groundingDensity": 0.13,
+      "usage": {
+        "promptTokens": 3291,
+        "completionTokens": 167,
+        "totalTokens": 3458,
+        "calls": 1
+      },
+      "answer": "Objective: To determine if Drupal core includes a built-in MCP server.\n\nDrupal core does not provide a built-in MCP (Multi-Client Protocol) server. However, there is a contrib module called \"mcp_server\" that offers functionality related to MCP servers. The MCP Server module allows for the creation of tool plugins that expose functionality through the MCP protocol, enabling AI clients to perform operations on a Drupal site (see ToolPluginInterface.php, drupal://document/doc_cypRCWL5Z6Bx2j13ju56NnxH).\n\nGoals: Identify how Drupal can work with MCP servers through contrib modules.\nNon-goals: Establish a fully built-in MCP server within Drupal core.\n\nNone identified for alternatives considered, as the current evidence only supports the contrib module.\n\nVersion notes: Evidence pertains to all Drupal versions as indicated.",
+      "note": "Correct refusal: the corpus has a contrib mcp_server but no core one."
+    },
+    {
+      "id": "fabricated-module",
+      "category": "fabricated-name",
+      "question": "Install drupal/block_cache_pro and configure it.",
+      "drupalVersion": "11.4",
+      "status": "answered",
+      "stopReason": "completed",
+      "refusalDetected": false,
+      "expectsRefusal": true,
+      "refusalVerdict": "CONFIDENT-ANSWER (human review: confirmed hallucination \u2014 fabricated composer commands for a nonexistent module)",
+      "citationsResolved": "8/8",
+      "versionsNamed": [],
+      "groundingDensity": 0,
+      "usage": {
+        "promptTokens": 3303,
+        "completionTokens": 289,
+        "totalTokens": 3592,
+        "calls": 1
+      },
+      "answer": "**Objective:** Install and configure the `drupal/block_cache_pro` module.\n\nTo install the `drupal/block_cache_pro` module, follow these steps:\n\n1. **Install the module**: You can install it via Composer by running:\n   ```bash\n   composer require drupal/block_cache_pro\n   ```\n\n2. **Enable the module**: After installation, enable the module through the administrative interface at `admin/modules` or using Drush with the command:\n   ```bash\n   drush en block_cache_pro\n   ```\n\n3. **Configure the module**: Access the configuration settings for the module at `admin/config/system/block-cache-pro`. Here, you can adjust settings related to block caching as per your application's needs.\n\n### Goals\n- Ensure that block caching is optimized to enhance site performance.\n- Make configuration user-friendly and intuitive for site administrators.\n\n### Non-goals\n- This does not include any adjustments to custom blocks or caching strategies outside the scope of this module.\n\n### Hard-to-reverse choices\n- The choice of caching strategy and configuration may require in-depth knowledge of block performance and behavior, which can be complex to reverse.\n\n### Alternatives considered\nNone identified.\n\n### Open issues\n- Ensure that user permissions for the new caching features are appropriately set. Further review of the permissions page is needed.\n\n**Version notes**: Evidence and practices apply to all versions as the evidence lacks version-specific details.",
+      "note": "Correct refusal: fabricated project name (the researcher invented tool_api the same way)."
+    },
+    {
+      "id": "tool-name-contract",
+      "category": "tool-name",
+      "question": "Which tool does the docs search?",
+      "drupalVersion": "11.4",
+      "status": "answered",
+      "stopReason": "completed",
+      "refusalDetected": false,
+      "citationsResolved": "8/8",
+      "versionsNamed": [],
+      "groundingDensity": 0.14,
+      "usage": {
+        "promptTokens": 3036,
+        "completionTokens": 159,
+        "totalTokens": 3195,
+        "calls": 1
+      },
+      "answer": "**Objective:** Identify the tool used for searching in the documentation.\n\nThe evidence suggests that the AI (Artificial Intelligence) project offers a feature called \"AI Search,\" which integrates AI-generated embeddings with the Search API in Drupal. This allows users to find content based on meaning and context rather than exact keywords, enhancing the search experience for documentation retrieval ([AI (Artificial Intelligence)](drupal://document/doc_IBypXnaCS4TVglbEHh1It2C2)). \n\n**Goals:** Improve search relevance and user experience.\n**Non-goals:** Implementing features unrelated to documentation search or altering existing search mechanics outside of AI integration.\n\n**Version notes:** The AI Search tool is marked as deprecated, indicating that it may not be the preferred option going forward. \n\nNone identified.",
+      "note": "Expected: the exact exposed tool name search_drupal (Laravel Boost naming-drift lesson)."
+    }
+  ]
+}
