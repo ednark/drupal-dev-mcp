@@ -1,5 +1,5 @@
 {
-  "savedAt": "2026-10-29T11:00:30.820Z",
+  "savedAt": "2026-10-29T13:01:25.837Z",
   "version": "11.4",
   "cases": [
     {
@@ -154,6 +154,16 @@
     },
     {
       "question": "phpstan deprecation rules drupal extension baseline",
+      "passed": true,
+      "rank": 1
+    },
+    {
+      "question": "drupal canvas requirements version 11.3",
+      "passed": true,
+      "rank": 1
+    },
+    {
+      "question": "mcp server for drupal stdio http transports",
       "passed": true,
       "rank": 1
     },
