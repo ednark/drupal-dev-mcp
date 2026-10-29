@@ -91,6 +91,17 @@ export const VERSION_SMOKE_PROBES: VersionSmokeProbe[] = [
     terms: ['anti-patterns'],
     expect: { '10.6': 'present', '11.4': 'present', '12.0': 'present' },
   },
+  // Version-gated contrib (research intake B1): Canvas declares ^11.3, so
+  // composer semantics exclude it from 12.0 scope until upstream declares
+  // 12.x support — the gate hiding a not-yet-12-ready module is CORRECT.
+  {
+    id: 'canvas-version-gated-contrib',
+    description: 'Canvas (^11.3) resolves at 11.4 only; excluded from 10.6 and 12.0 scopes by its core constraint',
+    kind: 'search',
+    query: 'canvas personalization segment condition plugin',
+    pathTerms: ['canvas_personalization'],
+    expect: { '10.6': 'absent', '11.4': 'present', '12.0': 'absent' },
+  },
 ] as const;
 
 export interface VersionSmokeCase {

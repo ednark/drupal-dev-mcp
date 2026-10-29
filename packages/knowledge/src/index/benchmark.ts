@@ -79,6 +79,8 @@ export const BENCHMARK_CASES: BenchmarkCase[] = [
   { question: 'Twig raw filter security fix escaping bypass', expected: ['anti-patterns', 'raw'] },
   { question: 'phpcs Drupal coding standards DrupalPractice sniffs', expected: ['phpcs', 'drupalpractice'] },
   { question: 'phpstan deprecation rules drupal extension baseline', expected: ['phpstan', 'deprecation'] },
+  { question: 'drupal canvas requirements version 11.3', expected: ['canvas'] },
+  { question: 'mcp server for drupal stdio http transports', expected: ['mcp server'] },
   { question: 'SA-CORE-2026-014', expected: ['sa-core-2026-014'] },
   { question: 'security advisory remote code execution field ui', expected: ['sa-core'] },
   { question: 'object oriented hook implementations autowired services ModuleHandler deprecated', expected: ['autowired', 'modulehandler'] },
