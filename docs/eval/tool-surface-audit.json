@@ -1,0 +1,81 @@
+{
+  "generatedAt": "2026-10-29T20:16:13.189Z",
+  "toolCount": 8,
+  "budgetGuidance": {
+    "toolCountMax": 10,
+    "surfaceTokensMax": 3000
+  },
+  "surfaceTokens": 1212,
+  "withinBudget": true,
+  "searchThenFetchCoverage": "2/8",
+  "tools": [
+    {
+      "id": "search_drupal",
+      "descriptionChars": 644,
+      "descriptionTokens": 161,
+      "schemaChars": 561,
+      "schemaTokens": 140,
+      "teachesSearchThenFetch": true
+    },
+    {
+      "id": "get_drupal_entity",
+      "descriptionChars": 189,
+      "descriptionTokens": 47,
+      "schemaChars": 368,
+      "schemaTokens": 92,
+      "teachesSearchThenFetch": false
+    },
+    {
+      "id": "get_drupal_entities",
+      "descriptionChars": 151,
+      "descriptionTokens": 38,
+      "schemaChars": 258,
+      "schemaTokens": 65,
+      "teachesSearchThenFetch": false
+    },
+    {
+      "id": "get_drupal_document",
+      "descriptionChars": 164,
+      "descriptionTokens": 41,
+      "schemaChars": 113,
+      "schemaTokens": 28,
+      "teachesSearchThenFetch": false
+    },
+    {
+      "id": "get_index_status",
+      "descriptionChars": 151,
+      "descriptionTokens": 38,
+      "schemaChars": 0,
+      "schemaTokens": 0,
+      "teachesSearchThenFetch": false
+    },
+    {
+      "id": "verify_drupal_modules",
+      "descriptionChars": 328,
+      "descriptionTokens": 82,
+      "schemaChars": 223,
+      "schemaTokens": 56,
+      "teachesSearchThenFetch": false
+    },
+    {
+      "id": "explore_drupal_relationships",
+      "descriptionChars": 293,
+      "descriptionTokens": 73,
+      "schemaChars": 426,
+      "schemaTokens": 107,
+      "teachesSearchThenFetch": false
+    },
+    {
+      "id": "ask_a_drupal_expert",
+      "descriptionChars": 677,
+      "descriptionTokens": 169,
+      "schemaChars": 301,
+      "schemaTokens": 75,
+      "teachesSearchThenFetch": true
+    }
+  ],
+  "notes": [
+    "Token figures are estimates (~4 chars/token) for planning, not billing.",
+    "The query-style guidance (\"short keyword queries score best\") should appear on every retrieval tool whose queries benefit from it."
+  ]
+}

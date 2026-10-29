@@ -217,6 +217,20 @@ export interface KnowledgeProvider {
   exploreRelationships(request: RelationshipRequest): Promise<RelationshipResponse>;
   readResource(uri: string): Promise<ResourceRecord | null>;
   getIndexStatus(): Promise<IndexStatus>;
+  /**
+   * Build-drift attribution: the build this provider serves (pinned at
+   * spawn) vs the currently active build on disk. staleBuild=true means
+   * the index was rebuilt after this server started — evidence freshness
+   * should be judged accordingly (respawn the MCP server to serve the
+   * active build).
+   */
+  getIndexAttribution?(): Promise<{
+    servingRunId: string | undefined;
+    servingBuiltAt: string | undefined;
+    activeRunId: string | undefined;
+    activeBuiltAt: string | undefined;
+    staleBuild: boolean;
+  }>;
 }
 
 export interface NormalizedDocument {

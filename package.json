@@ -34,7 +34,7 @@
     "typecheck": "npm run typecheck -w @drupal-dev-mcp/knowledge && npm run build -w @drupal-dev-mcp/knowledge && npm run typecheck -w @drupal-dev-mcp/server && npm run typecheck -w @drupal-dev-mcp/agent",
     "test": "node --import tsx --test packages/*/tests/*.test.ts",
     "pretest": "node scripts/doctor-node-abi.mjs",
-    "check": "npm run typecheck && npm run test",
+    "check": "npm run build && npm test",
     "expert-benchmark": "tsx scripts/expert-benchmark.ts"
   },
   "devDependencies": {

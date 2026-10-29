@@ -80,6 +80,16 @@ const GroundingStatsSchema = z.object({
   groundingDensity: z.number().nullable(),
 });
 
+const ModuleVerifyOutputSchema = z.object({
+  status: z.literal('verified'),
+  modules: z.array(z.object({
+    name: z.string(),
+    verdict: z.enum(['core', 'contrib', 'not_found']),
+    evidence: z.array(z.object({ title: z.string(), project: z.string().optional(), repositoryPath: z.string() })).optional(),
+  })),
+  warning: z.string().optional(),
+});
+
 const ExpertOutputSchema = z.object({
   status: z.enum(['answered', 'insufficient_evidence', 'unavailable', 'error']),
   question: z.string().optional(),
@@ -108,6 +118,17 @@ const READ_ONLY_ANNOTATIONS = {
   openWorldHint: false,
 } as const;
 
+/**
+ * Index attribution cache (B2): populated by get_index_status's drift check
+ * and stamped onto every subsequent tool result's _meta. Refreshed lazily —
+ * attribution reflects the latest get_index_status call in this process.
+ */
+let indexAttribution: {
+  servingRunId: string | undefined;
+  activeRunId: string | undefined;
+  staleBuild: boolean;
+} | null = null;
+
 function toolResult(payload: Record<string, unknown>, resourceUris: string[]) {
   const links = [...new Set(resourceUris)].map(uri => ({ type: 'resource_link' as const, uri, name: uri }));
   // Mirror the few host-actionable envelope signals into result-level _meta
@@ -116,6 +137,16 @@ function toolResult(payload: Record<string, unknown>, resourceUris: string[]) {
   const meta: Record<string, unknown> = {};
   if ('status' in payload) meta['drupal-dev-mcp/status'] = payload.status;
   if ('degradedMode' in payload) meta['drupal-dev-mcp/degraded-mode'] = payload.degradedMode;
+  // Index attribution on every result (B2): which build is being served and
+  // whether it has gone stale (rebuilt after this server spawned). Set by
+  // setIndexAttribution() from the get_index_status drift check.
+  if (indexAttribution) {
+    meta['drupal-dev-mcp/index-run-id'] = indexAttribution.servingRunId ?? '';
+    if (indexAttribution.staleBuild) {
+      meta['drupal-dev-mcp/index-stale-build'] = true;
+      meta['drupal-dev-mcp/index-active-run-id'] = indexAttribution.activeRunId ?? '';
+    }
+  }
   return {
     content: [{ type: 'text' as const, text: JSON.stringify(payload) }, ...links],
     structuredContent: payload,
@@ -253,7 +284,78 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
     annotations: READ_ONLY_ANNOTATIONS,
   }, async () => {
     const status = await provider.getIndexStatus();
+    const getAttribution = provider.getIndexAttribution?.bind(provider);
+    if (getAttribution) {
+      // Build-drift check: this server serves the build it was opened on;
+      // if a newer build has been activated since spawn, say so — evidence
+      // freshness must be judged against the serving build, and the client
+      // knows to respawn (e.g. /reload) when stale.
+      const attribution = await getAttribution();
+      indexAttribution = {
+        servingRunId: attribution.servingRunId,
+        activeRunId: attribution.activeRunId,
+        staleBuild: attribution.staleBuild,
+      };
+      if (attribution.staleBuild) {
+        const warnings = status.verification?.warnings ?? [];
+        status.verification = {
+          ...(status.verification ?? { passed: status.ready, errors: [] }),
+          warnings: [...warnings, `Index build drift: this server serves ${attribution.servingRunId} but the active build is ${attribution.activeRunId} — respawn the MCP server (e.g. /reload) to serve the active build.`],
+        };
+        const extended = status as unknown as Record<string, unknown>;
+        extended['staleBuild'] = true;
+        extended['activeRunId'] = attribution.activeRunId;
+      }
+    }
     return toolResult(status as unknown as Record<string, unknown>, ['drupal://index/status']);
+  });
+
+  server.registerTool('verify_drupal_modules', {
+    title: 'Verify Drupal module names',
+    description: 'Deterministic module-name verification against the indexed registry: for each machine name, reports core / contrib / not_found with evidence. Catches fabricated or misspelled module names BEFORE composer install or drush en — LLMs confidently produce nonexistent module names. Use before recommending any module by machine name.',
+    inputSchema: z.object({
+      modules: z.array(z.string().min(2).max(100)).min(1).max(25).describe('Module machine names to verify (e.g. "views", "mcp_server", "block_cache_pro").'),
+      drupal_version: DrupalVersionSchema.default('11.4'),
+    }),
+    outputSchema: ModuleVerifyOutputSchema,
+    annotations: READ_ONLY_ANNOTATIONS,
+  }, async input => {
+    const results = [];
+    for (const name of input.modules) {
+      const search = await provider.search({
+        query: name,
+        drupalVersion: input.drupal_version,
+        mode: 'lexical',
+        limit: 5,
+        entityKinds: ['module'],
+      });
+      const hits = search.results.filter(r => {
+        const path = r.repositoryPath ?? '';
+        // core: a document from the module's own directory; contrib: the
+        // project IS the module name.
+        const inModuleDir = path.includes(`/modules/${name}/`) || path.includes(`/modules/contrib/${name}/`);
+        const ownProject = r.project === name;
+        const ownFile = r.title.startsWith(`${name}.`) || r.title === `${name} info file`;
+        return inModuleDir || ownProject || ownFile;
+      });
+      let verdict = 'not_found';
+      if (hits.some(r => r.project === 'drupal')) verdict = 'core';
+      else if (hits.length > 0) verdict = 'contrib';
+      results.push({
+        name,
+        verdict,
+        evidence: hits.slice(0, 3).map(r => ({ title: r.title, project: r.project, repositoryPath: r.repositoryPath ?? '' })),
+      });
+    }
+    const notFound = results.filter(r => r.verdict === 'not_found').map(r => r.name);
+    return toolResult(
+      {
+        status: 'verified',
+        modules: results,
+        ...(notFound.length > 0 ? { warning: `Not found in the indexed registry: ${notFound.join(', ')} — verify the machine name before composer install or drush en; LLMs confidently fabricate module names.` } : {}),
+      },
+      [],
+    );
   });
 
   server.registerTool('explore_drupal_relationships', {

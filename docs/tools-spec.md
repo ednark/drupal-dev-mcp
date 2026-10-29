@@ -134,6 +134,14 @@ Active verified build report: `ready`, `schemaVersion`, `runId?`, `builtAt?`,
 Use it to decide whether to trust evidence freshness; cite `builtAt` when
 freshness matters to a claim.
 
+### `verify_drupal_modules`
+
+Deterministic module-name verification against the indexed registry: for each machine name, reports `core`, `contrib`, or `not_found` with evidence. Catches fabricated or misspelled module names *before* `composer install` or `drush en` — LLMs confidently produce nonexistent module names.
+
+Input: `modules` (string[], 1–25 machine names), `drupal_version` (default `11.4`).
+
+Output: `status: 'verified'`, per-module `{ name, verdict, evidence }`, and a `warning` listing not-found names when any. Read-only, idempotent, closed-world.
+
 ### `explore_drupal_relationships`
 
 Traverse evidence-backed graph edges from `entity_id` (`ent_…`). Optional

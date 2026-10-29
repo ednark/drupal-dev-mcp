@@ -56,7 +56,7 @@ test('MCP exposes exactly seven closed-world read tools and three resource surfa
   try {
     const tools = await client.listTools();
     assert.deepEqual(tools.tools.map(tool => tool.name).sort(), [
-      'ask_a_drupal_expert', 'explore_drupal_relationships', 'get_drupal_document', 'get_drupal_entities', 'get_drupal_entity', 'get_index_status', 'search_drupal',
+      'ask_a_drupal_expert', 'explore_drupal_relationships', 'get_drupal_document', 'get_drupal_entities', 'get_drupal_entity', 'get_index_status', 'search_drupal', 'verify_drupal_modules',
     ]);
     for (const tool of tools.tools) {
       assert.equal(tool.annotations?.readOnlyHint, true);

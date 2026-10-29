@@ -176,6 +176,30 @@ export class SqliteKnowledgeProvider implements KnowledgeProvider {
 
   async getIndexStatus(): Promise<IndexStatus> { return statusFromManifest(this.manifest); }
 
+  /**
+   * Build-drift attribution: compares the build this provider was opened on
+   * (pinned at process spawn) against the CURRENTLY active build on disk.
+   * A long-running MCP server serves the pinned build even after
+   * `index:rebuild` atomically activates a newer one — this surfaces that
+   * drift so agents can judge evidence freshness (and know to /reload).
+   */
+  async getIndexAttribution(): Promise<{
+    servingRunId: string | undefined;
+    servingBuiltAt: string | undefined;
+    activeRunId: string | undefined;
+    activeBuiltAt: string | undefined;
+    staleBuild: boolean;
+  }> {
+    const active = await resolveActiveBuild(getDefaultIndexRoot());
+    return {
+      servingRunId: this.manifest.runId,
+      servingBuiltAt: this.manifest.builtAt,
+      activeRunId: active?.runId,
+      activeBuiltAt: active?.builtAt,
+      staleBuild: Boolean(active?.runId && active.runId !== this.manifest.runId),
+    };
+  }
+
   async search(request: SearchRequest): Promise<SearchResponse> {
     const query = request.query?.trim();
     if (!query) throw new Error('query is required');

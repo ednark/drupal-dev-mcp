@@ -25,6 +25,7 @@ const REGISTERED_TOOLS = new Set([
   'get_index_status',
   'explore_drupal_relationships',
   'ask_a_drupal_expert',
+  'verify_drupal_modules',
 ]);
 
 /** Underscored words that are not tool names and must never be required to be. */
