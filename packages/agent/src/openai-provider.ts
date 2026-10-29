@@ -25,8 +25,11 @@ export class OpenAiLlmProvider implements LlmProvider {
   }
 
   async generate(request: LlmRequest): Promise<string> {
-    // OpenAI requires the literal word "json" in messages when response_format is json_object.
-    const system = request.responseFormat === 'json' && !/json/i.test(`${request.system}${request.prompt}`)
+    // OpenAI requires the literal word "json" in the messages when
+    // response_format is json_object. Check the SYSTEM text only: relying on
+    // the user prompt would mean untrusted corpus excerpts could satisfy (or
+    // fail to satisfy) the requirement for a small local model.
+    const system = request.responseFormat === 'json' && !/json/i.test(request.system)
       ? `${request.system}\n\nRespond with valid JSON.`
       : request.system;
     const response = await this.client.chat.completions.create({
