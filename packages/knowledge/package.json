@@ -20,6 +20,7 @@
     "index:status": "tsx src/cli.ts status",
     "index:freshness": "tsx src/cli.ts freshness",
     "index:benchmark": "tsx src/cli.ts benchmark",
+    "index:health": "tsx src/cli.ts health",
     "index:version-smoke": "tsx src/cli.ts version-smoke"
   },
   "dependencies": {

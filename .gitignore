@@ -35,6 +35,13 @@ data/sources/**
 # concept-bridge-recent-era-systems remedy).
 !data/sources/drupal-concept-bridge-guidance/
 !data/sources/drupal-concept-bridge-guidance/**
+# Same for the AI-frequent anti-patterns corpus and the validation-tooling
+# guidance corpus (both hand-authored; see docs/eval and the fetch scripts
+# they complement).
+!data/sources/drupal-anti-patterns/
+!data/sources/drupal-anti-patterns/**
+!data/sources/drupal-validation-tooling/
+!data/sources/drupal-validation-tooling/**
 !data/sources/.gitkeep
 
 # Runtime cache files

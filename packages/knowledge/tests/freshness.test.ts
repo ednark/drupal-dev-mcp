@@ -170,7 +170,7 @@ test('fixture-limited builds record the limit and skip inconclusive comparisons'
 
 test('every git refresh script resolves to a real file', async () => {
   const scriptsRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
-  assert.equal(GIT_SOURCE_SCRIPTS.length, 4);
+  assert.equal(GIT_SOURCE_SCRIPTS.length, 5);
   for (const script of GIT_SOURCE_SCRIPTS) {
     await access(path.join(scriptsRoot, script));
   }

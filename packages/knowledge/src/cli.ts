@@ -6,7 +6,9 @@ import { findRepoRoot, getDefaultIndexRoot, resolveActiveBuild, statusFromManife
 import { verifyActiveIndex } from './index/verify.js';
 import { runBenchmark } from './index/benchmark.js';
 import { runVersionSmoke } from './index/version-smoke.js';
+import { runCorpusHealth } from './index/health.js';
 import { checkFreshness } from './index/freshness.js';
+import * as path from 'node:path';
 import { SqliteKnowledgeProvider } from './query/provider.js';
 
 async function main(): Promise<void> {
@@ -58,10 +60,19 @@ async function main(): Promise<void> {
   if (command === 'benchmark') {
     const provider = await SqliteKnowledgeProvider.open(indexRoot);
     try {
-      const result = await runBenchmark(provider, args.find(argument => argument.startsWith('--version='))?.split('=')[1] ?? '11.4');
+      const result = await runBenchmark(provider, args.find(argument => argument.startsWith('--version='))?.split('=')[1] ?? '11.4', {
+        baselinePath: path.join(repoRoot, 'docs', 'eval', 'benchmark-baseline.json'),
+        saveBaseline: args.includes('--save-baseline'),
+      });
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
       if (!result.releaseGate) process.exitCode = 1;
     } finally { provider.close(); }
+    return;
+  }
+  if (command === 'health') {
+    const report = await runCorpusHealth(repoRoot);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    if (!report.releaseGate) process.exitCode = 1;
     return;
   }
   if (command === 'version-smoke') {
@@ -74,7 +85,7 @@ async function main(): Promise<void> {
     } finally { provider.close(); }
     return;
   }
-  throw new Error(`Unknown command: ${command}. Use fetch, build, rebuild, verify, status, freshness, benchmark, or version-smoke.`);
+  throw new Error(`Unknown command: ${command}. Use fetch, build, rebuild, verify, status, freshness, benchmark, health, or version-smoke.`);
 }
 
 main().catch(error => {

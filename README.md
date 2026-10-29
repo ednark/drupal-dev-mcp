@@ -42,7 +42,7 @@ npm run index:rebuild -- --with-embeddings
 
 The normative wire contract for these tools — schemas, result envelope, `_meta` keys, resource URIs, capability advertisement, and status semantics — is [docs/tools-spec.md](docs/tools-spec.md). A companion agent skill packages the usage guidance (routing, grounding workflow, token budgeting) for skill-aware clients: [`skills/querying-drupal-knowledge/`](skills/querying-drupal-knowledge/SKILL.md). The six read-only, non-destructive, idempotent, closed-world retrieval tools plus one opt-in synthesis tool:
 
-- `search_drupal` — searches evidence using version, mode, project, source type, entity kind, limit, snippet-budget, and relevance-floor (`min_score`) filters. Short keyword/identifier queries score best; semantic hits carry chunk-level citation URIs. Ordering is deterministic within an index build. `source_types: ["guidance"]` narrows to the curated change-placement corpus (where a change should live).
+- `search_drupal` — searches evidence using version, mode, project, source type, entity kind, limit, snippet-budget, and relevance-floor (`min_score`) filters. Short keyword/identifier queries score best; semantic hits carry chunk-level citation URIs. Ordering is deterministic within an index build. `source_types: ["guidance"]` narrows to the curated guidance corpora — change-placement docs and AI-frequent anti-pattern docs (legacy-pattern fallbacks like service-locator calls, `|raw` in Twig, missing cache metadata, and their current replacements); `["tooling"]` also matches validation-tooling guidance (PHPStan/PHPCS/complexity tooling and the agent fix-loop pattern).
 - `get_drupal_entity` — resolves an opaque `ent_…` ID or exact identifier and returns disambiguation, metadata, deprecations, evidence, and relationships.
 - `get_drupal_entities` — resolves up to 25 opaque `ent_…` IDs in one call; unknown IDs are reported per item instead of failing the batch.
 - `explore_drupal_relationships` — traverses evidence-backed graph edges with predicate, direction, depth, confidence, and node limits.
@@ -83,12 +83,14 @@ Example MCP client entry after `npm run build`:
 
 ```bash
 npm run index:fetch       # refresh all git-based sources (core snapshots, contrib code, examples, skills, symfony docs); -- --core-only for core snapshots alone
+npm run index:fetch-advisories  # fetch Drupal core security advisories (cron-friendly; --pages=N for backfill, --check-only to diff)
 npm run index:build       # build and atomically activate a verified index
 npm run index:verify      # verify active SQLite integrity and references
 npm run index:rebuild     # clean full-index build; no old-index migration
 npm run index:status      # report active run, counts, versions, and warnings
 npm run index:freshness   # compare data/sources against the active build; exit 1 when sources need re-processing
-npm run index:benchmark   # run the 20-question top-five evidence gate
+npm run index:benchmark   # rank-aware retrieval gate (39 cases: top-3 pass, MRR, chrome invariant, negative terms); -- --save-baseline refreshes docs/eval/benchmark-baseline.json; regression-fails against the stored baseline otherwise
+npm run index:health      # corpus ingestion-quality gate: chrome ratio, stub ratio, size floors per text source (catches pollution search gates cannot see)
 npm run index:version-smoke  # version-scoped retrieval probes (per-version presence/absence matrix); exit 1 on failure
 npm run check             # typecheck + test in one gate
 npm test

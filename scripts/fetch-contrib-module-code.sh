@@ -77,6 +77,13 @@ MODULES=(
   honeypot
   diff
   select2
+  # audit — site/code audit scores (security, performance, caching, config,
+  # code quality) with JSON Drush commands; indexed so agents can ground
+  # audit-driven fix loops against the module's own rule documentation.
+  audit
+  # coder — PHPCS Drupal/DrupalPractice sniffs; primary source for the
+  # validation-tooling guidance (what phpcs catches on Drupal code).
+  coder
   # Tier 2 — common, project-dependent
   commerce
   simple_oauth

@@ -16,7 +16,7 @@ one opt-in exception (`drupal-dev-mcp:ask_a_drupal_expert`).
 
 | Tool | Route it as | Notes |
 |------|-------------|-------|
-| `drupal-dev-mcp:search_drupal` | retrieve | Default first step for grounding. `source_types: ["guidance"]` for "where should X live" placement questions. |
+| `drupal-dev-mcp:search_drupal` | retrieve | Default first step for grounding. `source_types: ["guidance"]` narrows to the curated change-placement corpus (plus AI-frequent anti-pattern docs) — "where should X live" placement questions and "what is the current pattern instead of Y" repairs. |
 | `drupal-dev-mcp:get_drupal_entity` | resolve | One entity by `ent_…` ID or exact identifier; explicit disambiguation. |
 | `drupal-dev-mcp:get_drupal_entities` | resolve | Up to 25 `ent_…` IDs in one call; unknown IDs return per-item `not_found`. |
 | `drupal-dev-mcp:explore_drupal_relationships` | traverse | API genealogy: what implements a hook, what deprecated an API (`changed_by`/`deprecated_by`). |

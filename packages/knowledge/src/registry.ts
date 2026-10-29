@@ -2,6 +2,7 @@ export type SourceType =
   | 'core_code'
   | 'api'
   | 'change_record'
+  | 'security_advisory'
   | 'official_guide'
   | 'contrib_code'
   | 'contrib_docs'
@@ -60,6 +61,10 @@ export const SOURCE_REGISTRY: readonly SourceDefinition[] = [
   { key: 'gof_patterns', displayName: 'Design patterns (GoF catalog)', type: 'methodology', authority: 80, defaultSearch: true, fetcher: 'supplemental-docs', parser: 'markdown', canonicalBaseUrl: 'https://sourcemaking.com/design_patterns', versionPolicy: 'agnostic', lexical: true, vector: true, graph: false },
   { key: 'drupal_theming_guide', displayName: 'Drupal theming guide', type: 'official_guide', authority: 95, defaultSearch: true, fetcher: 'theming-guide', parser: 'markdown', canonicalBaseUrl: 'https://www.drupal.org/docs/develop/theming-drupal', versionPolicy: 'agnostic', lexical: true, vector: true, graph: false },
   { key: 'drupal_placement_guidance', displayName: 'Drupal change placement guidance (curated)', type: 'guidance', authority: 90, defaultSearch: true, fetcher: 'curated-local', parser: 'markdown', canonicalBaseUrl: 'https://www.drupal.org/docs', versionPolicy: 'agnostic', lexical: true, vector: true, graph: false },
+  { key: 'drupal_anti_patterns', displayName: 'Drupal AI-frequent anti-patterns (curated)', type: 'guidance', authority: 90, defaultSearch: true, fetcher: 'curated-local', parser: 'markdown', canonicalBaseUrl: 'https://www.drupal.org/docs', versionPolicy: 'agnostic', lexical: true, vector: true, graph: false },
+  { key: 'drupal_validation_tooling', displayName: 'Drupal validation tooling guidance (curated)', type: 'tooling', authority: 88, defaultSearch: true, fetcher: 'curated-local', parser: 'markdown', canonicalBaseUrl: 'https://www.drupal.org/docs', versionPolicy: 'agnostic', lexical: true, vector: true, graph: false },
+  { key: 'phpstan_drupal', displayName: 'phpstan-drupal extension (primary source)', type: 'tooling', authority: 92, defaultSearch: true, fetcher: 'phpstan-drupal', parser: 'markdown', canonicalBaseUrl: 'https://github.com/mglaman/phpstan-drupal', versionPolicy: 'upstream', lexical: true, vector: true, graph: false },
+  { key: 'security_advisories', displayName: 'Drupal core security advisories', type: 'security_advisory', authority: 98, defaultSearch: true, fetcher: 'security-advisories', parser: 'markdown', canonicalBaseUrl: 'https://www.drupal.org/security', versionPolicy: 'agnostic', lexical: true, vector: true, graph: false },
   { key: 'drupal_concept_bridge', displayName: 'Drupal concept-bridge guidance (curated)', type: 'guidance', authority: 90, defaultSearch: true, fetcher: 'curated-local', parser: 'markdown', canonicalBaseUrl: 'https://www.drupal.org/docs', versionPolicy: 'agnostic', lexical: true, vector: true, graph: false },
 ] as const;
 

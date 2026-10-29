@@ -76,8 +76,7 @@ Evidence search over the closed index. Never synthesizes advice.
 
 Input: `query` (required, 1+ chars), `drupal_version` (default `11.4`),
 `mode` (`hybrid | lexical | semantic`, default `hybrid`), `projects` (string[]),
-`source_types` (string[]; `"guidance"` narrows to the curated change-placement
-corpus), `entity_kinds` (enum array, see node kinds below), `limit` (1–25,
+`source_types` (string[]; `"guidance"` narrows to the curated guidance corpora — change-placement and AI-anti-pattern docs), `entity_kinds` (enum array, see node kinds below), `limit` (1–25,
 default 8), `include_snippets` (default true), `snippet_max_chars` (40–2000),
 `min_score` (0–1, default 0.2; results below are dropped as noise).
 

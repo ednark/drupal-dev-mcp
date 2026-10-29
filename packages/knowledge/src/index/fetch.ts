@@ -44,6 +44,7 @@ export const GIT_SOURCE_SCRIPTS = [
   'scripts/fetch-drupal-examples.sh',
   'scripts/fetch-drupal-skills.sh',
   'scripts/fetch-symfony-docs.sh',
+  'scripts/fetch-phpstan-drupal.sh',
 ] as const;
 
 export interface FetchSummary {

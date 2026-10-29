@@ -72,6 +72,25 @@ export const VERSION_SMOKE_PROBES: VersionSmokeProbe[] = [
     terms: ['tasksinterface'],
     expect: { '10.6': 'absent', '11.4': 'absent', '12.0': 'absent' },
   },
+  // Version-agnostic corpora (2026-10-29): security advisories and the
+  // curated guidance corpora are drupalVersion 'all' — they must resolve at
+  // every pinned version, not only in unscoped searches.
+  {
+    id: 'security-advisories-resolve-per-version',
+    description: 'Core security advisories resolve under every pinned version scope',
+    kind: 'search',
+    query: 'SA-CORE-2026-014',
+    pathTerms: ['sa-core-2026-014'],
+    expect: { '10.6': 'present', '11.4': 'present', '12.0': 'present' },
+  },
+  {
+    id: 'anti-pattern-corpus-resolves-per-version',
+    description: 'Curated anti-pattern guidance resolves under every pinned version scope',
+    kind: 'search',
+    query: 'AI-frequent Drupal anti-patterns overview',
+    terms: ['anti-patterns'],
+    expect: { '10.6': 'present', '11.4': 'present', '12.0': 'present' },
+  },
 ] as const;
 
 export interface VersionSmokeCase {

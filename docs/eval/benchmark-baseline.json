@@ -1,0 +1,201 @@
+{
+  "savedAt": "2026-10-29T11:00:30.820Z",
+  "version": "11.4",
+  "cases": [
+    {
+      "question": "create Views display taxonomy terms exposed filters",
+      "passed": true,
+      "rank": 1
+    },
+    {
+      "question": "programmatically create a view and add a field",
+      "passed": true,
+      "rank": 2
+    },
+    {
+      "question": "create a custom block plugin BlockBase build",
+      "passed": true,
+      "rank": 2
+    },
+    {
+      "question": "block visibility custom condition blockAccess",
+      "passed": true,
+      "rank": 1
+    },
+    {
+      "question": "custom field type custom formatter FieldType FieldFormatter",
+      "passed": true,
+      "rank": 1
+    },
+    {
+      "question": "baseFieldDefinitions BaseFieldDefinition content entity",
+      "passed": true,
+      "rank": 1
+    },
+    {
+      "question": "Node create field values save entity API",
+      "passed": true,
+      "rank": 1
+    },
+    {
+      "question": "entity view builder render view mode",
+      "passed": true,
+      "rank": 1
+    },
+    {
+      "question": "taxonomy term storage loadTree vocabulary",
+      "passed": true,
+      "rank": 1
+    },
+    {
+      "question": "taxonomy term reference field entity_reference",
+      "passed": true,
+      "rank": 1
+    },
+    {
+      "question": "Twig template suggestion node bundle content type",
+      "passed": true,
+      "rank": 1
+    },
+    {
+      "question": "attach CSS library libraries.yml render array",
+      "passed": true,
+      "rank": 1
+    },
+    {
+      "question": "FormBase buildForm validateForm submitForm",
+      "passed": true,
+      "rank": 1
+    },
+    {
+      "question": "form AJAX callback AjaxResponse ReplaceCommand",
+      "passed": true,
+      "rank": 1
+    },
+    {
+      "question": "custom text filter plugin FilterBase process",
+      "passed": true,
+      "rank": 1
+    },
+    {
+      "question": "configuration schema custom module schema.yml typed config",
+      "passed": true,
+      "rank": 2
+    },
+    {
+      "question": "custom content entity ContentEntityBase ContentEntityType",
+      "passed": true,
+      "rank": 1
+    },
+    {
+      "question": "hook_entity_presave modify entity before saving",
+      "passed": true,
+      "rank": 1
+    },
+    {
+      "question": "custom service services.yml dependency injection controller",
+      "passed": true,
+      "rank": 1
+    },
+    {
+      "question": "Drupal Database API select fields execute fetchAll",
+      "passed": true,
+      "rank": 1
+    },
+    {
+      "question": "How do I create custom regions in a theme?",
+      "passed": true,
+      "rank": 1
+    },
+    {
+      "question": "How can I fix these \"Cannot autowire service\" errors?",
+      "passed": true,
+      "rank": 1
+    },
+    {
+      "question": "Permanent Cache Bin and Memcache",
+      "passed": true,
+      "rank": 3
+    },
+    {
+      "question": "Custom exception subscriber does not handle PHP errors",
+      "passed": true,
+      "rank": 1
+    },
+    {
+      "question": "webform email handler does not allow certain roles in to field",
+      "passed": true,
+      "rank": 1
+    },
+    {
+      "question": "single directory components theming sdc",
+      "passed": true,
+      "rank": 2
+    },
+    {
+      "question": "define sdc component.yml metadata",
+      "passed": true,
+      "rank": 1
+    },
+    {
+      "question": "component yml slots required props documentation",
+      "passed": true,
+      "rank": 2
+    },
+    {
+      "question": "Twig raw filter security fix escaping bypass",
+      "passed": true,
+      "rank": 3
+    },
+    {
+      "question": "phpcs Drupal coding standards DrupalPractice sniffs",
+      "passed": true,
+      "rank": 1
+    },
+    {
+      "question": "phpstan deprecation rules drupal extension baseline",
+      "passed": true,
+      "rank": 1
+    },
+    {
+      "question": "SA-CORE-2026-014",
+      "passed": true,
+      "rank": 1
+    },
+    {
+      "question": "security advisory remote code execution field ui",
+      "passed": true,
+      "rank": 1
+    },
+    {
+      "question": "object oriented hook implementations autowired services ModuleHandler deprecated",
+      "passed": true,
+      "rank": 1
+    },
+    {
+      "question": "batch api queue long running form submit",
+      "passed": true,
+      "rank": 1
+    },
+    {
+      "question": "service locator instead of dependency injection class",
+      "passed": true,
+      "rank": 1
+    },
+    {
+      "question": "where do preprocess hooks live module or theme",
+      "passed": true,
+      "rank": 1
+    },
+    {
+      "question": "how do I get the currently logged in user account",
+      "passed": true,
+      "rank": 1
+    },
+    {
+      "question": "drupal for ecommerce fintech healthcare industries",
+      "passed": true,
+      "rank": 1
+    }
+  ]
+}

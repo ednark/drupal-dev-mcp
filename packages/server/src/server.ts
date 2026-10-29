@@ -141,7 +141,7 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
 
   server.registerTool('search_drupal', {
     title: 'Search Drupal evidence',
-    description: 'Search the closed, versioned Drupal knowledge index (core code 10.6/11.4/12.0, api.drupal.org, change records, official guides, coding standards, 73 contrib modules, PHP/Twig/Symfony/Drush docs). Returns evidence with provenance, never advice. Use short keyword or identifier queries (e.g. "hook_entity_presave", "EntityTypeManagerInterface") — they score better than sentences; run several narrow queries rather than one broad one. source_types ["guidance"] narrows to curated change-placement guidance.',
+    description: 'Search the closed, versioned Drupal knowledge index (core code 10.6/11.4/12.0, api.drupal.org, change records, official guides, coding standards, 81 contrib modules, PHP/Twig/Symfony/Drush docs). Returns evidence with provenance, never advice. Use short keyword or identifier queries (e.g. "hook_entity_presave", "EntityTypeManagerInterface") — they score better than sentences; run several narrow queries rather than one broad one. `source_types: ["guidance"]` narrows to the curated guidance corpora (change-placement and AI-anti-pattern docs); `["tooling"]` adds validation-tooling guidance (PHPStan/PHPCS/complexity tools, agent fix loops).',
     inputSchema: z.object({
       query: z.string().min(1),
       drupal_version: DrupalVersionSchema.default('11.4'),

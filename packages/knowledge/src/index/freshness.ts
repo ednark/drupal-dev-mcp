@@ -51,10 +51,14 @@ export const SOURCE_LOCATIONS: readonly SourceLocation[] = [
       ['drupal-skills', 'drupal_skills'], ['tutorials', 'tutorials'], ['symfony-docs', 'symfony_docs'],
       ['php-manual', 'php_docs'], ['certification', 'certification'], ['contrib-modules', 'contrib_docs'],
       ['api-drupal-org', 'api_drupal_org'], ['change-records', 'change_records'],
+      ['security-advisories', 'security_advisories'],
       ['drupal-user-guide', 'drupal_user_guide'], ['drush-docs', 'drush_docs'], ['twig-docs', 'twig_docs'],
       ['drupal-coding-standards', 'drupal_coding_standards'], ['php-fig', 'php_fig'],
       ['drupal-theming-guide', 'drupal_theming_guide'],
       ['drupal-placement-guidance', 'drupal_placement_guidance'],
+      ['drupal-anti-patterns', 'drupal_anti_patterns'],
+      ['drupal-validation-tooling', 'drupal_validation_tooling'],
+      ['phpstan-drupal', 'phpstan_drupal'],
       ['drupal-concept-bridge-guidance', 'drupal_concept_bridge'],
       ['twelve-factor', 'twelve_factor'], ['fowler', 'fowler'],
       ['ms-cloud-patterns', 'ms_cloud_patterns'], ['eip-patterns', 'eip_patterns'],
@@ -66,8 +70,9 @@ export const SOURCE_LOCATIONS: readonly SourceLocation[] = [
     drupalVersion: 'all',
     includeCode: false,
     project: { mode: 'firstSegment' },
-    // drupal-skills and symfony-docs are plain git clones: track commit drift like core.
-    git: sourceKey === 'drupal_skills' || sourceKey === 'symfony_docs' ? 'root' : 'none',
+    // drupal-skills, symfony-docs, and phpstan-drupal are plain git clones:
+    // track commit drift like core.
+    git: sourceKey === 'drupal_skills' || sourceKey === 'symfony_docs' || sourceKey === 'phpstan_drupal' ? 'root' : 'none',
   })),
 ];
 
