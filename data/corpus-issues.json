@@ -363,6 +363,19 @@
       "remedy": "Add a doc comparing external-embed approaches (full_html body, media entity iframe type, custom block, contrib embed module) with the security tradeoffs of each.",
       "status": "open",
       "firstObserved": "2026-10-30"
+    },
+    {
+      "id": "long-form-body-vs-structured-content-guidance-missing",
+      "title": "No corpus guidance on when a single body field is sufficient vs structured content (Paragraphs/sections)",
+      "question": "For Drupal 12, when a source page is very long-form (79-191 headings, 100+ KB of HTML), should the content live in a single body field or should sections be structured into Paragraphs?",
+      "groundTruth": "Verified live (duplication test steps 13-17): five pages built with single verbatim body fields (basic_html/full_html) \u2014 the faithful representation for a duplication test. The expert recommended Paragraphs (contrib, density 0.07) \u2014 overridden: the source IS a single HTML document. The corpus has no doc on when a single body field becomes a maintenance problem or when structured content earns its complexity. Corpus doc: drupal-validation-tooling/04-agent-fix-loop.md and the placement corpus cover the fix loop and content types, but not the long-form modeling decision.",
+      "observed": "The expert recommended Paragraphs for all long-form content without considering the duplication-test context (verbatim representation vs editor-managed content). A useful corpus doc would state the tradeoff: single body = faithful + simple, structured = maintainable + reusable, with size thresholds.",
+      "classification": "coverage-gap",
+      "locatedDocIds": [],
+      "detection": "Duplication test steps 13-17 (batch build of 5 long-form pages).",
+      "remedy": "Add a placement guidance doc: long-form body vs structured content \u2014 the tradeoff table, size thresholds, and when each fits (duplication test vs editor-managed site).",
+      "status": "open",
+      "firstObserved": "2026-10-30"
     }
   ]
 }
