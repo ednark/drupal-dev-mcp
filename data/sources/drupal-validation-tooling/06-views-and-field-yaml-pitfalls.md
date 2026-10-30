@@ -55,3 +55,26 @@ Also: a failed import can leave **partially-created displays** that then block r
 ## The core.extension rollback trap
 
 The sync directory's `core.extension.yml` is the authoritative module set for `config:import`. If it is stale (exported before new modules were enabled), **every failed import first rolls the module set back** — silently uninstalling modules enabled outside the sync dir (JSON:API, datetime_range vanished this way during the duplication test). After enabling modules: re-export `core.extension` (or the full config) *before* the next import, and remember `config-export` **deletes** sync-dir files that don't match active config — preserve not-yet-imported files first.
+
+## Daterange fields require BOTH ends (NULL end_value crashes the insert)
+
+A `daterange` field stores `value` + `end_value` in **NOT NULL columns**. Saving a season with only one parseable end — `['value' => '2026-05-23', 'end_value' => NULL]` — throws `IntegrityConstraintViolationException: Column 'field_winter_season_end_value' cannot be null`. There is no partial-range representation:
+
+- Store the field **only when both ends parse**; a one-sided season (source shows an opening date but no closing date, or "—") omits the field entirely — the verbatim date lives in the source and the status field carries what is known.
+- Do not synthesize the missing end (end = start fabricates data).
+- Year inference from column headers (e.g. "Winter 2026-27": first day late 2026, last day early 2027) belongs in the import script, where it is auditable — not in the stored value.
+
+## Views table grouping renders as <caption>, not headings
+
+The table style's `grouping` option renders each group label as the **`<caption>` of its own table** — one `<table>` per group, NOT h3/h4 section headings:
+
+```yaml
+style:
+  type: table
+  options:
+    grouping:
+      field_area:
+        field: field_area
+```
+
+renders `<table><caption>Bridge Bay</caption>…</table>` per group. Fidelity checks that count h2/h3 headings will miss working grouping — compare `caption`/table counts instead. (A grouping entry is a keyed object — `grouping: { field_area: { field: field_area } }` — a bare list throws `Cannot access offset of type string on string` in `StylePluginBase::renderGrouping`.)

@@ -311,6 +311,32 @@
       "remedy": "Views/field YAML doc addition; corpus lesson: a failed import can leave partially-created displays \u2014 config-delete them before recreating.",
       "status": "open",
       "firstObserved": "2026-10-29"
+    },
+    {
+      "id": "daterange-null-end-value-crash",
+      "title": "Daterange fields require both ends \u2014 a NULL end_value crashes the DB insert",
+      "question": "How do I store an operating season where only the opening date is known (the source shows a first day but no last day)?",
+      "groundTruth": "Verified live (D12.0.x-dev, duplication test step 11): saving ['value' => '2026-05-23', 'end_value' => NULL] throws IntegrityConstraintViolationException 'Column field_winter_season_end_value cannot be null' \u2014 the daterange value/end_value columns are NOT NULL and there is no partial-range representation (corpus doc: drupal-validation-tooling/06-views-and-field-yaml-pitfalls.md)",
+      "observed": "Step 11: the operating-dates parser crashed mid-run (132-node run aborted at nid 81) on a winter season with a parseable first day but an em-dash last day; fixed with a both-ends guard that omits the field when either end is missing.",
+      "classification": "coverage-gap",
+      "locatedDocIds": [],
+      "detection": "Duplication test step 11 (IntegrityConstraintViolationException mid-import).",
+      "remedy": "Corpus doc 06 now documents the both-ends guard: store only complete ranges, never synthesize the missing end, keep year inference in the import script. Keep open until re-measured on a rebuilt index.",
+      "status": "open",
+      "firstObserved": "2026-10-29"
+    },
+    {
+      "id": "views-table-grouping-renders-as-caption",
+      "title": "Views table grouping renders group labels as <caption>, not headings \u2014 h3-only fidelity checks miss it",
+      "question": "How does the Views table style render grouped rows (one table per group)?",
+      "groundTruth": "Verified live (D12.0.x-dev, duplication test step 11): the table style's grouping option renders each group label as the <caption> of its own table (10 captioned tables for 10 park areas) \u2014 no h3/h4 headings are emitted. The grouping entry is a keyed object (grouping: {field: field_area}); a bare list throws 'Cannot access offset of type string on string' in StylePluginBase::renderGrouping (corpus doc: drupal-validation-tooling/06-views-and-field-yaml-pitfalls.md)",
+      "observed": "Step 11: the grouped operating-dates view rendered 10 captioned tables correctly, but the h3-only fidelity check reported 0 group headers \u2014 the check pattern missed the working feature; a bare-list grouping config also crashed renderGrouping.",
+      "classification": "agent-loop lesson",
+      "locatedDocIds": [],
+      "detection": "Duplication test step 11 (h3-only fidelity check false negative + renderGrouping TypeError).",
+      "remedy": "Corpus doc 06 now documents the caption rendering and the keyed grouping shape. Element-inventory checks should count caption/table structures alongside headings. Keep open until re-measured on a rebuilt index.",
+      "status": "open",
+      "firstObserved": "2026-10-29"
     }
   ]
 }
