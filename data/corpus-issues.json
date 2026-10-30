@@ -337,6 +337,32 @@
       "remedy": "Corpus doc 06 now documents the caption rendering and the keyed grouping shape. Element-inventory checks should count caption/table structures alongside headings. Keep open until re-measured on a rebuilt index.",
       "status": "open",
       "firstObserved": "2026-10-29"
+    },
+    {
+      "id": "menu-card-grid-rendering-pattern-missing",
+      "title": "Menu-driven card-grid rendering pattern (the most common page element) missing from corpus guidance",
+      "question": "How do I render a grid of cards from a custom menu (each menu_link_content has title, description, and link) in a Drupal 12 theme?",
+      "groundTruth": "Verified live (duplication test steps 4 and 12): the pattern is a preprocess hook loading menu_link_content entities and passing them to an SDC component \u2014 used on the Plan Your Visit landing and the Eat & Sleep tiles. The corpus has zero content on this pattern; search_drupal for 'menu link content description tile cards render' returns nothing. Corpus doc: drupal-validation-tooling/04-agent-fix-loop.md and the companion skill cover query patterns but not rendering patterns.",
+      "observed": "The pattern was used on at least 2 of 12 page types (landing cards, Eat & Sleep tiles) and would apply to any tile/card grid. The agent built it from priors, not corpus.",
+      "classification": "coverage-gap",
+      "locatedDocIds": [],
+      "detection": "Retroactive MCP consultation (protocol correction for step 12).",
+      "remedy": "Add a placement/validation doc: menu-driven card-grid rendering (preprocess hook \u2192 SDC include pattern), including the alternative custom-block approach and when each fits.",
+      "status": "open",
+      "firstObserved": "2026-10-30"
+    },
+    {
+      "id": "external-embed-iframe-pattern-missing",
+      "title": "External iframe embed pattern (map/webcam) missing from corpus guidance",
+      "question": "How should an external iframe embed (nps.gov maps, webcams) be modeled in Drupal 12 \u2014 full_html body field, media entity, custom block, or contrib module?",
+      "groundTruth": "Verified live (duplication test steps 6 and 12): iframes embedded in full_html body fields and Views header areas work; the corpus has no doc comparing the iframe-in-body vs media-entity vs block approaches. search_drupal for 'iframe embed embed.html full_html body format' returns only a Paragraphs reference. Corpus doc: drupal-validation-tooling/04-agent-fix-loop.md does not cover this.",
+      "observed": "Used on 2 of 12 page types (campgrounds map embed, Places To Go map embed); webcams page would need the same pattern.",
+      "classification": "coverage-gap",
+      "locatedDocIds": [],
+      "detection": "Retroactive MCP consultation (protocol correction for step 12).",
+      "remedy": "Add a doc comparing external-embed approaches (full_html body, media entity iframe type, custom block, contrib embed module) with the security tradeoffs of each.",
+      "status": "open",
+      "firstObserved": "2026-10-30"
     }
   ]
 }
