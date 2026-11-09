@@ -91,6 +91,8 @@ npm run index:verify      # verify active SQLite integrity and references
 npm run index:rebuild     # clean full-index build; no old-index migration
 npm run index:status      # report active run, counts, versions, and warnings
 npm run index:freshness   # compare data/sources against the active build; exit 1 when sources need re-processing
+                          # add --check-upstream to also git-fetch each source's remote and flag clones whose
+                          # upstream moved (status: upstream_drift) — disk-vs-index "fresh" does NOT mean upstream-current
 npm run index:benchmark   # rank-aware retrieval gate (39 cases: top-3 pass, MRR, chrome invariant, negative terms); -- --save-baseline refreshes docs/eval/benchmark-baseline.json; regression-fails against the stored baseline otherwise
 npm run index:health      # corpus ingestion-quality gate: chrome ratio, stub ratio, size floors per text source (catches pollution search gates cannot see)
 npm run index:version-smoke  # version-scoped retrieval probes (per-version presence/absence matrix); exit 1 on failure

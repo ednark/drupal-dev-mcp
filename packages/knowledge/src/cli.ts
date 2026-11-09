@@ -8,6 +8,7 @@ import { runBenchmark } from './index/benchmark.js';
 import { runVersionSmoke } from './index/version-smoke.js';
 import { runCorpusHealth } from './index/health.js';
 import { checkFreshness } from './index/freshness.js';
+import { measureSemanticCalibration } from './index/calibration.js';
 import * as path from 'node:path';
 import { SqliteKnowledgeProvider } from './query/provider.js';
 
@@ -49,7 +50,7 @@ async function main(): Promise<void> {
     return;
   }
   if (command === 'freshness') {
-    const report = await checkFreshness(repoRoot, indexRoot);
+    const report = await checkFreshness(repoRoot, indexRoot, { checkUpstream: args.includes('--check-upstream') });
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
     for (const source of report.sources.filter(item => item.status !== 'fresh' && item.status !== 'unfetched')) {
       process.stderr.write(`${source.status}: ${source.sourceKey} — ${source.details.join('; ')}\n`);
@@ -85,7 +86,49 @@ async function main(): Promise<void> {
     } finally { provider.close(); }
     return;
   }
-  throw new Error(`Unknown command: ${command}. Use fetch, build, rebuild, verify, status, freshness, benchmark, health, or version-smoke.`);
+  if (command === 'calibrate') {
+    // Re-measure semantic anchors for the ACTIVE build against its own vector
+    // table, using the SAME embedding model the build recorded (that is the
+    // guard — calibrating with a different model than the vectors would
+    // produce exactly the silent corruption this exists to prevent).
+    const manifest = await resolveActiveBuild(indexRoot);
+    if (!manifest) throw new Error('No active index build to calibrate.');
+    if (!manifest.embeddingModel || !manifest.counts.vectors) {
+      throw new Error(`Build ${manifest.runId} has no vector index (vectors=${manifest.counts.vectors ?? 0}) — run 'rebuild --with-embeddings' first.`);
+    }
+    const { default: OpenAI } = await import('openai');
+    if (!process.env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY is required to embed calibration probes with the build\'s model.');
+    const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const embed = async (texts: string[]) => {
+      const response = await client.embeddings.create({ model: manifest.embeddingModel!, input: texts });
+      return response.data.map(item => item.embedding);
+    };
+    const measured = await measureSemanticCalibration({ buildPath: manifest.buildPath, embeddingModel: manifest.embeddingModel, embed });
+    const report = {
+      runId: manifest.runId,
+      embeddingModel: manifest.embeddingModel,
+      current: manifest.semanticCalibration ?? null,
+      proposed: measured,
+      changed: !manifest.semanticCalibration
+        || manifest.semanticCalibration.excellent !== measured.excellent
+        || manifest.semanticCalibration.irrelevant !== measured.irrelevant,
+    };
+    if (args.includes('--write')) {
+      const updated = { ...manifest, semanticCalibration: measured };
+      const { writeFile } = await import('node:fs/promises');
+      await writeFile(path.join(manifest.buildPath, 'manifest.json'), JSON.stringify(updated, null, 2));
+      const active = path.join(indexRoot, 'active.json');
+      const { readFile } = await import('node:fs/promises');
+      if (JSON.parse(await readFile(active, 'utf8')).runId === manifest.runId) {
+        await writeFile(active, JSON.stringify(updated, null, 2));
+      }
+      process.stdout.write(`${JSON.stringify({ ...report, written: true }, null, 2)}\n`);
+    } else {
+      process.stdout.write(`${JSON.stringify({ ...report, note: 'dry run — pass --write to persist into the build manifest' }, null, 2)}\n`);
+    }
+    return;
+  }
+  throw new Error(`Unknown command: ${command}. Use fetch, build, rebuild, verify, status, freshness, benchmark, health, version-smoke, or calibrate.`);
 }
 
 main().catch(error => {

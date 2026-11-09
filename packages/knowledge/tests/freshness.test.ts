@@ -1,13 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { access } from 'node:fs/promises';
-import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
+import { access, mkdtemp, mkdir, writeFile } from 'node:fs/promises';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SOURCE_REGISTRY } from '../src/registry.js';
 import { buildIndex } from '../src/index/builder.js';
 import { GIT_SOURCE_SCRIPTS } from '../src/index/fetch.js';
+import { gitUpstreamDrift } from '../src/index/freshness.js';
 import { statusFromManifest } from '../src/index/manifest.js';
 import {
   SOURCE_LOCATIONS,
@@ -40,6 +42,50 @@ function indexed(overrides: Partial<IndexedSourceState> & { digest: string }): I
     projects: { docs: { files: 2, digest: overrides.digest } }, ...overrides,
   };
 }
+
+test('gitUpstreamDrift: detects commits the local clone lacks; handles shallow clones; null for non-git directories', async () => {
+  const base = await mkdtemp(path.join(os.tmpdir(), 'drupal-mcp-upstream-'));
+  const origin = path.join(base, 'origin');
+  const clone = path.join(base, 'clone');
+  const git = (cwd: string, args: string[]) => execFileSync('git', ['-C', cwd, ...args], { encoding: 'utf8' });
+  // Origin with one commit; working clone tracks it.
+  mkdirSync(origin, { recursive: true });
+  git(origin, ['init', '--initial-branch=main']);
+  git(origin, ['config', 'user.email', 'test@example.com']);
+  git(origin, ['config', 'user.name', 'Test']);
+  writeFileSync(path.join(origin, 'doc.md'), '# Origin doc\n');
+  git(origin, ['add', '.']);
+  git(origin, ['commit', '-m', 'initial']);
+  git(origin, ['clone', '--quiet', origin, clone]);
+  git(clone, ['config', 'user.email', 'test@example.com']);
+  git(clone, ['config', 'user.name', 'Test']);
+  assert.deepEqual(await gitUpstreamDrift(clone), { behind: 0, branch: 'main', drift: false });
+  // Upstream moves; the clone does not (full clone → exact count).
+  writeFileSync(path.join(origin, 'new.md'), '# New upstream content\n');
+  git(origin, ['add', '.']);
+  git(origin, ['commit', '-m', 'second']);
+  const drift = await gitUpstreamDrift(clone);
+  assert.ok(drift && drift.drift && drift.behind === 1, `expected drift with behind=1, got ${JSON.stringify(drift)}`);
+  // Shallow clone of the same upstream: up to date at clone time...
+  // (file:// forces the pack transport — local paths ignore --depth)
+  const shallow = path.join(base, 'shallow');
+  git(origin, ['clone', '--quiet', '--depth=1', `file://${origin}`, shallow]);
+  assert.ok((await gitUpstreamDrift(shallow))!.drift === false, 'fresh shallow clone: no drift');
+  // ...then upstream moves again — drift detected, count NOT provable on shallow.
+  writeFileSync(path.join(origin, 'third.md'), '# Third upstream change\n');
+  git(origin, ['add', '.']);
+  git(origin, ['commit', '-m', 'third']);
+  const shallowDrift = await gitUpstreamDrift(shallow);
+  assert.ok(shallowDrift && shallowDrift.drift, `expected drift on shallow clone, got ${JSON.stringify(shallowDrift)}`);
+  assert.equal(shallowDrift!.behind, null, 'shallow clones cannot prove ancestry');
+  // Shallow clone UP TO DATE: no drift.
+  git(shallow, ['fetch', '--quiet', '--depth=1', 'origin', 'main']);
+  git(shallow, ['reset', '--hard', 'FETCH_HEAD']);
+  const shallowFresh = await gitUpstreamDrift(shallow);
+  assert.ok(shallowFresh && !shallowFresh.drift, `expected no drift on up-to-date shallow clone, got ${JSON.stringify(shallowFresh)}`);
+  // Non-git directory → null (advisory check must not fail).
+  assert.equal(await gitUpstreamDrift(path.join(base, 'not-a-repo')), null);
+});
 
 test('SOURCE_LOCATIONS covers every registered source', () => {
   const mapped = new Set(SOURCE_LOCATIONS.map(location => location.sourceKey));
@@ -170,7 +216,7 @@ test('fixture-limited builds record the limit and skip inconclusive comparisons'
 
 test('every git refresh script resolves to a real file', async () => {
   const scriptsRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
-  assert.equal(GIT_SOURCE_SCRIPTS.length, 5);
+  assert.equal(GIT_SOURCE_SCRIPTS.length, 6);
   for (const script of GIT_SOURCE_SCRIPTS) {
     await access(path.join(scriptsRoot, script));
   }

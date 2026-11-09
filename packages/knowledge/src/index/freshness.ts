@@ -1,4 +1,8 @@
-import { readdir, readFile, stat } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { access, readdir, readFile, stat } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+const execFileAsync = promisify(execFile);
 import path from 'node:path';
 import { contentHash } from '../ids.js';
 import { SOURCE_BY_KEY } from '../registry.js';
@@ -25,7 +29,9 @@ export type SourceFreshnessStatus =
   | 'new'
   | 'unfetched'
   | 'unindexed'
-  | 'skipped';
+  | 'skipped'
+  /** Disk matches the index, but the git upstream has newer commits than the clone. */
+  | 'upstream_drift';
 
 export interface SourceLocation {
   sourceKey: string;
@@ -48,7 +54,7 @@ export const SOURCE_LOCATIONS: readonly SourceLocation[] = [
   ...(
     [
       ['drupal-developer-guides', 'developer_guides'], ['drupal-module-handbook', 'module_handbook'],
-      ['drupal-skills', 'drupal_skills'], ['tutorials', 'tutorials'], ['symfony-docs', 'symfony_docs'],
+      ['drupal-skills', 'drupal_skills'], ['drupal-ai-best-practices', 'ai_best_practices'], ['tutorials', 'tutorials'], ['symfony-docs', 'symfony_docs'],
       ['php-manual', 'php_docs'], ['certification', 'certification'], ['contrib-modules', 'contrib_docs'],
       ['api-drupal-org', 'api_drupal_org'], ['change-records', 'change_records'],
       ['security-advisories', 'security_advisories'],
@@ -70,9 +76,9 @@ export const SOURCE_LOCATIONS: readonly SourceLocation[] = [
     drupalVersion: 'all',
     includeCode: false,
     project: { mode: 'firstSegment' },
-    // drupal-skills, symfony-docs, and phpstan-drupal are plain git clones:
-    // track commit drift like core.
-    git: sourceKey === 'drupal_skills' || sourceKey === 'symfony_docs' || sourceKey === 'phpstan_drupal' ? 'root' : 'none',
+    // drupal-skills, ai_best_practices, symfony-docs, and phpstan-drupal are
+    // plain git clones: track commit drift like core.
+    git: sourceKey === 'drupal_skills' || sourceKey === 'ai_best_practices' || sourceKey === 'symfony_docs' || sourceKey === 'phpstan_drupal' ? 'root' : 'none',
   })),
 ];
 
@@ -118,6 +124,92 @@ export interface FreshnessReport {
   /** Source keys never fetched and never indexed: informational only. */
   attention: string[];
   sources: SourceFreshness[];
+  /** Whether upstream git drift was checked (opt-in: --check-upstream). */
+  upstreamChecked?: boolean;
+  /** Sources whose upstream has commits the local clone lacks (when checked). */
+  upstreamDrift?: string[];
+}
+
+/**
+ * Upstream drift for one git clone: fetches the remote (network) and counts
+ * commits the local HEAD lacks. Null on any failure (not a git repo, no
+ * upstream, offline) — the check is advisory and must never break the report.
+ * This is the check `index:freshness` historically lacked: it compared
+ * disk-vs-index, so a 96-commit-stale core snapshot reported "fresh".
+ */
+export interface GitUpstreamDrift {
+  /** Commits the local clone lacks; null when shallow (ancestry not provable). */
+  behind: number | null;
+  branch: string;
+  /** True when the upstream tip differs from local HEAD (the drift signal). */
+  drift: boolean;
+}
+
+/**
+ * Upstream drift for one git clone: fetches the remote (network) and detects
+ * commits the local HEAD lacks. Null on any failure (not a git repo, no
+ * upstream, offline) — the check is advisory and must never break the report.
+ *
+ * Shallow-aware (contrib clones are --depth=1): ancestry is not provable, so
+ * drift = "fetched tip !== HEAD" with behind=null instead of a rev-list count,
+ * which is garbage across shallow boundaries.
+ *
+ * This is the check `index:freshness` historically lacked: it compared
+ * disk-vs-index, so a 96-commit-stale core snapshot reported "fresh".
+ */
+export async function gitUpstreamDrift(directory: string, refMode: 'tracked' | 'default' = 'tracked'): Promise<GitUpstreamDrift | null> {
+  const gitDir = path.join(directory, '.git');
+  try {
+    await access(gitDir);
+  } catch {
+    return null;
+  }
+  const run = async (args: string[]): Promise<string> => {
+    const { stdout } = await execFileAsync('git', ['-C', directory, ...args], { timeout: 120_000, maxBuffer: 10 * 1024 * 1024 });
+    return stdout.trim();
+  };
+  try {
+    // Ref model MUST match the fetcher that maintains the clone:
+    // - 'tracked': fetchers pull the checked-out branch (core snapshots,
+    //   skills repos — `git pull origin <branch>`).
+    // - 'default': fetchers `reset --hard` to origin's DEFAULT branch
+    //   (fetch-contrib) — comparing against the checked-out branch name
+    //   here would flag commits on a differently-advanced release branch
+    //   that the fetcher intentionally does not track.
+    let ref = '';
+    if (refMode === 'default') {
+      // Literal remote HEAD — exactly what fetch-contrib uses (`git fetch
+      // origin HEAD`). Resolving the local origin/HEAD symbolic ref instead
+      // would use the branch name frozen at clone time, which diverges when
+      // the upstream switches its default branch.
+      ref = 'HEAD';
+    } else {
+      try {
+        ref = (await run(['rev-parse', '--abbrev-ref', '@{upstream}'])).replace(/^origin\//, '');
+      } catch {
+        ref = 'HEAD'; // no upstream (single-branch shallow clones) — default branch
+      }
+    }
+    await run(['fetch', '--quiet', 'origin', ref]);
+    const localHead = await run(['rev-parse', 'HEAD']);
+    const remoteTip = await run(['rev-parse', 'FETCH_HEAD']);
+    const drift = localHead !== remoteTip;
+    let behind: number | null = null;
+    if (!drift) {
+      behind = 0;
+    } else {
+      try {
+        // Only meaningful for full clones; shallow rev-lists can't prove ancestry.
+        await access(path.join(gitDir, 'shallow'));
+      } catch {
+        behind = Number(await run(['rev-list', '--count', `HEAD..FETCH_HEAD`]));
+        if (!Number.isFinite(behind)) behind = null;
+      }
+    }
+    return { behind, branch: ref, drift };
+  } catch {
+    return null;
+  }
 }
 
 function eligibleExtension(file: string, includeCode: boolean): boolean {
@@ -327,7 +419,7 @@ async function readIndexedStates(indexRoot: string): Promise<{ runId?: string; b
   } finally { db.close(); }
 }
 
-export async function checkFreshness(repoRoot: string, indexRoot = getDefaultIndexRoot(repoRoot)): Promise<FreshnessReport> {
+export async function checkFreshness(repoRoot: string, indexRoot = getDefaultIndexRoot(repoRoot), options: { checkUpstream?: boolean } = {}): Promise<FreshnessReport> {
   const indexed = await readIndexedStates(indexRoot);
   const fixtureLimit = indexed?.fixtureLimit;
   const fixtureLimited = Boolean(fixtureLimit && fixtureLimit > 0);
@@ -354,14 +446,85 @@ export async function checkFreshness(repoRoot: string, indexRoot = getDefaultInd
   }
   const needsProcessing = sources.filter(item => item.status === 'changed' || item.status === 'missing' || item.status === 'new').map(item => item.sourceKey);
   const attention = sources.filter(item => item.status === 'unfetched').map(item => item.sourceKey);
+
+  // Upstream drift check (opt-in): disk-vs-index comparison alone reported
+  // "fresh" for a clone whose remote had moved — the gap that hid a
+  // 96-commit-stale core snapshot. Fetch each unique git directory once,
+  // then flag sources whose upstream is ahead. Feed-based sources (git:
+  // 'none') are not checkable here — they refresh via their fetch command.
+  let upstreamChecked = false;
+  const upstreamDrift: string[] = [];
+  if (options.checkUpstream) {
+    upstreamChecked = true;
+    const driftByDir = new Map<string, Awaited<ReturnType<typeof gitUpstreamDrift>>>();
+    const dirFor = async (location: SourceLocation): Promise<string | null> => {
+      for (const folder of location.folders) {
+        const directory = path.join(repoRoot, 'data', 'sources', folder);
+        try { await access(path.join(directory, '.git')); return directory; } catch { /* next folder */ }
+      }
+      return null;
+    };
+    const driftFor = async (directory: string | null, refMode: 'tracked' | 'default') => {
+      if (!directory) return null;
+      const key = `${directory}::${refMode}`;
+      if (!driftByDir.has(key)) driftByDir.set(key, await gitUpstreamDrift(directory, refMode));
+      return driftByDir.get(key) ?? null;
+    };
+    for (const location of SOURCE_LOCATIONS) {
+      if (location.git === 'none') continue;
+      let directories: string[] = [];
+      if (location.git === 'subdir') {
+        const root = path.join(repoRoot, 'data', 'sources', location.folders[0]!);
+        try {
+          directories = (await readdir(root, { withFileTypes: true })).filter(entry => entry.isDirectory() && existsSync(path.join(root, entry.name, '.git'))).map(entry => path.join(root, entry.name));
+        } catch { directories = []; }
+      } else {
+        const resolved = await dirFor(location);
+        directories = resolved ? [resolved] : [];
+      }
+      let maxBehind = 0;
+      let branch = '';
+      let anyDrift = false;
+      const offenders: string[] = [];
+      for (const directory of directories) {
+        // 'subdir' git sources are maintained against origin's default branch
+        // (fetch-contrib resets --hard to origin/HEAD); 'root' sources pull
+        // their tracked branch. The drift ref must match the fetcher.
+        const drift = await driftFor(directory, location.git === 'subdir' ? 'default' : 'tracked');
+        if (drift?.drift) {
+          anyDrift = true;
+          offenders.push(drift.behind === null
+            ? `${path.basename(directory)} (tip differs; shallow)`
+            : `${path.basename(directory)} (${drift.behind})`);
+          if (drift.behind !== null && drift.behind > maxBehind) { maxBehind = drift.behind; branch = drift.branch; }
+          else if (!branch) branch = drift.branch;
+        }
+      }
+      if (anyDrift) {
+        upstreamDrift.push(location.sourceKey);
+        const source = sources.find(item => item.sourceKey === location.sourceKey);
+        if (source && source.status === 'fresh') {
+          source.status = 'upstream_drift';
+          source.details = [
+            `Upstream ${branch} ahead for ${offenders.length} project(s): ${offenders.slice(0, 8).join(', ')}${offenders.length > 8 ? ' …' : ''} — run index:fetch then index:rebuild`,
+            ...source.details,
+          ];
+        }
+      }
+    }
+  }
+
   return {
     ready: Boolean(indexed),
     runId: indexed?.runId,
     builtAt: indexed?.builtAt,
     fixtureLimited,
     stale: sources.some(item => item.status === 'changed' || item.status === 'missing'),
-    needsProcessing,
+    needsProcessing: upstreamChecked
+      ? [...new Set([...needsProcessing, ...upstreamDrift])]
+      : needsProcessing,
     attention,
     sources,
+    ...(upstreamChecked ? { upstreamChecked, upstreamDrift } : {}),
   };
 }
