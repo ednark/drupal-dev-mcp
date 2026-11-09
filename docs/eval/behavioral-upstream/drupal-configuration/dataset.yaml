@@ -1,0 +1,88 @@
+questions:
+- id: B01
+  input: I'm building a Drupal module that integrates with a third-party weather API. The module needs
+    to store the API key. Where should I store it and how do I read it in code? Show me the implementation.
+  criteria: The agent must store the API key in settings.php using $settings, NOT in Drupal config. It
+    should use Settings::get() to read the value. Storing an API key in config would export it to YAML
+    and risk committing it to git.
+  bundle: drupal_configuration
+  rubric_ref: rubric/drupal_configuration_b01@1.1
+  metadata:
+    expectations:
+    - Stores the API key in settings.php, NOT in config
+    - Uses Settings::get() to read the value
+    - Explains the security risk of storing secrets in config (exported to YAML, committed to git)
+    - Does NOT use \Drupal::config() for the API key
+- id: B02
+  input: 'Create a simple settings form for a Drupal module called weather_widget. It needs two settings:
+    a city name (string) and a refresh interval in seconds (integer, default 3600). Include the config
+    schema file.'
+  criteria: 'A settings form with matching config schema in config/schema/*.schema.yml. The schema must
+    define both fields with correct types (string, integer). The form must extend ConfigFormBase and map
+    both elements with #config_target (Drupal 10.2+), not load #default_value from $config->get() and save
+    with ->set()->save() in submitForm().'
+  bundle: drupal_configuration
+  rubric_ref: rubric/drupal_configuration_b02@2.0
+  metadata:
+    expectations:
+    - Creates a config schema file (*.schema.yml)
+    - Schema defines the city as type string and interval as type integer
+    - Config install YAML matches the schema structure
+    - 'Maps both form elements with #config_target instead of saving them in submitForm()'
+    - Generated PHP passes php -l syntax check
+- id: B03
+  input: My Drupal module runs a cron job that syncs data from an external API. I need to store the timestamp
+    of the last successful sync so cron knows where to resume. Where should I store this?
+  criteria: The agent must use the State API (\Drupal::state()), NOT config. Timestamps change on every
+    cron run and are environment-specific. Storing them in config would cause constant diffs in config
+    exports and risk overwriting production state on deploy.
+  bundle: drupal_configuration
+  rubric_ref: rubric/drupal_configuration_b03@1.1
+  metadata:
+    expectations:
+    - Uses \Drupal::state()->set() and ->get() for the timestamp
+    - Explains why config is wrong (constant diffs, deploy risk)
+    - Does NOT use \Drupal::config() for the timestamp
+- id: B04
+  input: I need to change the site name to 'My New Site' on my local environment only, without affecting
+    the config that gets deployed to production. How do I do this in Drupal?
+  criteria: The agent should use a config override in settings.php, not edit the config directly. It should
+    explain the override system and the distinction between get() (reads overridden value) and getEditable()
+    (reads stored value, ignoring overrides).
+  bundle: drupal_configuration
+  rubric_ref: rubric/drupal_configuration_b04@1.1
+  metadata:
+    expectations:
+    - Uses $config override in settings.php
+    - Explains that overrides are read-only and environment-specific
+    - Distinguishes get() from getEditable()
+    - Does NOT advise hand-editing YAML in config/sync/
+- id: B05
+  input: I have a module that needs to let site admins create and manage multiple notification channels
+    (email, Slack, SMS), each with its own configuration (endpoint URL, auth token, enabled/disabled).
+    Should I use simple config or a config entity?
+  criteria: The agent should recommend a config entity because admins need to create, edit, and delete
+    multiple named instances through the UI. Simple config is for a fixed set of key-value settings, not
+    for user-created collections.
+  bundle: drupal_configuration
+  rubric_ref: rubric/drupal_configuration_b05@1.0
+  metadata:
+    expectations:
+    - Recommends a config entity, NOT simple config
+    - Explains that config entities support CRUD for multiple named instances
+    - Mentions that config entities provide list builders, forms, and access control
+    - Does NOT suggest storing multiple channels as a sequence in simple config
+- id: B06
+  input: My module needs to add a custom setting to every content type (node type) in Drupal — a boolean
+    flag called 'enable_ai_summary'. I don't own the node type config entities. How should I store this?
+  criteria: Uses the third_party_settings mechanism (setThirdPartySetting / getThirdPartySetting) to attach
+    module-specific settings to config entities owned by other modules. Does NOT modify the node type
+    config keys directly.
+  bundle: drupal_configuration
+  rubric_ref: rubric/drupal_configuration_b06@1.0
+  metadata:
+    expectations:
+    - Uses setThirdPartySetting or getThirdPartySetting
+    - Explains that third_party_settings are namespaced by module
+    - Mentions automatic cleanup on module uninstall
+    - Does NOT modify node type config keys directly

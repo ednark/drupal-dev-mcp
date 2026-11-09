@@ -1,0 +1,74 @@
+questions:
+- id: B01
+  input: 'Generate a Kernel test class for a Drupal module called my_module that tests a service named
+    my_module.calculator. The service has a method add(int $a, int $b): int. Write the complete test file.'
+  criteria: A complete PHP Kernel test file using KernelTestBase with correct namespace, RunTestsInSeparateProcesses
+    attribute, and explicit setUp with installConfig/installSchema.
+  bundle: drupal_automated_testing
+  rubric_ref: rubric/drupal_automated_testing_b01@1.0
+  metadata:
+    expectations:
+    - Uses KernelTestBase as the base class
+    - Does NOT extend UnitTestCase or BrowserTestBase
+    - Includes the RunTestsInSeparateProcesses attribute
+    - Generated PHP passes php -l syntax check
+- id: B02
+  input: Generate a Functional test class for a Drupal module called my_module that tests a page at /my-module/dashboard
+    which should return a 200 status and contain the text 'Dashboard'. Write the complete test file and
+    show the full PHP code in your response.
+  criteria: A complete PHP Functional test file using BrowserTestBase with correct namespace and RunTestsInSeparateProcesses
+    attribute.
+  bundle: drupal_automated_testing
+  rubric_ref: rubric/drupal_automated_testing_b02@1.0
+  metadata:
+    expectations:
+    - Uses BrowserTestBase as the base class
+    - Does NOT extend UnitTestCase
+    - Generated PHP passes php -l syntax check
+- id: B03
+  input: Generate a FunctionalJavascript test for a Drupal form where clicking a 'Show advanced' checkbox
+    reveals a hidden fieldset with CSS selector '#edit-advanced-wrapper'. Write the complete test file
+    and show the code in your response.
+  criteria: A complete FunctionalJavascript test using WebDriverTestBase with waitForElement wrapped in
+    assertNotEmpty to avoid flaky assertions.
+  bundle: drupal_automated_testing
+  rubric_ref: rubric/drupal_automated_testing_b03@1.0
+  metadata:
+    expectations:
+    - Uses waitForElement for async element checks
+    - Uses assertNotEmpty to verify waitForElement result
+    - Generated PHP passes php -l syntax check
+- id: B04
+  input: I have a Kernel test for my_module that creates node entities but it throws 'table node_field_data
+    does not exist'. Show me the corrected setUp method.
+  criteria: A corrected setUp method showing installEntitySchema and installConfig calls that create the
+    required database tables.
+  bundle: drupal_automated_testing
+  rubric_ref: rubric/drupal_automated_testing_b04@1.0
+  metadata:
+    expectations:
+    - Uses installEntitySchema to create entity tables
+    - Explains that Kernel tests do not install config or schema automatically
+- id: B05
+  input: Generate a Kernel test skeleton for a module called my_module. Only the class structure, no test
+    methods yet.
+  criteria: A minimal Kernel test skeleton with KernelTestBase, correct namespace, and RunTestsInSeparateProcesses
+    attribute.
+  bundle: drupal_automated_testing
+  rubric_ref: rubric/drupal_automated_testing_b05@1.0
+  metadata:
+    expectations:
+    - Includes the RunTestsInSeparateProcesses attribute
+    - Generated PHP passes php -l syntax check
+- id: B06
+  input: What is the correct PHP namespace for a FunctionalJavascript test class in a module called 'my_commerce'?
+    Show the full class opening with namespace, use statements, and class declaration. Show the code in
+    your response.
+  criteria: Uses the \Drupal\Tests\my_commerce\FunctionalJavascript namespace and extends WebDriverTestBase.
+  bundle: drupal_automated_testing
+  rubric_ref: rubric/drupal_automated_testing_b06@1.0
+  metadata:
+    expectations:
+    - 'Correct namespace: Drupal\Tests\my_commerce\FunctionalJavascript'
+    - Extends WebDriverTestBase
+    - Generated PHP passes php -l syntax check

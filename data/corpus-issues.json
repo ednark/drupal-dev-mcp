@@ -376,6 +376,33 @@
       "remedy": "Add a placement guidance doc: long-form body vs structured content \u2014 the tradeoff table, size thresholds, and when each fits (duplication test vs editor-managed site).",
       "status": "open",
       "firstObserved": "2026-10-30"
+    },
+    {
+      "id": "ai-best-practices-source-onboarded",
+      "title": "ai_best_practices community guidance corpus onboarded as indexed source",
+      "question": "Should the community ai_best_practices skills repo (git.drupalcode.org/project/ai_best_practices) be part of the index, and does it contradict the curated corpora?",
+      "groundTruth": "Incorporated 2026-11-09 (plan: plans/active/ai-best-practices-corpus.md; maintainer decisions: authority 84, meta-skills included, eval mining as separate behavioral suite). Source: skills/ only via sparse checkout — evals/, src/, tests/, .agents/ excluded. Last upstream commit at ingest: 4cdb347b (2026-11-04).",
+      "observed": "Consistency audit vs curated corpora found NO contradictions: drupal-render-pipeline complements anti-patterns 09/04 (mechanism vs decision-rule), drupal-configuration complements placement 05/12 (mechanics vs placement, 'What not to do' list consistent). CKEditor5 skill carries version-sensitive references (version-matrix.md, drupal-12-outlook.md) inside an agnostic source — re-verify at refresh.",
+      "classification": "coverage-gap",
+      "classificationNote": "coverage-gap CLOSED by this onboarding: testing, accessibility (a11y FAPI), CKEditor5 plugin development, GitLab CI, documentation writing were previously absent from the corpus",
+      "locatedDocIds": [],
+      "detection": "Competitive-landscape review 2026-11-09 + direct repo inspection.",
+      "remedy": "Cross-references added to anti-patterns 09/04 and placement 05/12. Benchmark gate held (41/41, MRR 0.902 vs 0.907 prior, no per-case regressions). Behavioral eval mining (their evals/ datasets) tracked as separate task: scripts/behavioral-eval.ts.",
+      "status": "fixed",
+      "firstObserved": "2026-11-09"
+    },
+    {
+      "id": "behavioral-eval-coverage-gaps",
+      "title": "Behavioral eval (upstream ai_best_practices cases) exposes 5 corpus/retrieval gaps",
+      "question": "Does the index support the ~50-case behavioral surface defined by ai_best_practices evals (accessibility, config, testing, git workflow, docs standards, render pipeline)?",
+      "groundTruth": "Baseline measured 2026-11-09: 66/71 (93%) retrieval-layer pass with fetch-on-demand evidence (search + full-document reads, mirroring the agent loop). Baseline: docs/eval/behavioral-baseline.json. Suite: scripts/behavioral-eval.ts (npm run behavioral:eval). Case definitions: docs/eval/behavioral-upstream/ (upstream commit 4cdb347b). Ground-truth references for the failing expectations: Drupal documentation standards https://www.drupal.org/docs/develop/documenting-your-project; Drupal.org GitLab commit/attribution conventions https://www.drupal.org/about/core/policies/core-change-policies/git-and-commit-messages (and their eval rubrics rubric/drupal_gitlab_b02@1.0, rubric/drupal_writing_documentation_b03@1.0); WCAG SC 1.1.1 / 1.4.3 per https://www.w3.org/TR/WCAG21/; API-key storage ground truth = placement-guidance/16 decision rule 3 + ai_best_practices drupal-configuration skill ('Do not store API keys... use $settings').",
+      "observed": "5 failures: (1) drupal-configuration::B01 — API-key-in-settings.php: corpus HAS the evidence ('Working with Drupal configuration' retrieves rank 1-3 under keyword phrasing) but the case's long instructional prompt fails to retrieve it — query-phrasing sensitivity, consistent with the Redis reformulation finding and the tool description's short-query guidance. (2) drupal-gitlab::B02,B09 — Drupal.org git conventions (Conventional Commits with issue id, 'By:' attribution lines using d.o usernames) absent from corpus. (3) drupal-writing-documentation::B03 — Drupal documentation standards (heading levels, link text, code-block prompts) absent. (4) drupal-accessibility/drupal-a11y-qa::B02 — WCAG success-criterion-level triage detail (SC 1.1.1 vs 1.4.3, one-issue-per-criterion policy) absent.",
+      "classification": "coverage-gap",
+      "locatedDocIds": [],
+      "detection": "Behavioral eval suite, retrieval mode, baseline run.",
+      "remedy": "Candidate corpus additions: (a) Drupal.org git/commit-convention doc (change-record + GitLab docs territory); (b) Drupal documentation standards (https://www.drupal.org/docs/develop/documenting-your-project); (c) WCAG criterion quick-reference for the a11y QA triage question — verify licensing/scope before adding. Retrieval-phrasing gap is a tool-UX finding, not corpus: raw search callers must reformulate; ask_a_drupal_expert reformulates internally.",
+      "status": "open",
+      "firstObserved": "2026-11-09"
     }
   ]
 }

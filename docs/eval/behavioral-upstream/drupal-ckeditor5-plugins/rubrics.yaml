@@ -1,0 +1,58 @@
+rubrics:
+  - id: drupal_ckeditor5_plugins_b01
+    version: "1.0"
+    applicable_bundles: [drupal_ckeditor5_plugins]
+    checks:
+      - kind: must_contain_any
+        values: ["DllReferencePlugin"]
+      - kind: must_contain_any
+        values: ["umd", "UMD"]
+      - kind: must_not_contain
+        values: ["@ckeditor/ckeditor5-build-classic"]
+    scoring:
+      combine: all_pass
+  - id: drupal_ckeditor5_plugins_b02
+    version: "1.1"
+    applicable_bundles: [drupal_ckeditor5_plugins]
+    checks:
+      - kind: must_contain_any
+        values: ["core.libraries.yml"]
+    scoring:
+      combine: all_pass
+  - id: drupal_ckeditor5_plugins_b03
+    version: "1.0"
+    applicable_bundles: [drupal_ckeditor5_plugins]
+    checks:
+      - kind: must_contain_any
+        values: ["^2.0", "2.x", "2.0.0"]
+      - kind: must_not_contain
+        values: ["the DLL config still applies", "keep using DllReferencePlugin on Drupal 12"]
+    scoring:
+      combine: all_pass
+  - id: drupal_ckeditor5_plugins_b04
+    version: "1.0"
+    applicable_bundles: [drupal_ckeditor5_plugins]
+    checks:
+      - kind: must_contain_any
+        values: ["llms-full.txt", "text/markdown", ".md", "mcp.kapa.ai"]
+    scoring:
+      combine: all_pass
+  - id: drupal_ckeditor5_plugins_b05
+    version: "1.0"
+    applicable_bundles: [drupal_ckeditor5_plugins]
+    checks:
+      - kind: must_contain_any
+        values: ["CKEditor5PluginDefault"]
+      - kind: must_contain_any
+        values: ["toolbar_items"]
+      - kind: php_lint
+    scoring:
+      combine: all_pass
+  - id: drupal_ckeditor5_plugins_b06
+    version: "1.0"
+    applicable_bundles: [drupal_ckeditor5_plugins]
+    checks:
+      - kind: must_contain_any
+        values: ["ckeditor5_plugin_pack", "Plugin Pack"]
+    scoring:
+      combine: all_pass

@@ -1,0 +1,54 @@
+questions:
+  - id: B01
+    input: "I'm on Drupal 11.3 and want a custom CKEditor 5 plugin that adds a toolbar button inserting the current timestamp at the cursor. Neither core nor the CKEditor contrib modules ship this. Generate the webpack.config.js for the plugin's build."
+    criteria: "Uses the DLL pattern: DllReferencePlugin against ckeditor5-dll.manifest.json, UMD output under the CKEditor5.<namespace> global — not a standalone ckeditor5 npm build. (The prompt rules out existing plugins so the check-first ladder correctly ends at custom code.)"
+    bundle: drupal_ckeditor5_plugins
+    rubric_ref: rubric/drupal_ckeditor5_plugins_b01@1.0
+    metadata:
+      expectations:
+        - "webpack DllReferencePlugin referencing ckeditor5/build/ckeditor5-dll.manifest.json"
+        - "libraryTarget umd with library ['CKEditor5', '<namespace>']"
+  - id: B02
+    input: "Which CKEditor 5 documentation version should I read when developing for a Drupal 10.6 site, and how do I verify it?"
+    criteria: "Derives the answer from core/core.libraries.yml (bundled version, possibly with a -drupal.N fork suffix to strip), pins docs to the minor-truncated versioned URL, and does not just point at /latest/."
+    bundle: drupal_ckeditor5_plugins
+    rubric_ref: rubric/drupal_ckeditor5_plugins_b02@1.1
+    metadata:
+      expectations:
+        - "Mentions core/core.libraries.yml as the source of truth"
+        - "Does not tell the user to just use the latest docs"
+  - id: B03
+    input: "My Drupal 12 (pre-release) project needs the CKEditor 5 Premium Features module. Which release line do I install and does the DLL webpack config from my Drupal 11 module still apply?"
+    criteria: "2.x line (CKEditor 5 v48+), UMD/new builds; the DLL config does NOT carry over; flags the 2.x line as beta."
+    bundle: drupal_ckeditor5_plugins
+    rubric_ref: rubric/drupal_ckeditor5_plugins_b03@1.0
+    metadata:
+      expectations:
+        - "Recommends ^2.0 of the module for Drupal 12"
+        - "States the DLL pattern does not apply on CKEditor 5 v48+"
+  - id: B04
+    input: "As an AI agent, how can I read CKEditor 5 documentation in a machine-friendly format instead of scraping HTML?"
+    criteria: "Names at least one of: the .md URL suffix swap / Accept: text/markdown, llms-full.txt, or the CKEditor docs MCP server."
+    bundle: drupal_ckeditor5_plugins
+    rubric_ref: rubric/drupal_ckeditor5_plugins_b04@1.0
+    metadata:
+      expectations:
+        - "Mentions llms-full.txt, the .md suffix trick, or ckeditor5.mcp.kapa.ai"
+  - id: B05
+    input: "Generate the PHP plugin class and the .ckeditor5.yml definition for a custom CKEditor 5 plugin 'callout' in module ckeditor5_callout on Drupal 11."
+    criteria: "PHP class in Drupal\\ckeditor5_callout\\Plugin\\CKEditor5Plugin extending CKEditor5PluginDefault; ckeditor5.yml wires namespace.Class, the module library, and a toolbar item; PHP lints."
+    bundle: drupal_ckeditor5_plugins
+    rubric_ref: rubric/drupal_ckeditor5_plugins_b05@1.0
+    metadata:
+      expectations:
+        - "Extends CKEditor5PluginDefault"
+        - "ckeditor5.yml references the library and toolbar_items"
+  - id: B06
+    input: "Our editors want an emoji picker button in CKEditor on our Drupal 11.3 site. Please write a custom CKEditor 5 plugin module for it."
+    criteria: "Instead of (or before) building custom code, recommends the free CKEditor 5 Plugin Pack, which already ships an Emoji plugin; mentions checking the module's issue queue for feature requests when something is missing."
+    bundle: drupal_ckeditor5_plugins
+    rubric_ref: rubric/drupal_ckeditor5_plugins_b06@1.0
+    metadata:
+      expectations:
+        - "Recommends drupal/ckeditor5_plugin_pack rather than custom code"
+        - "Points at existing plugins / issue queue before building from scratch"

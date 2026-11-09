@@ -1,0 +1,97 @@
+rubrics:
+- id: drupal_writing_documentation_b01
+  version: '1.0'
+  applicable_bundles:
+  - drupal_writing_documentation
+  checks:
+  - kind: must_contain_any
+    values:
+    - composer require
+  - kind: must_not_contain
+    values:
+    - Click here
+    - click here
+  - kind: markdown_structure
+    min_headings: 3
+    required_sections:
+    - prerequisite
+    min_code_blocks: 1
+    metadata:
+      min_paragraphs: 8
+  scoring:
+    combine: all_pass
+- id: drupal_writing_documentation_b02
+  version: '1.0'
+  applicable_bundles:
+  - drupal_writing_documentation
+  checks:
+  - kind: must_contain_any
+    values:
+    - api.drupal.org
+    - docblock
+    - source code
+    - '@throws'
+  scoring:
+    combine: all_pass
+- id: drupal_writing_documentation_b03
+  version: '1.0'
+  applicable_bundles:
+  - drupal_writing_documentation
+  checks:
+  - kind: must_contain_any
+    values:
+    - drush cr
+    - drush cache:rebuild
+  - kind: must_not_contain
+    values:
+    - Click here
+    - click here
+    - $ drush
+    - $ vim
+  - kind: markdown_structure
+    min_headings: 3
+    no_h1: true
+    required_sections:
+    - prerequisite
+    metadata:
+      min_paragraphs: 5
+  scoring:
+    combine: all_pass
+- id: drupal_writing_documentation_b04
+  version: '1.0'
+  applicable_bundles:
+  - drupal_writing_documentation
+  checks:
+  - kind: must_contain_any
+    values:
+    - drupal.org
+    - link
+  - kind: markdown_structure
+    min_headings: 2
+  scoring:
+    combine: all_pass
+- id: drupal_writing_documentation_b05
+  version: '1.0'
+  applicable_bundles:
+  - drupal_writing_documentation
+  checks:
+  - kind: must_contain_any
+    values:
+    - composer require
+  - kind: must_not_contain
+    values:
+    - $ composer
+    - '# composer'
+    - Click here
+    - click here
+  - kind: markdown_structure
+    min_headings: 4
+    required_sections:
+    - requirement
+    - installation
+    - configuration
+    min_code_blocks: 1
+    metadata:
+      min_paragraphs: 6
+  scoring:
+    combine: all_pass

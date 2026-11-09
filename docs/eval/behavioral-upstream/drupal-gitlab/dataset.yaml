@@ -1,0 +1,122 @@
+questions:
+- id: B01
+  input: I'm working on a Drupal contrib module hosted on git.drupalcode.org. Show me the glab command
+    to list the open issues for the project 'token'.
+  criteria: The command targets git.drupalcode.org via the --repo flag (the hostname is in the repo path).
+    glab resolves the Drupal.org token automatically — no GITLAB_HOST env var, no manual token extraction,
+    and no change to any global default host.
+  bundle: drupal_gitlab
+  rubric_ref: rubric/drupal_gitlab_b01@1.0
+  metadata:
+    expectations:
+    - Uses --repo pointing at the git.drupalcode.org project path
+    - Does NOT set GITLAB_HOST or change the global default GitLab host
+    - Does NOT extract or pass a token manually
+- id: B02
+  input: Write the git commit message for a fix on Drupal issue 3588908, summary 'Resolve fatal error
+    on cron run'. The reporter's Drupal.org username is webchick and I am zorz.
+  criteria: 'A Conventional Commits message: ''{type}: #{issue-id} Short summary'' followed by By: lines
+    using Drupal.org usernames (not @-prefixed, not GitLab display names).'
+  bundle: drupal_gitlab
+  rubric_ref: rubric/drupal_gitlab_b02@1.0
+  metadata:
+    expectations:
+    - 'First line follows ''{type}: #3588908 ...'' Conventional Commits format'
+    - 'Includes By: lines crediting contributors with Drupal.org usernames'
+    - 'Does NOT use @username syntax in the By: lines'
+    - Uses the issue id 3588908
+- id: B03
+  input: I pushed a branch to my issue fork on git.drupalcode.org and want to open a merge request from
+    the fork to the upstream project's 1.0.x branch using glab. What's the command?
+  criteria: The agent must explain that glab mr create cannot create cross-project (fork-to-upstream)
+    MRs on Drupal's setup, and that the REST API must be used with an explicit source_project_id and target_project_id.
+  bundle: drupal_gitlab
+  rubric_ref: rubric/drupal_gitlab_b03@1.0
+  metadata:
+    expectations:
+    - States that glab mr create cannot create cross-project MRs
+    - Uses the GitLab REST API for the merge request instead
+    - Sets an explicit source_project_id and target_project_id
+- id: B04
+  input: 'The GitLab API reports detailed_merge_status: mergeable for my MR on git.drupalcode.org, and
+    I''m a maintainer with a full api-scoped token. Can I just merge it via the API?'
+  criteria: No. API-based merges are blocked at the infrastructure level on git.drupalcode.org even for
+    maintainers; all merges go through the web UI. mergeable from the API also does not account for the
+    fast-forward requirement.
+  bundle: drupal_gitlab
+  rubric_ref: rubric/drupal_gitlab_b04@1.0
+  metadata:
+    expectations:
+    - States that merges via the API are blocked on git.drupalcode.org
+    - Directs the user to merge through the web UI
+    - Notes that mergeable does not guarantee the branch is fast-forwardable / may need a rebase
+- id: B05
+  input: I created a work item for my Drupal module and tried to push my branch to the issue fork, but
+    I get a 404. The fork URL looks right. What's wrong?
+  criteria: The issue fork must be provisioned through the Drupal.org issue management UI before it exists.
+    Pushing to a non-existent fork returns 404, and the fork cannot be created by pushing or via the API.
+  bundle: drupal_gitlab
+  rubric_ref: rubric/drupal_gitlab_b05@1.0
+  metadata:
+    expectations:
+    - Explains the fork must be provisioned via the Drupal.org issue management page first
+    - Mentions clicking 'Create issue fork' in the UI
+    - States the fork cannot be created by pushing or via the API
+- id: B06
+  input: How do I move a Drupal work item on git.drupalcode.org to the 'Needs review' status using glab?
+    Can I just add a label?
+  criteria: Work item status is a status widget, not a label. It cannot be set by adding a label; it requires
+    a GraphQL workItemUpdate mutation. If permissions are insufficient, the user sets it in the UI.
+  bundle: drupal_gitlab
+  rubric_ref: rubric/drupal_gitlab_b06@1.0
+  metadata:
+    expectations:
+    - States that status is a work item widget, not a label
+    - Uses a GraphQL mutation (workItemUpdate) to change status
+    - Does NOT advise adding or setting a label to change status
+- id: B07
+  input: I ran glab issue list for a Drupal core-related project on git.drupalcode.org and got nothing
+    back, even though I know there are open issues. Is the API broken?
+  criteria: Not all Drupal projects have migrated to GitLab work items; many still use the legacy Drupal.org
+    issue queue. An empty glab issue list does not mean the API is broken. Continue without a work item
+    or check the legacy queue.
+  bundle: drupal_gitlab
+  rubric_ref: rubric/drupal_gitlab_b07@1.1
+  metadata:
+    expectations:
+    - Explains that some projects still use the legacy Drupal.org issue queue
+    - Notes that an empty result does not mean the API is broken
+    - Advises continuing without a work item rather than assuming failure
+- id: B08
+  input: I'm a first-time contributor to a Drupal module on git.drupalcode.org. There's an open work item
+    I want to fix, but an issue fork already exists — someone else created it. Walk me through how to
+    actually start working on it and get my change in.
+  criteria: 'Because the fork already exists and is not theirs, they must obtain access before pushing
+    — via the /do:access comment command or the ''Request access'' button on the Drupal.org fork management
+    page — then use the existing fork. From there: branch, commit (Conventional Commits), push to the
+    fork, and open the MR via the REST API (not glab mr create) with Closes #<id> to wire it to the issue.'
+  bundle: drupal_gitlab
+  rubric_ref: rubric/drupal_gitlab_b08@1.1
+  metadata:
+    expectations:
+    - Recognizes the fork already exists and the user needs access, not a new fork
+    - Uses /do:access (or the Request access button) rather than /do:fork
+    - Does NOT tell the user to push to upstream/origin directly (they are a contributor, not a maintainer)
+    - Opens the MR via the REST API rather than glab mr create
+    - 'Mentions wiring the MR to the issue with Closes #<id>'
+- id: B09
+  input: Draft the description for my merge request on git.drupalcode.org. It implements a design that
+    zorz proposed and I'd like their review, plus ronaldtebrake maintains this area. Wire it to close
+    issue 3588925.
+  criteria: 'The MR description should state the substance (what it does, that it follows the proposed
+    design, Closes #3588925) without @-mentioning or assigning zorz/ronaldtebrake. Deciding whom to ping
+    or add as reviewer is the human''s call; the agent should write it in general terms and leave tagging
+    to the user.'
+  bundle: drupal_gitlab
+  rubric_ref: rubric/drupal_gitlab_b09@1.0
+  metadata:
+    expectations:
+    - 'Includes Closes #3588925 to wire the MR to the issue'
+    - Does NOT @-mention or assign zorz or ronaldtebrake unprompted
+    - Notes that deciding whom to ping/add as reviewer is the human's call, or simply leaves it to the
+      user

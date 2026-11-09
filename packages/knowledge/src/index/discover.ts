@@ -174,7 +174,7 @@ export async function discoverDocuments(repoRoot: string, fixtureLimit?: number)
 
   const textSources = [
     ['drupal-developer-guides', 'developer_guides'], ['drupal-module-handbook', 'module_handbook'],
-    ['drupal-skills', 'drupal_skills'], ['tutorials', 'tutorials'], ['symfony-docs', 'symfony_docs'],
+    ['drupal-skills', 'drupal_skills'], ['drupal-ai-best-practices', 'ai_best_practices'], ['tutorials', 'tutorials'], ['symfony-docs', 'symfony_docs'],
     ['php-manual', 'php_docs'], ['certification', 'certification'], ['contrib-modules', 'contrib_docs'],
     ['api-drupal-org', 'api_drupal_org'], ['change-records', 'change_records'],
     ['security-advisories', 'security_advisories'],

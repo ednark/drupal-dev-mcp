@@ -1,0 +1,65 @@
+questions:
+- id: B01
+  input: Write a Drupal.behaviors JavaScript snippet that announces 'Item added to your cart.' to screen
+    readers when a user clicks a button with data-cart-add.
+  criteria: A Drupal.behaviors block that calls Drupal.announce() with the polite message. Does not add
+    a hand-rolled aria-live region to the DOM.
+  bundle: drupal_accessibility_drupal_a11y_dynamic
+  rubric_ref: rubric/drupal_accessibility_drupal_a11y_dynamic_b01@1.0
+  metadata:
+    expectations:
+    - Uses Drupal.announce()
+    - Does NOT insert an aria-live element into the DOM
+    - Uses Drupal.t() for the translated string
+    - Uses once() to avoid duplicate listeners
+- id: B02
+  input: After a Drupal AJAX command replaces a 'Load more' button with new content, how should I return
+    keyboard focus to the rebuilt trigger?
+  criteria: Use FocusFirstCommand from \Drupal\Core\Ajax\FocusFirstCommand in the AJAX response to move
+    focus after the command queue settles. Do not use element.focus() in a JS callback.
+  bundle: drupal_accessibility_drupal_a11y_dynamic
+  rubric_ref: rubric/drupal_accessibility_drupal_a11y_dynamic_b02@1.0
+  metadata:
+    expectations:
+    - Recommends FocusFirstCommand (core has no FocusCommand class)
+    - Does NOT recommend element.focus() inside an AJAX success callback
+    - References the command queue settling before focus
+- id: B03
+  input: Write a Playwright accessibility test for a Drupal cart page that checks for WCAG 2.2 AA violations.
+    Do not read or modify any existing files — generate the test code directly in your response.
+  criteria: A Playwright test using @axe-core/playwright with the wcag22aa tag. Includes at least one
+    keyboard-flow assertion beyond the Axe scan.
+  bundle: drupal_accessibility_drupal_a11y_dynamic
+  rubric_ref: rubric/drupal_accessibility_drupal_a11y_dynamic_b03@1.0
+  metadata:
+    expectations:
+    - Uses @axe-core/playwright
+    - Includes wcag22aa in the tags list
+    - Includes at least one keyboard navigation assertion
+    - Does NOT use Nightwatch
+- id: B04
+  input: Write a new Playwright test file for a Drupal page at /node/1 that checks for WCAG 2.2 AA accessibility
+    violations in both light and dark colour modes. Do not read or modify any existing files — generate
+    the test code directly in your response.
+  criteria: A Playwright test loop over ['light', 'dark'] that calls page.emulateMedia({ colorScheme })
+    before running the Axe scan in each mode.
+  bundle: drupal_accessibility_drupal_a11y_dynamic
+  rubric_ref: rubric/drupal_accessibility_drupal_a11y_dynamic_b04@1.0
+  metadata:
+    expectations:
+    - Loops over light and dark colour schemes
+    - Uses page.emulateMedia({ colorScheme })
+    - Runs AxeBuilder scan in both modes
+- id: B05
+  input: How should I add an accessibility test for a Drupal render array inside a PHPUnit Kernel test?
+  criteria: 'Guidance to use AxeRenderArrayTrait with assertAxeClean(), noting that this trait is proposed
+    in issue #3338664 and may not yet be committed to core. Check the issue for the current status before
+    using the snippet.'
+  bundle: drupal_accessibility_drupal_a11y_dynamic
+  rubric_ref: rubric/drupal_accessibility_drupal_a11y_dynamic_b05@1.0
+  metadata:
+    expectations:
+    - References AxeRenderArrayTrait or assertAxeClean
+    - Notes that the trait is in-flight / not yet committed
+    - 'References issue #3338664'
+    - Recommends the wcag22aa tag

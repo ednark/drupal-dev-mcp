@@ -1,0 +1,77 @@
+rubrics:
+- id: drupal_render_pipeline_b01
+  version: '1.0'
+  applicable_bundles:
+  - drupal_render_pipeline
+  checks:
+  - kind: must_contain_any
+    values:
+    - '#cache'
+    - '''tags'''
+    - '''contexts'''
+  - kind: must_not_contain
+    values:
+    - new Response(
+    - new HtmlResponse(
+    - return '<
+  - kind: php_lint
+  scoring:
+    combine: all_pass
+- id: drupal_render_pipeline_b02
+  version: '1.0'
+  applicable_bundles:
+  - drupal_render_pipeline
+  checks:
+  - kind: must_contain_any
+    values:
+    - node:42
+  - kind: must_not_contain
+    values:
+    - new Response(
+    - new HtmlResponse(
+  - kind: php_lint
+  scoring:
+    combine: all_pass
+- id: drupal_render_pipeline_b03
+  version: '1.0'
+  applicable_bundles:
+  - drupal_render_pipeline
+  checks:
+  - kind: must_contain_any
+    values:
+    - '#lazy_builder'
+    - '#create_placeholder'
+  - kind: must_not_contain
+    values:
+    - new Response(
+  - kind: php_lint
+  scoring:
+    combine: all_pass
+- id: drupal_render_pipeline_b04
+  version: '1.0'
+  applicable_bundles:
+  - drupal_render_pipeline
+  checks:
+  - kind: must_contain_any
+    values:
+    - CacheableJsonResponse
+  - kind: must_not_contain
+    values:
+    - new JsonResponse(
+    - new Response(
+  - kind: php_lint
+  scoring:
+    combine: all_pass
+- id: drupal_render_pipeline_b05
+  version: '1.1'
+  applicable_bundles:
+  - drupal_render_pipeline
+  checks:
+  - kind: must_contain_any
+    values:
+    - '#plain_text'
+  - kind: must_not_contain
+    values:
+    - => Markup::create(
+  scoring:
+    combine: all_pass

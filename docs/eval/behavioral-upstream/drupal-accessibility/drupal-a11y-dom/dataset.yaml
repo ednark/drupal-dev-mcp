@@ -1,0 +1,70 @@
+questions:
+- id: B01
+  input: Write a Twig template for a main navigation region. There is only one nav on the page.
+  criteria: A <nav> element without role='navigation'. Since there is only one nav, aria-label is also
+    optional. Uses {{ attributes }} for Drupal's Attribute object pattern.
+  bundle: drupal_accessibility_drupal_a11y_dom
+  rubric_ref: rubric/drupal_accessibility_drupal_a11y_dom_b01@1.0
+  metadata:
+    expectations:
+    - Uses a <nav> element
+    - Does NOT include role="navigation" on the <nav>
+    - Uses {{ attributes }} for Drupal attribute handling
+    - Generated Twig is syntactically plausible
+- id: B02
+  input: I need to hide a skip-link visually but keep it available to screen readers. What class should
+    I use in a Drupal theme?
+  criteria: Use .visually-hidden from Drupal core. Do not redefine it locally or use display:none.
+  bundle: drupal_accessibility_drupal_a11y_dom
+  rubric_ref: rubric/drupal_accessibility_drupal_a11y_dom_b02@1.1
+  metadata:
+    expectations:
+    - Recommends .visually-hidden
+    - Does NOT recommend display:none or visibility:hidden for this purpose
+    - Does NOT suggest redefining the class locally
+- id: B03
+  input: Write CSS for a 16×16 icon-only toolbar button that meets WCAG 2.2 SC 2.5.8.
+  criteria: CSS that expands the hit area to at least 24×24 CSS pixels using min-width/min-height and
+    padding, without enlarging the visible icon.
+  bundle: drupal_accessibility_drupal_a11y_dom
+  rubric_ref: rubric/drupal_accessibility_drupal_a11y_dom_b03@1.0
+  metadata:
+    expectations:
+    - Sets min-width and/or min-height to at least 24px
+    - Uses padding to expand the hit area
+    - Does NOT simply enlarge the icon to 24px
+- id: B04
+  input: Write CSS for a component that has animations, ensuring it respects user motion preferences.
+  criteria: 'CSS that gates transitions/animations inside @media (prefers-reduced-motion: no-preference)
+    or removes/shortens them inside (prefers-reduced-motion: reduce).'
+  bundle: drupal_accessibility_drupal_a11y_dom
+  rubric_ref: rubric/drupal_accessibility_drupal_a11y_dom_b04@1.0
+  metadata:
+    expectations:
+    - Uses prefers-reduced-motion media query
+    - Does NOT apply animations unconditionally
+- id: B05
+  input: Write CSS for a theme that needs to support both light and dark modes, with a text colour and
+    background colour token.
+  criteria: 'CSS custom properties defined on :root with light defaults, and a prefers-color-scheme: dark
+    block that overrides the tokens. Components reference the tokens, not raw hex values.'
+  bundle: drupal_accessibility_drupal_a11y_dom
+  rubric_ref: rubric/drupal_accessibility_drupal_a11y_dom_b05@1.0
+  metadata:
+    expectations:
+    - Uses CSS custom properties (--color-text or similar)
+    - 'Uses @media (prefers-color-scheme: dark)'
+    - Components reference var(--...) tokens, not hardcoded colours
+- id: B06
+  input: Write a Twig snippet for an icon button that shows a cart SVG icon next to the text 'View cart'.
+    The icon is decorative.
+  criteria: A button element with the SVG marked aria-hidden="true" and focusable="false", and visible
+    text 'View cart' adjacent to the icon.
+  bundle: drupal_accessibility_drupal_a11y_dom
+  rubric_ref: rubric/drupal_accessibility_drupal_a11y_dom_b06@1.0
+  metadata:
+    expectations:
+    - SVG has aria-hidden="true"
+    - SVG has focusable="false"
+    - Button contains visible text
+    - Generated Twig is syntactically plausible

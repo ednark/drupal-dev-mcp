@@ -1,0 +1,136 @@
+rubrics:
+- id: drupal_gitlab_b01
+  version: '1.0'
+  applicable_bundles:
+  - drupal_gitlab
+  checks:
+  - kind: must_contain_any
+    values:
+    - --repo "git.drupalcode.org/project/token"
+    - --repo 'git.drupalcode.org/project/token'
+    - --repo git.drupalcode.org/project/token
+  - kind: must_not_contain
+    values:
+    - glab config set host
+    - GITLAB_HOST
+  scoring:
+    combine: all_pass
+- id: drupal_gitlab_b02
+  version: '1.0'
+  applicable_bundles:
+  - drupal_gitlab
+  checks:
+  - kind: must_contain_any
+    values:
+    - '#3588908'
+  - kind: must_not_contain
+    values:
+    - 'By: @'
+  scoring:
+    combine: all_pass
+- id: drupal_gitlab_b03
+  version: '1.0'
+  applicable_bundles:
+  - drupal_gitlab
+  checks:
+  - kind: must_contain_any
+    values:
+    - REST API
+    - source_project_id
+  scoring:
+    combine: all_pass
+- id: drupal_gitlab_b04
+  version: '1.0'
+  applicable_bundles:
+  - drupal_gitlab
+  checks:
+  - kind: must_contain_any
+    values:
+    - web UI
+    - UI
+  - kind: must_not_contain
+    values:
+    - yes, just merge
+    - glab mr merge will work
+  scoring:
+    combine: all_pass
+- id: drupal_gitlab_b05
+  version: '1.0'
+  applicable_bundles:
+  - drupal_gitlab
+  checks:
+  - kind: must_contain_any
+    values:
+    - Create issue fork
+    - management
+    - provision
+  - kind: must_not_contain
+    values:
+    - just push again
+    - push will create the fork
+  scoring:
+    combine: all_pass
+- id: drupal_gitlab_b06
+  version: '1.0'
+  applicable_bundles:
+  - drupal_gitlab
+  checks:
+  - kind: must_contain_any
+    values:
+    - GraphQL
+    - workItem
+  - kind: must_not_contain
+    values:
+    - add a label
+    - --label
+  scoring:
+    combine: all_pass
+- id: drupal_gitlab_b07
+  version: '1.1'
+  applicable_bundles:
+  - drupal_gitlab
+  checks:
+  - kind: must_contain_any
+    values:
+    - legacy
+    - not all projects
+    - have not migrated
+  - kind: must_not_contain
+    values:
+    - reinstall glab
+  scoring:
+    combine: all_pass
+- id: drupal_gitlab_b08
+  version: '1.1'
+  applicable_bundles:
+  - drupal_gitlab
+  checks:
+  - kind: must_contain_any
+    values:
+    - /do:access
+    - Request access
+    - request access
+  - kind: must_not_contain
+    values:
+    - glab mr create --
+    - glab mr create -t
+    - glab mr create -f
+    - glab mr create -s
+    - use `glab mr create`
+    - run `glab mr create`
+  scoring:
+    combine: all_pass
+- id: drupal_gitlab_b09
+  version: '1.0'
+  applicable_bundles:
+  - drupal_gitlab
+  checks:
+  - kind: must_contain_any
+    values:
+    - 'Closes #3588925'
+  - kind: must_not_contain
+    values:
+    - '@zorz'
+    - '@ronaldtebrake'
+  scoring:
+    combine: all_pass

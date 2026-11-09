@@ -1,0 +1,51 @@
+rubrics:
+- id: drupal_expert_corrections_b01
+  version: '1.0'
+  applicable_bundles:
+  - drupal_expert_corrections
+  checks:
+  - kind: must_contain_any
+    values:
+    - SKILL_GAP
+    - reasoning_failure
+    - claimed
+    - patch the skill
+  - kind: must_not_contain
+    values:
+    - no action needed
+    - dismissed
+  scoring:
+    combine: all_pass
+- id: drupal_expert_corrections_b02
+  version: '1.0'
+  applicable_bundles:
+  - drupal_expert_corrections
+  checks:
+  - kind: must_contain_any
+    values:
+    - CONFABULATION
+    - reasoning_failure
+    - eval_seed
+  - kind: must_not_contain
+    values:
+    - no action needed
+    - dismissed
+  scoring:
+    combine: all_pass
+- id: drupal_expert_corrections_b03
+  version: '1.0'
+  applicable_bundles:
+  - drupal_expert_corrections
+  checks:
+  - kind: must_contain_any
+    values:
+    - ASSUMPTION_ERROR
+    - reasoning_failure
+    - claimed
+    - constructor
+  - kind: must_not_contain
+    values:
+    - no action needed
+    - dismissed
+  scoring:
+    combine: all_pass

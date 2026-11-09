@@ -1,0 +1,128 @@
+questions:
+- id: B01
+  input: 'Write a drupal.org handbook page explaining how to install a contributed module using Composer
+    on a Drupal 11 site. Target audience: someone who has Drupal running locally but has never installed
+    a contrib module before. Use ''## Prerequisites'' as the first section. Use ## headings for sections,
+    not #. Output the page in Markdown. Do not add explanations outside the page itself.'
+  criteria: A well-structured documentation page with version info, prerequisites, step-by-step instructions
+    using Composer as the happy path, and links to canonical Drupal documentation rather than reproducing
+    it.
+  bundle: drupal_writing_documentation
+  rubric_ref: rubric/drupal_writing_documentation_b01@1.0
+  metadata:
+    expectations:
+    - Starts with prerequisites or version compatibility
+    - Uses Composer as the primary method, not manual download
+    - Links to drupal.org or official docs rather than reproducing third-party instructions
+    - Uses numbered steps for the installation sequence
+    - 'Does not include shell prompt characters ($ or #) in code blocks'
+- id: B02
+  input: A contributor found a bug in Drupal's Entity API where EntityTypeManager::getStorage() throws
+    an unexpected exception when called with a non-existent entity type. They wrote a fix and want to
+    document it. Where should the documentation update go? Write the actual documentation update, not
+    just advice about where to put it. Output in Markdown.
+  criteria: The agent should identify that Entity API fixes belong in source code docblocks (which feed
+    api.drupal.org), not in a drupal.org wiki page. The documentation update should be a corrected or
+    expanded docblock for the method, explaining the exception behavior.
+  bundle: drupal_writing_documentation
+  rubric_ref: rubric/drupal_writing_documentation_b02@1.0
+  metadata:
+    expectations:
+    - Identifies api.drupal.org or source code docblocks as the right location
+    - Does NOT suggest creating a new drupal.org wiki page for this
+    - Writes or updates a PHP docblock with @throws annotation
+    - Explains both when and why the exception is thrown
+- id: B03
+  input: 'Rewrite the following bad documentation to meet Drupal documentation standards. Use ## headings
+    for sections, not #. Add a ''## Prerequisites'' section. Replace ''Click here'' with descriptive link
+    text. Remove $ prompts from code blocks. Do not add explanations outside the rewritten page.
+
+
+    ---
+
+
+    # HOW TO CONFIGURE CACHING
+
+
+    Click here for more info: https://www.drupal.org/docs/administering-a-drupal-site/internal-page-caching
+
+
+    To clear the cache run this:
+
+
+    ```
+
+    $ drush cr
+
+    ```
+
+
+    There are many ways to configure caching in Drupal. You can use Internal Page Cache, Dynamic Page
+    Cache, BigPipe, Varnish, Redis, Memcache, or CDN modules. Each has different configuration steps.
+
+
+    You need to edit settings.php. Here is an example:
+
+
+    ```
+
+    $ vim web/sites/default/settings.php
+
+    ```
+
+
+    For Docker setup instructions see the Docker documentation. For installing PHP see the PHP manual.
+    For setting up Apache see the Apache docs.
+
+
+    ---
+
+
+    Output the rewritten page in Markdown.'
+  criteria: 'A restructured page that fixes the anti-patterns: removes Click here links, removes $ from
+    code blocks, adds prerequisites and version info, picks one recommended approach instead of listing
+    all options, removes non-Drupal setup instructions, uses proper heading hierarchy.'
+  bundle: drupal_writing_documentation
+  rubric_ref: rubric/drupal_writing_documentation_b03@1.0
+  metadata:
+    expectations:
+    - Removes 'Click here' link text and uses descriptive link text
+    - Removes $ shell prompt from code blocks
+    - Adds a prerequisites or requirements section
+    - Picks a recommended caching approach instead of listing all 7 options equally
+    - Removes or links out the Docker/PHP/Apache setup instructions
+    - Uses H2 headings, not H1 for sections
+- id: B04
+  input: A site builder wants to document how Views works for other site builders on their team. They
+    plan to write a comprehensive guide covering every Views feature, every display type, every field
+    formatter, and every filter option. Following Drupal documentation best practices, what should they
+    do differently? Write a short explanation (under 300 words) and then write a better outline for their
+    documentation page. Output in Markdown.
+  criteria: The agent should advise against documenting every option (content sprawl) and instead recommend
+    linking to existing Views documentation on drupal.org. The outline should be focused, opinionated,
+    and cover common use cases rather than exhaustive feature lists.
+  bundle: drupal_writing_documentation
+  rubric_ref: rubric/drupal_writing_documentation_b04@1.0
+  metadata:
+    expectations:
+    - Warns against documenting every possible option
+    - Recommends linking to existing drupal.org Views documentation
+    - Suggests focusing on the team's specific use cases
+    - The outline is short and task-oriented, not a feature inventory
+- id: B05
+  input: Write a README.md for a Drupal 11 contrib module called 'smart_cache' that provides configurable
+    cache tag grouping. The module lets site builders define groups of cache tags that are invalidated
+    together. It requires Drupal 11.0+ and PHP 8.3+. Follow Drupal contrib documentation standards. Output
+    in Markdown.
+  criteria: A README following the drupal.org README template with sections for description, requirements,
+    installation, configuration, and maintainers. Should mention specific versions and use Composer for
+    installation.
+  bundle: drupal_writing_documentation
+  rubric_ref: rubric/drupal_writing_documentation_b05@1.0
+  metadata:
+    expectations:
+    - Has clear sections following the README template pattern
+    - States Drupal 11 and PHP 8.3 requirements explicitly
+    - Uses Composer for installation instructions
+    - Does not include shell prompt characters in code blocks
+    - Links to relevant drupal.org pages rather than explaining Composer itself

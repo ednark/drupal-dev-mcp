@@ -1,0 +1,81 @@
+rubrics:
+- id: drupal_automated_testing_b01
+  version: '1.0'
+  applicable_bundles:
+  - drupal_automated_testing
+  checks:
+  - kind: must_contain_any
+    values:
+    - KernelTestBase
+    - RunTestsInSeparateProcesses
+  - kind: must_not_contain
+    values:
+    - extends UnitTestCase
+    - extends BrowserTestBase
+  - kind: php_lint
+  scoring:
+    combine: all_pass
+- id: drupal_automated_testing_b02
+  version: '1.0'
+  applicable_bundles:
+  - drupal_automated_testing
+  checks:
+  - kind: must_contain_any
+    values:
+    - BrowserTestBase
+  - kind: must_not_contain
+    values:
+    - extends UnitTestCase
+  - kind: php_lint
+  - kind: markdown_structure
+    min_code_blocks: 1
+  scoring:
+    combine: all_pass
+- id: drupal_automated_testing_b03
+  version: '1.0'
+  applicable_bundles:
+  - drupal_automated_testing
+  checks:
+  - kind: must_contain_any
+    values:
+    - waitForElement
+    - assertNotEmpty
+  - kind: php_lint
+  - kind: markdown_structure
+    min_code_blocks: 1
+  scoring:
+    combine: all_pass
+- id: drupal_automated_testing_b04
+  version: '1.0'
+  applicable_bundles:
+  - drupal_automated_testing
+  checks:
+  - kind: must_contain_any
+    values:
+    - installEntitySchema
+    - installConfig
+  scoring:
+    combine: all_pass
+- id: drupal_automated_testing_b05
+  version: '1.0'
+  applicable_bundles:
+  - drupal_automated_testing
+  checks:
+  - kind: must_contain_any
+    values:
+    - RunTestsInSeparateProcesses
+  - kind: php_lint
+  scoring:
+    combine: all_pass
+- id: drupal_automated_testing_b06
+  version: '1.0'
+  applicable_bundles:
+  - drupal_automated_testing
+  checks:
+  - kind: must_contain_any
+    values:
+    - FunctionalJavascript
+    - WebDriverTestBase
+  - kind: php_lint
+  scoring:
+    combine: all_pass

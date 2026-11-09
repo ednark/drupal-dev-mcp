@@ -47,3 +47,8 @@ Validator: the audit module's `audit_cache` and `audit_twig` check block/render 
 - Cache API + bubbling: since 8.x, unchanged through 12.x.
 - `CacheableDependencyInterface`, placeholders/BigPipe: 8.x+; still current.
 - Max-age 0 = do not cache — occasionally the *correct* answer for per-request data.
+
+## Related corpus entries
+
+- `ai_best_practices` skill `drupal-render-pipeline` (indexed 2026-11-09): corroborates the mandatory-metadata rule; adds lazy-builder/BigPipe depth. Use it for "how does the pipeline treat this", this doc for "what did my code omit".
+- `ai_best_practices` skill `drupal-automated-testing` (indexed 2026-11-09): testing the caching behavior this doc warns about.

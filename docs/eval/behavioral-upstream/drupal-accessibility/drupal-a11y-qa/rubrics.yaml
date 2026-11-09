@@ -1,0 +1,84 @@
+rubrics:
+- id: drupal_accessibility_drupal_a11y_qa_b01
+  version: '1.0'
+  applicable_bundles:
+  - drupal_accessibility_drupal_a11y_qa
+  checks:
+  - kind: must_contain_any
+    values:
+    - instance
+    - pattern
+    - button-name
+    - desktop
+    - 4.1.2
+  scoring:
+    combine: all_pass
+- id: drupal_accessibility_drupal_a11y_qa_b02
+  version: '1.1'
+  applicable_bundles:
+  - drupal_accessibility_drupal_a11y_qa
+  checks:
+  - kind: must_contain_any
+    values:
+    - two issues
+    - two separate
+    - separate issues
+    - 2 issues
+    - two tickets
+  scoring:
+    combine: all_pass
+- id: drupal_accessibility_drupal_a11y_qa_b03
+  version: '1.0'
+  applicable_bundles:
+  - drupal_accessibility_drupal_a11y_qa
+  checks:
+  - kind: must_contain_any
+    values:
+    - AI disclosure
+    - Skills loaded
+    - drupal-accessibility
+    - mgifford
+    - Claude Code
+  scoring:
+    combine: all_pass
+- id: drupal_accessibility_drupal_a11y_qa_b04
+  version: '1.0'
+  applicable_bundles:
+  - drupal_accessibility_drupal_a11y_qa
+  checks:
+  - kind: must_contain_any
+    values:
+    - keyboard
+    - screen-reader
+    - 200%
+    - RTBC
+    - forced-colour
+  - kind: must_not_contain
+    values:
+    - Axe alone is sufficient
+    - automated scan is enough
+  scoring:
+    combine: all_pass
+- id: drupal_accessibility_drupal_a11y_qa_b05
+  version: '1.0'
+  applicable_bundles:
+  - drupal_accessibility_drupal_a11y_qa
+  checks:
+  - kind: must_contain_any
+    values:
+    - SHA-256
+    - instance_id
+    - pattern_id
+  scoring:
+    combine: all_pass
+- id: drupal_accessibility_drupal_a11y_qa_b06
+  version: '1.0'
+  applicable_bundles:
+  - drupal_accessibility_drupal_a11y_qa
+  checks:
+  - kind: must_contain_any
+    values:
+    - drupal-a11y-fapi
+    - fieldset
+  scoring:
+    combine: all_pass

@@ -1,0 +1,69 @@
+questions:
+- id: B01
+  input: Write a Drupal page controller method that displays a list of the 10 most recent published articles.
+    The page is visible to any user with the 'access content' permission.
+  criteria: A controller method that returns a render array (NOT a Response object or raw HTML string)
+    with cache metadata including cache tags (node_list) and cache contexts (user.permissions).
+  bundle: drupal_render_pipeline
+  rubric_ref: rubric/drupal_render_pipeline_b01@1.0
+  metadata:
+    expectations:
+    - Returns a render array, NOT new Response() or a raw HTML string
+    - Includes cache tags (at minimum node_list)
+    - Includes cache contexts (at minimum user.permissions)
+    - 'Uses #theme or #type for structured output, not #markup with concatenated HTML'
+    - Generated PHP passes php -l syntax check
+- id: B02
+  input: Write a Drupal block plugin that displays the title and summary of node 42. The block should
+    update whenever node 42 is edited.
+  criteria: A block plugin whose build() method returns a render array with cache tag 'node:42' so the
+    block invalidates when node 42 changes. Must propagate the cache tag through the render array, not
+    set it on a Response object.
+  bundle: drupal_render_pipeline
+  rubric_ref: rubric/drupal_render_pipeline_b02@1.0
+  metadata:
+    expectations:
+    - Returns a render array with '#cache' containing 'tags' => ['node:42']
+    - Loads the node through entity storage, not raw SQL
+    - Cache tag is on the render array so it bubbles up through the render tree
+    - Generated PHP passes php -l syntax check
+- id: B03
+  input: Write a Drupal page controller that displays a personalized greeting with the current user's
+    display name on an otherwise cacheable page. The page also shows a list of recent announcements.
+  criteria: 'The controller uses a lazy builder with #create_placeholder for the personalized greeting,
+    keeping the rest of the page cacheable. The lazy builder arguments must be scalar values only.'
+  bundle: drupal_render_pipeline
+  rubric_ref: rubric/drupal_render_pipeline_b03@1.0
+  metadata:
+    expectations:
+    - 'Uses #lazy_builder for the personalized greeting'
+    - 'Includes #create_placeholder => TRUE'
+    - Lazy builder arguments are scalar values (user ID, not user object)
+    - The announcements list has proper cache tags
+    - Generated PHP passes php -l syntax check
+- id: B04
+  input: Write a Drupal controller method that returns JSON data for an API endpoint showing site statistics.
+    The data includes the total number of published articles and should be cached with a 1-hour max-age,
+    invalidated when any article changes.
+  criteria: Uses CacheableJsonResponse (not plain JsonResponse or Response) so cache metadata is attached
+    to the non-HTML response. Includes cache tags and max-age.
+  bundle: drupal_render_pipeline
+  rubric_ref: rubric/drupal_render_pipeline_b04@1.0
+  metadata:
+    expectations:
+    - Uses CacheableJsonResponse, not plain JsonResponse or Response
+    - Attaches cache tags (at minimum node_list or similar)
+    - Sets max-age to 3600
+    - Generated PHP passes php -l syntax check
+- id: B05
+  input: I have a Drupal render array that shows user-submitted comments. The comment body comes from
+    user input. What render element type should I use to display it safely?
+  criteria: 'Uses #plain_text for user-generated content, NOT #markup. Explains that #markup runs through
+    Xss::filterAdmin() which allows HTML tags, while #plain_text escapes everything.'
+  bundle: drupal_render_pipeline
+  rubric_ref: rubric/drupal_render_pipeline_b05@1.1
+  metadata:
+    expectations:
+    - 'Recommends #plain_text for user input'
+    - 'Explains why #markup is wrong for user content (allows HTML tags)'
+    - Does NOT recommend wrapping user input in Markup::create()

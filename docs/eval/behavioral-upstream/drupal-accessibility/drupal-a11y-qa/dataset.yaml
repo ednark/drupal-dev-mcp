@@ -1,0 +1,81 @@
+questions:
+- id: B01
+  input: 'Draft the opening structured field block for a Drupal accessibility issue. The violation is
+    a missing button label on the admin toolbar, found on /admin/content, affecting keyboard-only desktop
+    users in light mode. Tool: @axe-core/playwright 4.10, rule: button-name. Severity: High.'
+  criteria: 'A filled structured field block with Bug ID (instance and pattern), URL, XPath (simplified
+    and full DOM), WCAG SC reference, Rule with tool version, Severity, Frequency, Screen type: desktop,
+    Colour mode: light.'
+  bundle: drupal_accessibility_drupal_a11y_qa
+  rubric_ref: rubric/drupal_accessibility_drupal_a11y_qa_b01@1.0
+  metadata:
+    expectations:
+    - Includes Bug ID with instance and pattern identifiers
+    - References WCAG SC for missing button label (SC 4.1.2 or SC 1.3.1)
+    - Includes tool name and version (@axe-core/playwright 4.10)
+    - 'States rule ID: button-name'
+    - 'States severity: High'
+    - 'States screen type: desktop and colour mode: light'
+- id: B02
+  input: An automated scan found both a missing image alt text violation and a colour contrast violation
+    on the same page. Should I file one issue or two? Explain why.
+  criteria: Two separate issues — one per WCAG success criterion. Missing alt text = SC 1.1.1; colour
+    contrast = SC 1.4.3. Link the issues with Related issues.
+  bundle: drupal_accessibility_drupal_a11y_qa
+  rubric_ref: rubric/drupal_accessibility_drupal_a11y_qa_b02@1.1
+  metadata:
+    expectations:
+    - Recommends filing two separate issues
+    - Names the SCs (1.1.1 for alt, 1.4.3 for contrast)
+    - Mentions linking the issues as related
+- id: B03
+  input: Generate the AI disclosure block for a Drupal accessibility patch that was drafted with Claude
+    Code, used to generate the patch and tests, and reviewed by the drupal.org user mgifford.
+  criteria: 'The verbatim AI disclosure block from the skill: Tool: Claude Code, Used for: drafting the
+    patch and generating tests, Reviewed by: mgifford, Skills loaded: drupal-accessibility.'
+  bundle: drupal_accessibility_drupal_a11y_qa
+  rubric_ref: rubric/drupal_accessibility_drupal_a11y_qa_b03@1.0
+  metadata:
+    expectations:
+    - Includes 'AI disclosure' header
+    - Names the tool (Claude Code)
+    - Names the reviewer (mgifford)
+    - Includes 'Skills loaded' line referencing drupal-accessibility
+- id: B04
+  input: What manual checks are required before marking a Drupal accessibility patch as RTBC?
+  criteria: 'At minimum: keyboard-only walk, screen-reader pass with relevant AT, 200% zoom (and 400%
+    if SC 1.4.10 applies), forced-colours check if visual change. Axe alone is not sufficient.'
+  bundle: drupal_accessibility_drupal_a11y_qa
+  rubric_ref: rubric/drupal_accessibility_drupal_a11y_qa_b04@1.0
+  metadata:
+    expectations:
+    - Lists keyboard-only walk
+    - Lists screen-reader pass
+    - Lists 200% zoom check
+    - States that Axe alone is not sufficient for RTBC
+- id: B05
+  input: What is the correct prefix format for a Bug ID in a client project, and how is the hex suffix
+    generated?
+  criteria: 'A project-defined prefix (e.g. ACME-) followed by the first 8 hex characters of a SHA-256
+    hash of the inputs joined with |. For instance_id: page path + CSS selector + rule ID + screen type.
+    For pattern_id: CSS selector + rule ID + screen type.'
+  bundle: drupal_accessibility_drupal_a11y_qa
+  rubric_ref: rubric/drupal_accessibility_drupal_a11y_qa_b05@1.0
+  metadata:
+    expectations:
+    - Describes the prefix convention (DRP- for core, DRPC-<short> for contrib, custom for client)
+    - States SHA-256 as the hash algorithm
+    - States 8 hex characters
+    - Lists the correct hash inputs for instance_id and pattern_id
+- id: B06
+  input: Write the 'Suggested fix' section for a Drupal accessibility issue where a form radio group is
+    missing a fieldset grouping.
+  criteria: Cites drupal-a11y-fapi by name and references the fieldset/details grouping rule from that
+    sub-skill.
+  bundle: drupal_accessibility_drupal_a11y_qa
+  rubric_ref: rubric/drupal_accessibility_drupal_a11y_qa_b06@1.0
+  metadata:
+    expectations:
+    - Cites drupal-a11y-fapi by name
+    - References the fieldset or details element requirement
+    - Provides a concrete fix suggestion

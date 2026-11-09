@@ -1,0 +1,111 @@
+questions:
+- id: B01
+  input: I'm writing a new Agent Skill and want to add a static-checks eval that caps the SKILL.md length.
+    What line limit should I use?
+  criteria: The Agent Skills spec targets SKILL.md under 500 lines, so the cap should be 500 (or the entry
+    point should simply stay well under it). The agent should not invent a smaller arbitrary number like
+    320.
+  bundle: drupal_skill_authoring
+  rubric_ref: rubric/drupal_skill_authoring_b01@1.1
+  metadata:
+    expectations:
+    - States the canonical guideline is 500 lines
+    - Does NOT pick an arbitrary smaller limit and present it as the spec
+    - Mentions progressive disclosure / splitting into references/ as the way to stay under it
+- id: B02
+  input: I want my SKILL.md frontmatter to record when it was last reviewed and which Drupal version it
+    targets. Add `last-reviewed:` and `drupal-version:` fields. Will that pass CI?
+  criteria: 'No. The agent-skills-validator only allows name, description, license, allowed-tools, metadata,
+    and compatibility. Custom keys like last-reviewed or drupal-version fail the validate-agent-skills
+    job, and metadata: should not be used as a catch-all for them.'
+  bundle: drupal_skill_authoring
+  rubric_ref: rubric/drupal_skill_authoring_b02@1.0
+  metadata:
+    expectations:
+    - States that custom frontmatter keys fail the validator / CI
+    - Lists or references the allowed set of fields
+    - 'Does NOT endorse stuffing the values under metadata: as a workaround'
+    - Suggests handling version/freshness outside frontmatter (project, git history, or inspecting the
+      local project)
+- id: B03
+  input: I'm renaming a skill's directory from skills/drupal-foo to skills/drupal-foobar. Is there anything
+    in the SKILL.md I need to change?
+  criteria: 'Yes — the name: field in the frontmatter must exactly match the directory name, so it has
+    to change from drupal-foo to drupal-foobar or the validator fails.'
+  bundle: drupal_skill_authoring
+  rubric_ref: rubric/drupal_skill_authoring_b03@1.0
+  metadata:
+    expectations:
+    - 'States that name: must match the directory name'
+    - 'Says the name: field must be updated to drupal-foobar'
+    - Frames this as a validator / CI requirement
+- id: B04
+  input: My SKILL.md body is about 700 lines. Does that fail the validate-agent-skills CI job?
+  criteria: No — the validator checks frontmatter only, not body length. 700 lines does not fail CI, but
+    it exceeds the spec's 500-line guideline and should be split into references/ via progressive disclosure.
+  bundle: drupal_skill_authoring
+  rubric_ref: rubric/drupal_skill_authoring_b04@1.0
+  metadata:
+    expectations:
+    - States the validator checks frontmatter, not line count, so it does NOT fail CI
+    - Notes 700 lines still exceeds the 500-line spec guideline
+    - Recommends splitting into references/ (progressive disclosure)
+- id: B05
+  input: I'm adding a brand-new skill to the ai_best_practices repo. Besides skills/<name>/SKILL.md, what
+    else do I need to create so CI and the install are happy?
+  criteria: 'The evals under evals/<name>/: static-checks.json (file_exists + agent_skill_frontmatter
+    at minimum), the behavioral pair dataset.yaml + rubrics.yaml (Eval Commons dataset model), and
+    README.md. Skills auto-discover from skills/, so no AGENTS.md.template wiring is needed. The old
+    flat evals.json is no longer used.'
+  bundle: drupal_skill_authoring
+  rubric_ref: rubric/drupal_skill_authoring_b05@1.1
+  metadata:
+    expectations:
+    - Lists evals/<name>/static-checks.json, dataset.yaml + rubrics.yaml, and README.md
+    - Does NOT tell the user to create the obsolete evals.json
+    - Notes skills auto-discover and do NOT need to be wired into AGENTS.md.template
+    - Does NOT tell the user to manually register the skill in the template
+- id: B06
+  input: Write the frontmatter description for a skill that helps with debugging Drupal cache invalidation.
+    Keep it short.
+  criteria: A description written to trigger (names when to load the skill, in agent-matchable vocabulary),
+    in third person, non-empty, well under 1024 characters. It should describe the situations that load
+    the skill, not just summarize.
+  bundle: drupal_skill_authoring
+  rubric_ref: rubric/drupal_skill_authoring_b06@1.0
+  metadata:
+    expectations:
+    - Description names the triggering situations (e.g. 'when debugging cache invalidation')
+    - Written in third person (not 'I can help...' or 'You can use...')
+    - Stays well under the 1024-character limit
+    - Reads as a trigger, not a vague one-liner like 'info about caching'
+- id: B07
+  input: I want to record the skill author and a version number in my SKILL.md frontmatter by nesting
+    them under a `metadata:` key (metadata.author and metadata.version). Is that valid per the Agent Skills
+    spec, and will it pass this repo's CI?
+  criteria: 'Yes on both counts: the spec explicitly defines metadata as an arbitrary key-value map for
+    properties it doesn''t define (its own examples are author and version), and the validator does not
+    inspect metadata contents, so it passes CI. The agent should also note this repo''s convention discourages
+    using frontmatter for version/ownership bookkeeping (handle it via the project, issue/MR, git history)
+    — but should NOT claim it is forbidden by the spec or that it fails CI.'
+  bundle: drupal_skill_authoring
+  rubric_ref: rubric/drupal_skill_authoring_b07@1.0
+  metadata:
+    expectations:
+    - States that nesting custom fields under metadata is spec-legal
+    - States that it passes the validator / CI
+    - Does NOT claim the spec forbids it or that it fails CI
+    - Notes the repo convention discourages frontmatter bookkeeping as a project preference, not a rule
+- id: B08
+  input: I'm naming a new skill `claude-drupal-helper`. The repo's agent-skills-validator says it's valid.
+    Good to go?
+  criteria: No — the Agent Skills spec disallows the reserved words 'anthropic' and 'claude' in the name.
+    The repo validator does not check for reserved words, so passing it is not sufficient; the name still
+    violates the spec and should be changed (e.g. drop 'claude').
+  bundle: drupal_skill_authoring
+  rubric_ref: rubric/drupal_skill_authoring_b08@1.0
+  metadata:
+    expectations:
+    - Identifies 'claude' as a reserved word disallowed by the spec
+    - Explains that passing the repo validator does not mean it is spec-compliant
+    - Recommends renaming to remove the reserved word

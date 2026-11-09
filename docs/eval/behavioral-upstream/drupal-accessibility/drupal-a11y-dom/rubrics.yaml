@@ -1,0 +1,78 @@
+rubrics:
+- id: drupal_accessibility_drupal_a11y_dom_b01
+  version: '1.0'
+  applicable_bundles:
+  - drupal_accessibility_drupal_a11y_dom
+  checks:
+  - kind: must_contain_any
+    values:
+    - <nav
+    - '{{ attributes }}'
+  - kind: must_not_contain
+    values:
+    - 'role="navigation">
+
+      '
+    - <nav role="navigation"
+    - <nav role='navigation'
+  scoring:
+    combine: all_pass
+- id: drupal_accessibility_drupal_a11y_dom_b02
+  version: '1.1'
+  applicable_bundles:
+  - drupal_accessibility_drupal_a11y_dom
+  checks:
+  - kind: must_contain_any
+    values:
+    - visually-hidden
+  - kind: must_not_contain
+    values:
+    - 'display: none;'
+    - display:none;
+    - 'visibility: hidden;'
+  scoring:
+    combine: all_pass
+- id: drupal_accessibility_drupal_a11y_dom_b03
+  version: '1.0'
+  applicable_bundles:
+  - drupal_accessibility_drupal_a11y_dom
+  checks:
+  - kind: must_contain_any
+    values:
+    - 24px
+    - min-width
+    - min-height
+  scoring:
+    combine: all_pass
+- id: drupal_accessibility_drupal_a11y_dom_b04
+  version: '1.0'
+  applicable_bundles:
+  - drupal_accessibility_drupal_a11y_dom
+  checks:
+  - kind: must_contain_any
+    values:
+    - prefers-reduced-motion
+  scoring:
+    combine: all_pass
+- id: drupal_accessibility_drupal_a11y_dom_b05
+  version: '1.0'
+  applicable_bundles:
+  - drupal_accessibility_drupal_a11y_dom
+  checks:
+  - kind: must_contain_any
+    values:
+    - prefers-color-scheme
+    - var(--
+  scoring:
+    combine: all_pass
+- id: drupal_accessibility_drupal_a11y_dom_b06
+  version: '1.0'
+  applicable_bundles:
+  - drupal_accessibility_drupal_a11y_dom
+  checks:
+  - kind: must_contain_any
+    values:
+    - aria-hidden="true"
+    - focusable="false"
+  scoring:
+    combine: all_pass

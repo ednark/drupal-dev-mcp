@@ -1,0 +1,85 @@
+rubrics:
+- id: drupal_configuration_b01
+  version: '1.1'
+  applicable_bundles:
+  - drupal_configuration
+  checks:
+  - kind: must_contain_any
+    values:
+    - settings.php
+    - Settings::get
+  - kind: must_not_contain
+    values:
+    - ->get('api_key')
+    - ->get("api_key")
+  scoring:
+    combine: all_pass
+- id: drupal_configuration_b02
+  version: '2.0'
+  applicable_bundles:
+  - drupal_configuration
+  checks:
+  - kind: must_contain_any
+    values:
+    - schema.yml
+    - config_object
+  - kind: must_contain_any
+    values:
+    - '#config_target'
+  - kind: php_lint
+  scoring:
+    combine: all_pass
+- id: drupal_configuration_b03
+  version: '1.1'
+  applicable_bundles:
+  - drupal_configuration
+  checks:
+  - kind: must_contain_any
+    values:
+    - \Drupal::state()
+    - state()->set
+    - state()->get
+    - state->set
+    - state->get
+  - kind: must_not_contain
+    values:
+    - \Drupal::configFactory(
+    - getEditable(
+    - ->save()
+    - hook_schema
+  scoring:
+    combine: all_pass
+- id: drupal_configuration_b04
+  version: '1.1'
+  applicable_bundles:
+  - drupal_configuration
+  checks:
+  - kind: must_contain_any
+    values:
+    - $config['system.site']
+    - $config["system.site"]
+  scoring:
+    combine: all_pass
+- id: drupal_configuration_b05
+  version: '1.0'
+  applicable_bundles:
+  - drupal_configuration
+  checks:
+  - kind: must_contain_any
+    values:
+    - config entity
+    - ConfigEntityInterface
+    - ConfigEntityBase
+  scoring:
+    combine: all_pass
+- id: drupal_configuration_b06
+  version: '1.0'
+  applicable_bundles:
+  - drupal_configuration
+  checks:
+  - kind: must_contain_any
+    values:
+    - ThirdPartySetting
+    - third_party_settings
+  scoring:
+    combine: all_pass

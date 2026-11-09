@@ -1,0 +1,43 @@
+questions:
+- id: B01
+  input: 'You told a Drupal contributor that cache tags are invalidated synchronously and stale items
+    are eagerly deleted. The contributor corrects you: invalidation is two-phase, checksum update is immediate,
+    and eviction is lazy on the next read. Follow the capturing-expert-corrections skill. Output a correction
+    entry and the remediation you would propose.'
+  criteria: A correction entry that classifies the mistake as SKILL_GAP, includes a non-empty reasoning_failure,
+    and proposes patching the skill as the first remediation step.
+  bundle: drupal_expert_corrections
+  rubric_ref: rubric/drupal_expert_corrections_b01@1.0
+  metadata:
+    expectations:
+    - Uses classification SKILL_GAP
+    - Includes reasoning_failure explaining why the reasoning failed
+    - Proposes patch the skill as the first remediation step
+- id: B02
+  input: You advised a user to call \\Drupal::entityManager() to fetch entity storage on Drupal 11. The
+    user corrects you and says that API is gone and the correct entry point is \\Drupal::entityTypeManager().
+    Follow the capturing-expert-corrections skill. Output a correction entry and the remediation you would
+    propose.
+  criteria: A correction entry that classifies the error as CONFABULATION, explains the failed reasoning,
+    and includes an eval_seed so the correction can become an eval case.
+  bundle: drupal_expert_corrections
+  rubric_ref: rubric/drupal_expert_corrections_b02@1.0
+  metadata:
+    expectations:
+    - Uses classification CONFABULATION
+    - Explains that the model invented or guessed a plausible API name
+    - Includes eval_seed for promotion into evals.json
+- id: B03
+  input: You told a user to call \\Drupal::service('my_module.helper') directly inside a controller method.
+    The user corrects you and says the controller should use constructor dependency injection instead.
+    Follow the capturing-expert-corrections skill. Output a correction entry and the remediation you would
+    propose.
+  criteria: A correction entry that classifies the mistake as ASSUMPTION_ERROR, explains the reasoning
+    gap, and proposes remediation consistent with the skill.
+  bundle: drupal_expert_corrections
+  rubric_ref: rubric/drupal_expert_corrections_b03@1.0
+  metadata:
+    expectations:
+    - Uses classification ASSUMPTION_ERROR
+    - Explains that the service choice was correct but the inference about usage pattern was wrong
+    - Proposes remediation such as a skill patch or eval case

@@ -20,3 +20,7 @@ Source: https://www.drupal.org/docs/administering-a-site/configuration-managemen
 
 - UI-first keeps authors closest to actual behavior; risk is un-exported drift on prod hotfixes — enforce export-before-deploy discipline.
 - Code-provided config guarantees presence everywhere but chafes when sites must adapt names/labels; schema conventions mitigate.
+
+## Related corpus entries
+
+- `ai_best_practices` skill `drupal-configuration` (indexed 2026-11-09): the export workflow and "do not hand-edit sync YAML" rules that operationalize this doc's UI-first-vs-code trade-off.

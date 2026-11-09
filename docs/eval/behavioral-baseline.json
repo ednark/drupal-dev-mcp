@@ -1,0 +1,365 @@
+{
+  "generatedAt": "2026-11-09T14:50:40.845Z",
+  "totals": {
+    "passed": 66,
+    "total": 71,
+    "rate": 0.93
+  },
+  "cases": [
+    {
+      "bundle": "drupal-accessibility/drupal-a11y-dom",
+      "caseId": "B01",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-accessibility/drupal-a11y-dom",
+      "caseId": "B02",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-accessibility/drupal-a11y-dom",
+      "caseId": "B03",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-accessibility/drupal-a11y-dom",
+      "caseId": "B04",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-accessibility/drupal-a11y-dom",
+      "caseId": "B05",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-accessibility/drupal-a11y-dom",
+      "caseId": "B06",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-accessibility/drupal-a11y-dynamic",
+      "caseId": "B01",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-accessibility/drupal-a11y-dynamic",
+      "caseId": "B02",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-accessibility/drupal-a11y-dynamic",
+      "caseId": "B03",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-accessibility/drupal-a11y-dynamic",
+      "caseId": "B04",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-accessibility/drupal-a11y-dynamic",
+      "caseId": "B05",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-accessibility/drupal-a11y-fapi",
+      "caseId": "B01",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-accessibility/drupal-a11y-fapi",
+      "caseId": "B02",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-accessibility/drupal-a11y-fapi",
+      "caseId": "B03",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-accessibility/drupal-a11y-fapi",
+      "caseId": "B04",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-accessibility/drupal-a11y-fapi",
+      "caseId": "B05",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-accessibility/drupal-a11y-fapi",
+      "caseId": "B06",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-accessibility/drupal-a11y-qa",
+      "caseId": "B01",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-accessibility/drupal-a11y-qa",
+      "caseId": "B02",
+      "passed": false
+    },
+    {
+      "bundle": "drupal-accessibility/drupal-a11y-qa",
+      "caseId": "B03",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-accessibility/drupal-a11y-qa",
+      "caseId": "B04",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-accessibility/drupal-a11y-qa",
+      "caseId": "B05",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-accessibility/drupal-a11y-qa",
+      "caseId": "B06",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-automated-testing",
+      "caseId": "B01",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-automated-testing",
+      "caseId": "B02",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-automated-testing",
+      "caseId": "B03",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-automated-testing",
+      "caseId": "B04",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-automated-testing",
+      "caseId": "B05",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-automated-testing",
+      "caseId": "B06",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-ckeditor5-plugins",
+      "caseId": "B01",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-ckeditor5-plugins",
+      "caseId": "B02",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-ckeditor5-plugins",
+      "caseId": "B03",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-ckeditor5-plugins",
+      "caseId": "B04",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-ckeditor5-plugins",
+      "caseId": "B05",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-ckeditor5-plugins",
+      "caseId": "B06",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-configuration",
+      "caseId": "B01",
+      "passed": false
+    },
+    {
+      "bundle": "drupal-configuration",
+      "caseId": "B02",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-configuration",
+      "caseId": "B03",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-configuration",
+      "caseId": "B04",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-configuration",
+      "caseId": "B05",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-configuration",
+      "caseId": "B06",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-expert-corrections",
+      "caseId": "B01",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-expert-corrections",
+      "caseId": "B02",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-expert-corrections",
+      "caseId": "B03",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-gitlab",
+      "caseId": "B01",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-gitlab",
+      "caseId": "B02",
+      "passed": false
+    },
+    {
+      "bundle": "drupal-gitlab",
+      "caseId": "B03",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-gitlab",
+      "caseId": "B04",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-gitlab",
+      "caseId": "B05",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-gitlab",
+      "caseId": "B06",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-gitlab",
+      "caseId": "B07",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-gitlab",
+      "caseId": "B08",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-gitlab",
+      "caseId": "B09",
+      "passed": false
+    },
+    {
+      "bundle": "drupal-render-pipeline",
+      "caseId": "B01",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-render-pipeline",
+      "caseId": "B02",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-render-pipeline",
+      "caseId": "B03",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-render-pipeline",
+      "caseId": "B04",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-render-pipeline",
+      "caseId": "B05",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-skill-authoring",
+      "caseId": "B01",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-skill-authoring",
+      "caseId": "B02",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-skill-authoring",
+      "caseId": "B03",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-skill-authoring",
+      "caseId": "B04",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-skill-authoring",
+      "caseId": "B05",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-skill-authoring",
+      "caseId": "B06",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-skill-authoring",
+      "caseId": "B07",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-skill-authoring",
+      "caseId": "B08",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-writing-documentation",
+      "caseId": "B01",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-writing-documentation",
+      "caseId": "B02",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-writing-documentation",
+      "caseId": "B03",
+      "passed": false
+    },
+    {
+      "bundle": "drupal-writing-documentation",
+      "caseId": "B04",
+      "passed": true
+    },
+    {
+      "bundle": "drupal-writing-documentation",
+      "caseId": "B05",
+      "passed": true
+    }
+  ]
+}

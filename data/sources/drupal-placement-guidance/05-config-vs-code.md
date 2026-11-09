@@ -22,3 +22,7 @@ Source: https://www.drupal.org/docs/administering-a-site/configuration-managemen
 - Config-only changes deploy atomically with config import and roll back cleanly.
 - Code provides power but requires release process/deploy discipline for even tiny tweaks made in code.
 - Hardcoding UI-created things into code forfeits editor autonomy; hand-crafting config exports instead of building via UI risks schema mistakes.
+
+## Related corpus entries
+
+- `ai_best_practices` skill `drupal-configuration` (indexed 2026-11-09): mechanics depth for the config side of this decision — storage mechanisms, config entities vs simple config, dependencies, `#config_target`, config actions/recipes (10.3+). Consistency-audited against this doc 2026-11-09, no contradictions.

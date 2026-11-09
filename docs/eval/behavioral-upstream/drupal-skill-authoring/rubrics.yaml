@@ -1,0 +1,100 @@
+rubrics:
+- id: drupal_skill_authoring_b01
+  version: '1.1'
+  applicable_bundles:
+  - drupal_skill_authoring
+  checks:
+  - kind: must_contain_any
+    values:
+    - '500'
+  - kind: must_not_contain
+    values:
+    - 'limit: 320'
+    - cap of 320
+    - 320 lines.
+  scoring:
+    combine: all_pass
+- id: drupal_skill_authoring_b02
+  version: '1.0'
+  applicable_bundles:
+  - drupal_skill_authoring
+  checks:
+  - kind: must_contain_any
+    values:
+    - fail
+    - not allowed
+    - not pass
+  scoring:
+    combine: all_pass
+- id: drupal_skill_authoring_b03
+  version: '1.0'
+  applicable_bundles:
+  - drupal_skill_authoring
+  checks:
+  - kind: must_contain_any
+    values:
+    - name
+    - directory
+  scoring:
+    combine: all_pass
+- id: drupal_skill_authoring_b04
+  version: '1.0'
+  applicable_bundles:
+  - drupal_skill_authoring
+  checks:
+  - kind: must_contain_any
+    values:
+    - frontmatter
+    - does not fail
+    - not fail
+  scoring:
+    combine: all_pass
+- id: drupal_skill_authoring_b05
+  version: '1.1'
+  applicable_bundles:
+  - drupal_skill_authoring
+  checks:
+  - kind: must_contain_any
+    values:
+    - dataset.yaml
+  - kind: must_contain_any
+    values:
+    - rubrics.yaml
+  scoring:
+    combine: all_pass
+- id: drupal_skill_authoring_b06
+  version: '1.0'
+  applicable_bundles:
+  - drupal_skill_authoring
+  checks:
+  - kind: must_contain_any
+    values:
+    - description
+  scoring:
+    combine: all_pass
+- id: drupal_skill_authoring_b07
+  version: '1.0'
+  applicable_bundles:
+  - drupal_skill_authoring
+  checks:
+  - kind: must_contain_any
+    values:
+    - spec
+    - metadata
+  - kind: must_not_contain
+    values:
+    - forbidden by the spec
+    - fails CI
+  scoring:
+    combine: all_pass
+- id: drupal_skill_authoring_b08
+  version: '1.0'
+  applicable_bundles:
+  - drupal_skill_authoring
+  checks:
+  - kind: must_contain_any
+    values:
+    - reserved
+    - claude
+  scoring:
+    combine: all_pass

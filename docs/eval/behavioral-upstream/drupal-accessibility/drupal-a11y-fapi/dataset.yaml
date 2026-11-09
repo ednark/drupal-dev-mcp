@@ -1,0 +1,84 @@
+questions:
+- id: B01
+  input: Generate a Drupal Form API text field for a user's email address. The field should be required
+    and include a description explaining that the email will only be used for order receipts.
+  criteria: 'A render array using #type => ''email'' with #title, #description, and #required TRUE. No
+    hand-rolled aria-label or aria-describedby.'
+  bundle: drupal_accessibility_drupal_a11y_fapi
+  rubric_ref: rubric/drupal_accessibility_drupal_a11y_fapi_b01@1.1
+  metadata:
+    expectations:
+    - 'Uses #type => ''email'' or ''textfield'''
+    - 'Includes #title with translated string'
+    - 'Includes #description with translated string'
+    - 'Sets #required => TRUE'
+    - Does NOT include aria-label or aria-describedby as manual attributes
+    - Generated PHP passes php -l syntax check
+- id: B02
+  input: Generate a Drupal form with a group of shipping speed radio buttons (Standard 5-7 days, Express
+    2 days). The group should have a visible label.
+  criteria: 'A render array using #type => ''fieldset'' or ''details'' as the container, with a nested
+    #type => ''radios'' element. Not a bare radios element without a group container.'
+  bundle: drupal_accessibility_drupal_a11y_fapi
+  rubric_ref: rubric/drupal_accessibility_drupal_a11y_fapi_b02@1.1
+  metadata:
+    expectations:
+    - Uses fieldset or details as a grouping container
+    - 'Includes #title on the group container'
+    - 'Uses #type => ''radios'' for the options'
+    - Does NOT use a bare div or heading as the group label
+    - Generated PHP passes php -l syntax check
+- id: B03
+  input: Generate a render array for a 'Go to cart' call-to-action link styled as a button.
+  criteria: 'A render array using #type => ''link'' with #url from Url::fromRoute and #attributes for
+    the button class. Not a #markup string containing an <a> tag.'
+  bundle: drupal_accessibility_drupal_a11y_fapi
+  rubric_ref: rubric/drupal_accessibility_drupal_a11y_fapi_b03@1.0
+  metadata:
+    expectations:
+    - 'Uses #type => ''link'''
+    - 'Uses Url::fromRoute or similar for #url'
+    - 'Does NOT put the link inside #markup as a raw HTML string'
+    - Generated PHP passes php -l syntax check
+- id: B04
+  input: Generate a render array for a hero image of volunteers planting trees, and a separate purely
+    decorative swirl SVG.
+  criteria: 'Two image render elements using #theme => ''image''. The hero image has a descriptive #alt
+    string via $this->t(). The decorative image has #alt => ''''.'
+  bundle: drupal_accessibility_drupal_a11y_fapi
+  rubric_ref: rubric/drupal_accessibility_drupal_a11y_fapi_b04@1.0
+  metadata:
+    expectations:
+    - 'Uses #theme => ''image'' for both elements'
+    - 'Hero image has a non-empty #alt string'
+    - 'Decorative image has #alt => '''''
+    - 'Does NOT omit #alt on either image'
+    - Generated PHP passes php -l syntax check
+- id: B05
+  input: 'Generate a Drupal render array for a table of open orders with columns: Order, Placed, Status.
+    The table should handle the empty state.'
+  criteria: 'A render array using #type => ''table'' with #caption, #header, #rows, and #empty. Not a
+    raw HTML table in #markup.'
+  bundle: drupal_accessibility_drupal_a11y_fapi
+  rubric_ref: rubric/drupal_accessibility_drupal_a11y_fapi_b05@1.0
+  metadata:
+    expectations:
+    - 'Uses #type => ''table'''
+    - 'Includes #caption'
+    - 'Includes #header array'
+    - 'Includes #empty for the empty-state message'
+    - 'Does NOT use #markup to build the table HTML'
+    - Generated PHP passes php -l syntax check
+- id: B06
+  input: A form has an 'internal_id' hidden field that should only be visible to administrators. Show
+    how to hide it from non-admin users using the Drupal Form API accessibility-safe approach.
+  criteria: 'Uses #access => FALSE with a permission check (e.g. currentUser()->hasPermission()). Does
+    NOT use CSS display:none or inline style to hide the element.'
+  bundle: drupal_accessibility_drupal_a11y_fapi
+  rubric_ref: rubric/drupal_accessibility_drupal_a11y_fapi_b06@1.1
+  metadata:
+    expectations:
+    - 'Uses #access => FALSE so the element is not rendered and its input is ignored'
+    - 'Combines #access with a permission or role check'
+    - Does NOT use display:none, display:none, or visibility:hidden
+    - Generated PHP passes php -l syntax check

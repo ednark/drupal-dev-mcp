@@ -52,3 +52,7 @@ No generic linter expresses staleness; this is the audit module's cache-score te
 
 - Cache tags/contexts and bubbling: since 8.x, unchanged through 12.x.
 - `lifecycle: deprecated`-era block plugins and `BLOCK_NO_CACHE`: legacy constants still appear in old snippets; prefer `#cache` metadata.
+
+## Related corpus entries
+
+- `ai_best_practices` skill `drupal-render-pipeline` (indexed 2026-11-09): mechanism depth for this topic — render arrays vs Response, minimum-wins max-age bubbling, `#markup` vs `#plain_text`, two-phase invalidation, AccessResult explicit attachment. This doc is the decision rule; that skill is the mechanics.

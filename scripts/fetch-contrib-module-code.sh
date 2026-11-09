@@ -60,7 +60,9 @@ MODULES=(
   crop
   focal_point
   ai
-  drupal_ai
+  # NOTE: 'drupal_ai' removed 2026-11-09 — the drupal.org project exists but its
+  # git repository is empty (zero refs; no code ever pushed). The AI-initiative
+  # module is 'ai' (indexed above). Verified via git ls-remote before removal.
   # Tier 1 — near-universal in modern builds
   search_api
   search_api_db

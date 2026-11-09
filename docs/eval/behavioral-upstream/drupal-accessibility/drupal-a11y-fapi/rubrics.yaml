@@ -1,0 +1,100 @@
+rubrics:
+- id: drupal_accessibility_drupal_a11y_fapi_b01
+  version: '1.1'
+  applicable_bundles:
+  - drupal_accessibility_drupal_a11y_fapi
+  checks:
+  - kind: must_contain_any
+    values:
+    - '#title'
+    - '#description'
+    - '#required'
+  - kind: must_not_contain
+    values:
+    - '''aria-label'' =>'
+    - '''aria-describedby'' =>'
+    - '"aria-label" =>'
+    - '"aria-describedby" =>'
+  - &id001
+    kind: php_lint
+  scoring:
+    combine: all_pass
+- id: drupal_accessibility_drupal_a11y_fapi_b02
+  version: '1.1'
+  applicable_bundles:
+  - drupal_accessibility_drupal_a11y_fapi
+  checks:
+  - kind: must_contain_any
+    values:
+    - fieldset
+    - details
+    - '''radios'''
+  - kind: must_not_contain
+    values:
+    - '''#prefix'' => ''<div'
+    - '#type'' => ''div'''
+    - '''#markup'' => ''<div'
+  - *id001
+  scoring:
+    combine: all_pass
+- id: drupal_accessibility_drupal_a11y_fapi_b03
+  version: '1.0'
+  applicable_bundles:
+  - drupal_accessibility_drupal_a11y_fapi
+  checks:
+  - kind: must_contain_any
+    values:
+    - '#type.*link'
+    - '''link'''
+  - kind: must_not_contain
+    values:
+    - '#markup.*<a'
+    - '''#markup'' => ''<a'
+  - kind: php_lint
+  scoring:
+    combine: all_pass
+- id: drupal_accessibility_drupal_a11y_fapi_b04
+  version: '1.0'
+  applicable_bundles:
+  - drupal_accessibility_drupal_a11y_fapi
+  checks:
+  - kind: must_contain_any
+    values:
+    - '#alt => '''''
+    - '#alt => ""'
+  - kind: php_lint
+  scoring:
+    combine: all_pass
+- id: drupal_accessibility_drupal_a11y_fapi_b05
+  version: '1.0'
+  applicable_bundles:
+  - drupal_accessibility_drupal_a11y_fapi
+  checks:
+  - kind: must_contain_any
+    values:
+    - '''table'''
+    - '#caption'
+    - '#empty'
+  - kind: must_not_contain
+    values:
+    - '#markup.*<table'
+    - '''#markup'' => ''<table'
+  - kind: php_lint
+  scoring:
+    combine: all_pass
+- id: drupal_accessibility_drupal_a11y_fapi_b06
+  version: '1.1'
+  applicable_bundles:
+  - drupal_accessibility_drupal_a11y_fapi
+  checks:
+  - kind: must_contain_any
+    values:
+    - '#access'
+  - kind: must_not_contain
+    values:
+    - '''style'' =>'
+    - style="display
+    - style='display
+  - *id001
+  scoring:
+    combine: all_pass

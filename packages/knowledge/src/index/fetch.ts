@@ -43,6 +43,7 @@ export const GIT_SOURCE_SCRIPTS = [
   'scripts/fetch-contrib-module-code.sh',
   'scripts/fetch-drupal-examples.sh',
   'scripts/fetch-drupal-skills.sh',
+  'scripts/fetch-ai-best-practices.sh',
   'scripts/fetch-symfony-docs.sh',
   'scripts/fetch-phpstan-drupal.sh',
 ] as const;

@@ -1,0 +1,78 @@
+rubrics:
+- id: drupal_accessibility_drupal_a11y_dynamic_b01
+  version: '1.0'
+  applicable_bundles:
+  - drupal_accessibility_drupal_a11y_dynamic
+  checks:
+  - kind: must_contain_any
+    values:
+    - Drupal.announce
+    - once(
+  - kind: must_not_contain
+    values:
+    - aria-live="
+    - aria-live='
+    - createElement(
+    - insertAdjacentHTML(
+  scoring:
+    combine: all_pass
+- id: drupal_accessibility_drupal_a11y_dynamic_b02
+  version: '1.0'
+  applicable_bundles:
+  - drupal_accessibility_drupal_a11y_dynamic
+  checks:
+  - kind: must_contain_any
+    values:
+    - FocusFirstCommand
+    - use Drupal
+  - kind: must_not_contain
+    values:
+    - new FocusCommand(
+    - Ajax\FocusCommand
+    - '}).focus()'
+    - '].focus()'
+    - el.focus()
+    - button.focus()
+  scoring:
+    combine: all_pass
+- id: drupal_accessibility_drupal_a11y_dynamic_b03
+  version: '1.0'
+  applicable_bundles:
+  - drupal_accessibility_drupal_a11y_dynamic
+  checks:
+  - kind: must_contain_any
+    values:
+    - '@axe-core/playwright'
+    - wcag22aa
+    - getByRole
+  - kind: must_not_contain
+    values:
+    - NightwatchTestBase
+    - extends NightwatchTest
+    - browser.assert
+  scoring:
+    combine: all_pass
+- id: drupal_accessibility_drupal_a11y_dynamic_b04
+  version: '1.0'
+  applicable_bundles:
+  - drupal_accessibility_drupal_a11y_dynamic
+  checks:
+  - kind: must_contain_any
+    values:
+    - emulateMedia
+    - colorScheme
+  scoring:
+    combine: all_pass
+- id: drupal_accessibility_drupal_a11y_dynamic_b05
+  version: '1.0'
+  applicable_bundles:
+  - drupal_accessibility_drupal_a11y_dynamic
+  checks:
+  - kind: must_contain_any
+    values:
+    - '3338664'
+    - AxeRenderArrayTrait
+    - assertAxeClean
+    - wcag22aa
+  scoring:
+    combine: all_pass
