@@ -10,6 +10,7 @@ import type {
 } from '../types.js';
 import { DEFAULT_DRUPAL_VERSION, isCompatible } from '../version.js';
 import { getDefaultIndexRoot, resolveActiveBuild, statusFromManifest, type ActiveManifest } from '../index/manifest.js';
+import { resolveSemanticAnchors, type ResolvedSemanticAnchors } from '../index/calibration.js';
 
 type Row = Record<string, any>;
 
@@ -34,22 +35,28 @@ function bm25Score(bm25: number): number {
 }
 
 /**
- * Score calibration (see docs/score-calibration.md).
+ * Semantic score calibration (see docs/score-calibration.md and
+ * index/calibration.ts).
  *
- * Empirical cosine-distance anchors for text-embedding-3-small on this corpus,
- * measured by sampling benchmark-style queries against the vector table:
- * on-topic hits cluster at 0.64–0.95, while the best hit for a completely
- * unrelated query lands at ~1.03–1.05. Anchors are chosen so that unrelated
- * junk scores ~0 and strong on-topic hits ~1.
+ * The anchors below are LEGACY FALLBACKS, valid only for the one model they
+ * were hand-measured against (2026-08-25, text-embedding-3-small). Every build
+ * that creates vectors now measures its own anchors and stores them in the
+ * manifest (`semanticCalibration`); the provider resolves per-build anchors at
+ * open() and IGNORES these constants whenever manifest calibration exists.
+ *
+ * Guard (rule 2 in index/calibration.ts): a build whose embedding model has no
+ * manifest calibration — and is not the legacy hand-calibrated model — never
+ * reaches the semantic path. Hybrid queries degrade to lexical_only instead of
+ * silently applying another model's scale.
  */
-const SEMANTIC_DISTANCE_EXCELLENT = 0.8;
-const SEMANTIC_DISTANCE_IRRELEVANT = 1.05;
+const LEGACY_SEMANTIC_DISTANCE_EXCELLENT = 0.8;
+const LEGACY_SEMANTIC_DISTANCE_IRRELEVANT = 1.05;
 
 /** Maps a LanceDB cosine distance to [0, 1] relevance via affine rescaling between the anchors. */
-function distanceScore(distance: number): number {
-  if (distance <= SEMANTIC_DISTANCE_EXCELLENT) return 1;
-  if (distance >= SEMANTIC_DISTANCE_IRRELEVANT) return 0;
-  return (SEMANTIC_DISTANCE_IRRELEVANT - distance) / (SEMANTIC_DISTANCE_IRRELEVANT - SEMANTIC_DISTANCE_EXCELLENT);
+function distanceScore(distance: number, excellent: number, irrelevant: number): number {
+  if (distance <= excellent) return 1;
+  if (distance >= irrelevant) return 0;
+  return (irrelevant - distance) / (irrelevant - excellent);
 }
 
 /**
@@ -158,11 +165,18 @@ export interface ProviderOptions {
 }
 
 export class SqliteKnowledgeProvider implements KnowledgeProvider {
+  private readonly semanticAnchors: ResolvedSemanticAnchors | null;
+
   private constructor(
     private readonly manifest: ActiveManifest,
     private readonly db: Database.Database,
     private readonly queryEmbedder?: (query: string) => Promise<number[]>,
-  ) {}
+  ) {
+    // Calibration guard: per-build anchors from the manifest, or the legacy
+    // fallback for the one hand-calibrated model, or null (semantic mode
+    // refuses to run rather than apply another model's scale).
+    this.semanticAnchors = resolveSemanticAnchors(manifest);
+  }
 
   static async open(indexRoot = getDefaultIndexRoot(), options: ProviderOptions = {}): Promise<SqliteKnowledgeProvider> {
     const manifest = await resolveActiveBuild(indexRoot);
@@ -273,7 +287,7 @@ export class SqliteKnowledgeProvider implements KnowledgeProvider {
 
     let semanticRows: Array<{ chunk_id: string; _distance: number }> = [];
     let degradedMode: 'lexical_only' | undefined;
-    if (mode !== 'lexical' && this.manifest.embeddingModel && (this.queryEmbedder || process.env.OPENAI_API_KEY)) {
+    if (mode !== 'lexical' && this.manifest.embeddingModel && this.semanticAnchors && (this.queryEmbedder || process.env.OPENAI_API_KEY)) {
       try {
         const embedding = this.queryEmbedder
           ? await this.queryEmbedder(query)
@@ -296,7 +310,7 @@ export class SqliteKnowledgeProvider implements KnowledgeProvider {
       const document = this.db.prepare(`SELECT d.*, c.text FROM chunks c JOIN documents d ON d.id=c.document_id WHERE c.id=?`).get(row.chunk_id) as Row | undefined;
       if (!document) continue;
       if (version !== 'all' && !isCompatible(document.compatibility, version)) continue;
-      const semanticScore = distanceScore(row._distance);
+      const semanticScore = distanceScore(row._distance, this.semanticAnchors!.excellent, this.semanticAnchors!.irrelevant);
       const best = bestChunkByDoc.get(document.id);
       if (!best) bestChunkByDoc.set(document.id, { best: semanticScore, accumulated: semanticScore, chunkId: row.chunk_id, rank: index + 1, text: document.text, document });
       else {

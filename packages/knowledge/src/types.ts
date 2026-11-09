@@ -53,6 +53,8 @@ export interface IndexStatus {
   availableDrupalVersions: string[];
   counts: Record<string, number>;
   embeddingModel?: string;
+  /** Semantic-score anchors measured for this build's embedding model, if any. */
+  semanticCalibration?: import('./index/calibration.js').SemanticCalibration;
   buildPath?: string;
   /** Set when the build indexed only a per-directory file subset (dev/test builds). */
   fixtureLimit?: number;

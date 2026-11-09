@@ -10,6 +10,8 @@ export interface ActiveManifest {
   defaultDrupalVersion: '11.4';
   availableDrupalVersions: string[];
   embeddingModel?: string;
+  /** Semantic-score anchors measured for THIS build's embedding model (see index/calibration.ts). */
+  semanticCalibration?: import('./calibration.js').SemanticCalibration;
   counts: Record<string, number>;
   /** Per-directory file cap used at build time, if any (fixture builds). */
   fixtureLimit?: number;
@@ -66,6 +68,7 @@ export function statusFromManifest(manifest: ActiveManifest | null): IndexStatus
     availableDrupalVersions: manifest.availableDrupalVersions,
     counts: manifest.counts,
     embeddingModel: manifest.embeddingModel,
+    semanticCalibration: manifest.semanticCalibration,
     buildPath: manifest.buildPath,
     fixtureLimit: manifest.fixtureLimit,
     verification: manifest.verification,

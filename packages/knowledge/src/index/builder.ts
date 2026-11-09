@@ -8,6 +8,7 @@ import { createSchema, openDatabase, SCHEMA_VERSION } from '../storage/schema.js
 import type { ExtractedEntity, NormalizedDocument, RelationRecord } from '../types.js';
 import { normalizeDrupalVersion, SUPPORTED_DRUPAL_VERSIONS } from '../version.js';
 import { discoverDocuments } from './discover.js';
+import { measureSemanticCalibration } from './calibration.js';
 import type { ActiveManifest } from './manifest.js';
 import { getDefaultIndexRoot } from './manifest.js';
 import { buildVectorIndex } from './vector.js';
@@ -17,6 +18,8 @@ export interface BuildOptions {
   indexRoot?: string;
   fixtureLimit?: number;
   withEmbeddings?: boolean;
+  /** Overrides the recorded embedding-model name (e.g. a local transformers.js model). */
+  embeddingModel?: string;
   activate?: boolean;
   embed?: (texts: string[]) => Promise<number[][]>;
 }
@@ -94,7 +97,7 @@ export async function buildIndex(options: BuildOptions): Promise<BuildResult> {
   const startedAt = new Date().toISOString();
   const documents = await discoverDocuments(options.repoRoot, options.fixtureLimit);
   const corpusDigest = contentHash(documents.map(document => `${document.id}:${document.contentHash}`).sort().join('\n'));
-  const embeddingModel = options.withEmbeddings ? process.env.OPENAI_EMBEDDING_MODEL ?? 'text-embedding-3-small' : undefined;
+  const embeddingModel = options.withEmbeddings ? options.embeddingModel ?? process.env.OPENAI_EMBEDDING_MODEL ?? 'text-embedding-3-small' : undefined;
   db.prepare('INSERT INTO index_runs(id, schema_version, corpus_digest, embedding_model, started_at, status) VALUES (?, ?, ?, ?, ?, ?)').run(runId, SCHEMA_VERSION, corpusDigest, embeddingModel ?? null, startedAt, 'building');
 
   const snapshots = new Map<string, string>();
@@ -214,6 +217,7 @@ export async function buildIndex(options: BuildOptions): Promise<BuildResult> {
     embeddingsReused: reusedEmbeddingCount,
     parseErrors: parseErrors.length,
   };
+
   const eligibleCode = documents.filter(isGraphEligibleDocument).length;
   const parseSuccessRate = eligibleCode ? (eligibleCode - parseErrors.length) / eligibleCode : 1;
   const foreignKeyErrors = db.pragma('foreign_key_check') as unknown[];
@@ -223,6 +227,27 @@ export async function buildIndex(options: BuildOptions): Promise<BuildResult> {
   if (foreignKeyErrors.length) errors.push(`${foreignKeyErrors.length} foreign-key violations`);
   if (parseSuccessRate < 0.99) errors.push(`Parse success ${(parseSuccessRate * 100).toFixed(2)}% is below 99%`);
   if (!vectorCount) warnings.push('Vector index not built; hybrid queries will use lexical-only mode');
+
+  // Semantic-score calibration travels with the build (index/calibration.ts,
+  // rule 1): measured with the SAME embedding model that produced the vectors,
+  // stored in the manifest, consumed by the query provider. Without it the
+  // provider refuses semantic mode for any model other than the one legacy
+  // hand-calibrated model — a model swap can never silently mis-rank.
+  let semanticCalibration: BuildResult['semanticCalibration'];
+  if (vectorCount > 0 && embeddingModel) {
+    try {
+      const calibrationEmbed = options.embed ?? (async (texts: string[]) => {
+        const { default: OpenAI } = await import('openai');
+        const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+        const response = await client.embeddings.create({ model: embeddingModel, input: texts });
+        return response.data.map(item => item.embedding);
+      });
+      semanticCalibration = await measureSemanticCalibration({ buildPath, embeddingModel, embed: calibrationEmbed });
+    } catch (error) {
+      warnings.push(`Semantic calibration not measured (${error instanceof Error ? error.message : String(error)}); hybrid queries will degrade to lexical-only until 'cli.ts calibrate --write' succeeds for this build's embedding model.`);
+    }
+  }
+
   if (!documents.some(document => document.drupalVersion === '10.6')) warnings.push('Drupal 10.6 source snapshot is absent');
   if (!documents.some(document => document.drupalVersion === '11.4')) warnings.push('Drupal 11.4 source snapshot is absent');
   if (!documents.some(document => document.drupalVersion === '12.0')) warnings.push('Drupal 12.0 source snapshot is absent');
@@ -240,6 +265,7 @@ export async function buildIndex(options: BuildOptions): Promise<BuildResult> {
     defaultDrupalVersion: '11.4',
     availableDrupalVersions: SUPPORTED_DRUPAL_VERSIONS.filter(version => documents.some(document => document.drupalVersion === version)),
     embeddingModel,
+    semanticCalibration,
     counts,
     fixtureLimit: options.fixtureLimit,
     verification,
