@@ -20,6 +20,7 @@
     "index:status": "tsx src/cli.ts status",
     "index:freshness": "tsx src/cli.ts freshness",
     "index:benchmark": "tsx src/cli.ts benchmark",
+    "index:calibrate": "tsx src/cli.ts calibrate",
     "index:health": "tsx src/cli.ts health",
     "index:version-smoke": "tsx src/cli.ts version-smoke"
   },
@@ -30,5 +31,8 @@
     "openai": "^4.77.0",
     "php-parser": "^3.7.0",
     "yaml": "^2.8.1"
+  },
+  "optionalDependencies": {
+    "@huggingface/transformers": "^4.3.2"
   }
 }

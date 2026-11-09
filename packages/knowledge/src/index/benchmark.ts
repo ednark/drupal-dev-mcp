@@ -204,7 +204,7 @@ function readBaseline(baselinePath: string): BenchmarkBaseline | null {
 export async function runBenchmark(
   provider: KnowledgeProvider,
   version = '11.4',
-  options: { baselinePath?: string; saveBaseline?: boolean } = {},
+  options: { baselinePath?: string; saveBaseline?: boolean; mode?: 'lexical' | 'hybrid' } = {},
 ) {
   const cases: BenchmarkCaseResult[] = [];
   let chromeViolations = 0;
@@ -213,7 +213,7 @@ export async function runBenchmark(
     const response = await provider.search({
       query: benchmark.question,
       drupalVersion: version,
-      mode: 'lexical',
+      mode: options.mode ?? 'lexical',
       limit: TOP_K,
       sourceTypes: benchmark.sourceTypes,
     });
