@@ -2,6 +2,7 @@ import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mc
 import { z } from 'zod';
 import { DrupalAgent, OpenAiLlmProvider } from '@drupal-dev-mcp/agent';
 import type { KnowledgeProvider, NodeType, RelationPredicate } from '@drupal-dev-mcp/knowledge';
+import { createTelemetry, type TelemetryOptions } from './telemetry.js';
 
 const DrupalVersionSchema = z.enum(['10.6', '11.4', '12.0', 'all']);
 const NodeTypeSchema = z.enum([
@@ -63,6 +64,14 @@ const IndexStatusOutputSchema = z.object({
   availableDrupalVersions: z.array(z.string()),
   counts: z.record(z.string(), z.number()),
   embeddingModel: z.string().optional(),
+  semanticCalibration: z.object({
+    embeddingModel: z.string(),
+    excellent: z.number(),
+    irrelevant: z.number(),
+    measuredAt: z.string(),
+    probeQueries: z.number(),
+    method: z.string(),
+  }).optional(),
   buildPath: z.string().optional(),
   fixtureLimit: z.number().optional(),
   verification: z.object({ passed: z.boolean(), errors: z.array(z.string()), warnings: z.array(z.string()) }).optional(),
@@ -158,7 +167,12 @@ function resourceResponse(uri: string, mimeType: string, text: string) {
   return { contents: [{ uri, mimeType, text }] };
 }
 
-export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
+export function createDrupalMcpServer(provider: KnowledgeProvider, telemetryOptions: TelemetryOptions = {}): McpServer {
+  // Local query telemetry: real agent queries + mechanical grounding outcomes,
+  // one JSONL line per tool call (docs/telemetry.md). Disabled with
+  // DRUPAL_DEV_MCP_TELEMETRY=off; never affects tool behavior.
+  const telemetry = createTelemetry(telemetryOptions);
+  const t = telemetry.instrument.bind(telemetry);
   const server = new McpServer({ name: 'drupal-dev-mcp', version: '0.2.0' });
 
   // Static capability advertisement, evaluated once at server construction:
@@ -194,7 +208,7 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
     }),
     outputSchema: SearchOutputSchema,
     annotations: READ_ONLY_ANNOTATIONS,
-  }, async input => {
+  }, t('search_drupal', async input => {
     const response = await provider.search({
       query: input.query,
       drupalVersion: input.drupal_version,
@@ -208,7 +222,7 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
       minScore: input.min_score,
     });
     return toolResult(response as unknown as Record<string, unknown>, response.results.map(result => result.chunkResourceUri ?? result.resourceUri));
-  });
+  }));
 
   server.registerTool('get_drupal_entity', {
     title: 'Get Drupal entity',
@@ -224,7 +238,7 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
     }).refine(value => Boolean(value.entity_id) !== Boolean(value.identifier), 'Provide exactly one of entity_id or identifier'),
     outputSchema: EntityOutputSchema,
     annotations: READ_ONLY_ANNOTATIONS,
-  }, async input => {
+  }, t('get_drupal_entity', async input => {
     const response = await provider.getEntity({
       entityId: input.entity_id,
       identifier: input.identifier,
@@ -236,7 +250,7 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
     });
     const uris = [response.entity, ...(response.candidates ?? [])].filter(Boolean).map(entity => entity!.resourceUri);
     return toolResult(response as unknown as Record<string, unknown>, uris);
-  });
+  }));
 
   server.registerTool('get_drupal_entities', {
     title: 'Get Drupal entities in batch',
@@ -249,7 +263,7 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
     }),
     outputSchema: EntitiesOutputSchema,
     annotations: READ_ONLY_ANNOTATIONS,
-  }, async input => {
+  }, t('get_drupal_entities', async input => {
     const response = await provider.getEntities({
       entityIds: input.entity_ids,
       drupalVersion: input.drupal_version,
@@ -258,7 +272,7 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
     });
     const uris = response.results.filter(item => item.entity).map(item => item.entity!.resourceUri);
     return toolResult(response as unknown as Record<string, unknown>, uris);
-  });
+  }));
 
   server.registerTool('get_drupal_document', {
     title: 'Get Drupal source document',
@@ -269,12 +283,12 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
     }),
     outputSchema: DocumentOutputSchema,
     annotations: READ_ONLY_ANNOTATIONS,
-  }, async input => {
+  }, t('get_drupal_document', async input => {
     const uri = input.chunk_id ? `drupal://document/${input.document_id}#chunk/${input.chunk_id}` : `drupal://document/${input.document_id}`;
     const resource = await provider.readResource(uri);
     if (!resource) return toolResult({ status: 'not_found' }, []);
     return toolResult({ status: 'found', uri: resource.uri, mimeType: resource.mimeType, text: resource.text, textLength: resource.text.length }, [resource.uri]);
-  });
+  }));
 
   server.registerTool('get_index_status', {
     title: 'Get Drupal knowledge index status',
@@ -282,7 +296,7 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
     inputSchema: z.object({}),
     outputSchema: IndexStatusOutputSchema,
     annotations: READ_ONLY_ANNOTATIONS,
-  }, async () => {
+  }, t('get_index_status', async () => {
     const status = await provider.getIndexStatus();
     const getAttribution = provider.getIndexAttribution?.bind(provider);
     if (getAttribution) {
@@ -308,7 +322,7 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
       }
     }
     return toolResult(status as unknown as Record<string, unknown>, ['drupal://index/status']);
-  });
+  }));
 
   server.registerTool('verify_drupal_modules', {
     title: 'Verify Drupal module names',
@@ -319,7 +333,7 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
     }),
     outputSchema: ModuleVerifyOutputSchema,
     annotations: READ_ONLY_ANNOTATIONS,
-  }, async input => {
+  }, t('verify_drupal_modules', async input => {
     const results = [];
     for (const name of input.modules) {
       const search = await provider.search({
@@ -356,7 +370,7 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
       },
       [],
     );
-  });
+  }));
 
   server.registerTool('explore_drupal_relationships', {
     title: 'Explore Drupal relationships',
@@ -372,7 +386,7 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
     }),
     outputSchema: RelationshipOutputSchema,
     annotations: READ_ONLY_ANNOTATIONS,
-  }, async input => {
+  }, t('explore_drupal_relationships', async input => {
     const response = await provider.exploreRelationships({
       entityId: input.entity_id,
       predicates: input.predicates as RelationPredicate[] | undefined,
@@ -387,7 +401,7 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
       ...response.nodes.map(node => node.resourceUri),
       ...response.edges.flatMap(edge => edge.evidenceDocumentId ? [`drupal://document/${edge.evidenceDocumentId}`] : []),
     ]);
-  });
+  }));
 
   server.registerTool('ask_a_drupal_expert', {
     title: 'Ask a Drupal expert',
@@ -403,7 +417,7 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
       idempotentHint: false,
       openWorldHint: true,
     },
-  }, async input => {
+  }, t('ask_a_drupal_expert', async input => {
     if (!process.env.OPENAI_API_KEY) {
       return toolResult({
         status: 'unavailable',
@@ -430,7 +444,7 @@ export function createDrupalMcpServer(provider: KnowledgeProvider): McpServer {
         reason: error instanceof Error ? error.message : String(error),
       }, []);
     }
-  });
+  }));
 
   server.registerResource('drupal-index-status', 'drupal://index/status', {
     title: 'Drupal knowledge index status', mimeType: 'application/json', description: 'Active verified index status and freshness.',

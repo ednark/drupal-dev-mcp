@@ -49,7 +49,7 @@ const provider: KnowledgeProvider = {
 };
 
 test('MCP exposes exactly seven closed-world read tools and three resource surfaces', async () => {
-  const server = createDrupalMcpServer(provider);
+  const server = createDrupalMcpServer(provider, { enabled: false });
   const client = new Client({ name: 'test-client', version: '1.0.0' });
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);

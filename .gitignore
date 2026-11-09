@@ -25,6 +25,13 @@ build/
 data/lancedb/**
 !data/lancedb/.gitkeep
 
+# Local query telemetry (JSONL, maintainer decision 2026-11-09). Never
+# version-controlled: real agent queries may contain client-proprietary content.
+data/telemetry/**
+
+# Local-embedder comparison builds + reports (side-by-side evaluations).
+data/index-compare/**
+
 # Downloaded/scraped source documents (populated by fetch scripts)
 data/sources/**
 # Exception: the curated placement-guidance corpus is hand-authored, not
